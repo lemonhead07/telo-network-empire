@@ -3,69 +3,93 @@ using Telo.Game.World;
 
 namespace Telo.Game.Player;
 
-/// <summary>Minimal first-person walker with a look-at interaction ray. Freezes while a modal view is open.</summary>
-public partial class FirstPersonController : CharacterBody3D
+/// <summary>First-person walker on the planet, with a look-at interaction ray and a survey (fly) mode for development.</summary>
+public partial class FirstPersonController : SphereBody
 {
-    public const float WalkSpeed = 2.6f, SprintSpeed = 4.4f, JumpVelocity = 3.6f, Gravity = 9.8f, MouseSensitivity = 0.0025f;
+    public const float WalkSpeed = 2.8f, SprintSpeed = 5.2f, SwimSpeed = 1.7f, JumpVelocity = 3.8f, MouseSensitivity = 0.0025f;
+    public const float FlySpeed = 45f, FlyFastSpeed = 260f;
 
     public Camera3D Camera { get; private set; } = null!;
     private RayCast3D _ray = null!;
+    private CollisionShape3D _shape = null!;
 
     public Func<bool> IsFrozen { get; set; } = () => false;
+    public bool Flying { get; private set; }
+    public bool Active { get; private set; } = true;
 
     /// <summary>What the player is looking at right now (null if nothing interactable).</summary>
     public Interactable? Focus { get; private set; }
 
     public override void _Ready()
     {
-        AddChild(new CollisionShape3D { Shape = new CapsuleShape3D { Radius = 0.3f, Height = 1.75f }, Position = new Vector3(0, 0.875f, 0) });
-        Camera = new Camera3D { Position = new Vector3(0, 1.62f, 0), Fov = 72, Current = true };
+        _shape = new CollisionShape3D { Shape = new CapsuleShape3D { Radius = 0.3f, Height = 1.75f }, Position = new Vector3(0, 0.875f, 0) };
+        AddChild(_shape);
+        Camera = new Camera3D { Position = new Vector3(0, 1.62f, 0), Fov = 72, Current = true, Near = 0.08f, Far = 60000 };
         AddChild(Camera);
-        _ray = new RayCast3D { TargetPosition = new Vector3(0, 0, -2.2f), CollideWithBodies = true };
+        _ray = new RayCast3D { TargetPosition = new Vector3(0, 0, -2.6f), CollisionMask = 3 };
         Camera.AddChild(_ray);
+        FloorMaxAngle = Mathf.DegToRad(46);
+        FloorSnapLength = 0.4f;
         Input.MouseMode = Input.MouseModeEnum.Captured;
+    }
+
+    /// <summary>Switch the on-foot player off (while driving) or back on.</summary>
+    public void SetActive(bool active)
+    {
+        Active = active;
+        Visible = active;
+        _shape.Disabled = !active;
+        Camera.Current = active;
+        if (!active) Focus = null;
     }
 
     public override void _UnhandledInput(InputEvent e)
     {
-        if (IsFrozen()) return;
+        if (!Active || IsFrozen()) return;
         if (e is InputEventMouseMotion mm && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
-            RotateY(-mm.Relative.X * MouseSensitivity);
+            Turn(-mm.Relative.X * MouseSensitivity);
             var r = Camera.Rotation;
-            r.X = Mathf.Clamp(r.X - mm.Relative.Y * MouseSensitivity, -1.4f, 1.4f);
+            r.X = Mathf.Clamp(r.X - mm.Relative.Y * MouseSensitivity, -1.5f, 1.5f);
             Camera.Rotation = r;
         }
         else if (e is InputEventMouseButton { Pressed: true } && Input.MouseMode != Input.MouseModeEnum.Captured)
-        {
             Input.MouseMode = Input.MouseModeEnum.Captured;
-        }
         else if (e.IsActionPressed("interact") && Focus?.OnUse is { } use)
         {
             use();
             GetViewport().SetInputAsHandled();
         }
+        else if (e.IsActionPressed("fly")) { Flying = !Flying; VerticalSpeed = 0; }
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        var v = Velocity;
-        if (!IsOnFloor()) v.Y -= Gravity * (float)delta;
-
+        if (!Active) return;
         if (IsFrozen())
         {
-            v.X = 0; v.Z = 0; Velocity = v; MoveAndSlide(); Focus = null;
+            if (!Flying) MoveOnPlanet(Vector3.Zero, delta);
+            Focus = null;
             return;
         }
 
-        if (Input.IsActionJustPressed("jump") && IsOnFloor()) v.Y = JumpVelocity;
         var input = Input.GetVector("move_left", "move_right", "move_forward", "move_back");
-        var dir = (Transform.Basis * new Vector3(input.X, 0, input.Y)).Normalized();
-        float speed = Input.IsActionPressed("sprint") ? SprintSpeed : WalkSpeed;
-        v.X = dir.X * speed; v.Z = dir.Z * speed;
-        Velocity = v;
-        MoveAndSlide();
-
+        if (Flying)
+        {
+            // Survey mode: fly where you look. Still collides with the world.
+            var dir = Camera.GlobalBasis * new Vector3(input.X, 0, input.Y);
+            if (Input.IsActionPressed("jump")) dir += Up;
+            Velocity = dir.Normalized() * (Input.IsActionPressed("sprint") ? FlyFastSpeed : FlySpeed);
+            MoveAndSlide();
+            AlignToPlanet();
+        }
+        else
+        {
+            if (Input.IsActionJustPressed("jump") && (IsOnFloor() || InWater)) VerticalSpeed = JumpVelocity;
+            var dir = (GlobalBasis * new Vector3(input.X, 0, input.Y)).Normalized();
+            float speed = InWater ? SwimSpeed : Input.IsActionPressed("sprint") ? SprintSpeed : WalkSpeed;
+            MoveOnPlanet(dir * speed, delta);
+        }
         Focus = _ray.IsColliding() ? _ray.GetCollider() as Interactable : null;
     }
 }

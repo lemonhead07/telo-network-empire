@@ -3,7 +3,7 @@ using Godot;
 namespace Telo.Game.World;
 
 /// <summary>
-/// Builds the Act 0 rented room procedurally from primitives (greybox). Art replaces these meshes later;
+/// Builds the Act 0 rented room from primitives, in the local space of a building node placed on the planet;
 /// the interactables and their positions are the contract.
 /// </summary>
 public static class RoomBuilder
@@ -14,29 +14,37 @@ public static class RoomBuilder
         Wood = new(0.42f, 0.28f, 0.16f), Metal = new(0.35f, 0.37f, 0.38f), Beige = new(0.78f, 0.74f, 0.62f),
         Board = new(0.55f, 0.47f, 0.33f), Fabric = new(0.25f, 0.3f, 0.22f);
 
+    public const float DoorX = 1.2f, DoorW = 1.0f, DoorH = 2.1f;
+
+    /// <summary>Walls, floor, roof, a doorway on the south (+Z) side with a ramp, and interior lights.</summary>
     public static void BuildShell(Node3D root)
     {
-        Box(root, new Vector3(0, -0.05f, 0), new Vector3(W, 0.1f, D), Floor, solid: true);
+        Box(root, new Vector3(0, -0.25f, 0), new Vector3(W, 0.5f, D), Floor, solid: true);
         Box(root, new Vector3(0, H + 0.05f, 0), new Vector3(W, 0.1f, D), Wall * 0.9f, solid: true);
+        Box(root, new Vector3(0, H + 0.2f, 0), new Vector3(W + 0.6f, 0.2f, D + 0.6f), new Color(0.28f, 0.2f, 0.18f)); // roof slab
         Box(root, new Vector3(0, H / 2, -D / 2), new Vector3(W, H, 0.1f), Wall, solid: true);
-        Box(root, new Vector3(0, H / 2, D / 2), new Vector3(W, H, 0.1f), Wall, solid: true);
         Box(root, new Vector3(-W / 2, H / 2, 0), new Vector3(0.1f, H, D), Wall, solid: true);
         Box(root, new Vector3(W / 2, H / 2, 0), new Vector3(0.1f, H, D), Wall, solid: true);
-        // window (emissive pane = streetlight outside)
-        var pane = Box(root, new Vector3(W / 2 - 0.06f, 1.6f, 0.8f), new Vector3(0.02f, 0.9f, 1.2f), new Color(0.45f, 0.55f, 0.7f));
+        // south wall in three pieces around the doorway
+        float l0 = -W / 2, l1 = DoorX - DoorW / 2, r0 = DoorX + DoorW / 2, r1 = W / 2;
+        Box(root, new Vector3((l0 + l1) / 2, H / 2, D / 2), new Vector3(l1 - l0, H, 0.1f), Wall, solid: true);
+        Box(root, new Vector3((r0 + r1) / 2, H / 2, D / 2), new Vector3(r1 - r0, H, 0.1f), Wall, solid: true);
+        Box(root, new Vector3(DoorX, (H + DoorH) / 2, D / 2), new Vector3(DoorW, H - DoorH, 0.1f), Wall, solid: true);
+        // ramp from the doorstep down to the ground
+        var ramp = new StaticBody3D { Position = new Vector3(DoorX, -0.11f, D / 2 + 0.75f), RotationDegrees = new Vector3(6.5f, 0, 0) };
+        ramp.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(1.5f, 0.1f, 1.6f) } });
+        ramp.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.5f, 0.1f, 1.6f) }, MaterialOverride = Mat(Wood * 0.8f) });
+        root.AddChild(ramp);
+        var sign = Label(root, "TELEX & RADIO REPAIRS", new Vector3(DoorX, 2.4f, D / 2 + 0.07f), 0.16f);
+        sign.Modulate = new Color(0.2f, 0.1f, 0.06f);
+
+        // window (emissive pane)
+        var pane = Box(root, new Vector3(W / 2 - 0.06f, 1.6f, 0.8f), new Vector3(0.14f, 0.9f, 1.2f), new Color(0.45f, 0.55f, 0.7f));
         ((StandardMaterial3D)pane.MaterialOverride).EmissionEnabled = true;
         ((StandardMaterial3D)pane.MaterialOverride).Emission = new Color(0.3f, 0.38f, 0.5f);
 
-        root.AddChild(new OmniLight3D { Position = new Vector3(0.5f, 2.3f, 0), LightColor = new Color(1f, 0.82f, 0.6f), LightEnergy = 1.4f, OmniRange = 7, ShadowEnabled = true });
-        root.AddChild(new OmniLight3D { Position = new Vector3(-1.8f, 1.4f, -1.6f), LightColor = new Color(1f, 0.7f, 0.45f), LightEnergy = 0.6f, OmniRange = 3 });
-
-        var env = new Godot.Environment
-        {
-            BackgroundMode = Godot.Environment.BGMode.Color, BackgroundColor = new Color(0.05f, 0.05f, 0.07f),
-            AmbientLightSource = Godot.Environment.AmbientSource.Color, AmbientLightColor = new Color(0.35f, 0.3f, 0.28f), AmbientLightEnergy = 0.5f,
-            TonemapMode = Godot.Environment.ToneMapper.Filmic, FogEnabled = true, FogLightColor = new Color(0.4f, 0.35f, 0.3f), FogDensity = 0.02f,
-        };
-        root.AddChild(new WorldEnvironment { Environment = env });
+        root.AddChild(new OmniLight3D { Position = new Vector3(0.5f, 2.3f, 0), LightColor = new Color(1f, 0.82f, 0.6f), LightEnergy = 1.2f, OmniRange = 6, ShadowEnabled = true });
+        root.AddChild(new OmniLight3D { Position = new Vector3(-1.8f, 1.4f, -1.6f), LightColor = new Color(1f, 0.7f, 0.45f), LightEnergy = 0.5f, OmniRange = 3 });
     }
 
     /// <summary>Create an interactable prop: visual box + collision on the interactable body.</summary>

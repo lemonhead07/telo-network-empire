@@ -1,6 +1,8 @@
 # CLAUDE.md — TELO: Network Empire
 
-First-person telecom business sim, 1983–2035. You start alone wiring a frame in a rented room and end up running infrastructure millions depend on. **The core idea: the job itself changes as you play.** Verbs you do by hand become delegated, then automated, and the interface you see goes from paper to terminal to database to dashboard.
+**The owner is not a developer.** Claude does all design, code, models, images and sound. Explain choices in plain language, keep the game runnable at all times, and prefer showing a screenshot over describing code.
+
+First-person, open-world telecom business sim, 1983–2035, set on **one small planet** (2.5 km radius, ~16 km lap) that you walk, drive, sail and fly around, and eventually launch satellites from. You start alone wiring a frame in a rented room and end up running infrastructure millions depend on. **The core idea: the job itself changes as you play.** Verbs you do by hand become delegated, then automated, and the interface you see goes from paper to terminal to database to dashboard.
 
 Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`.
 
@@ -13,8 +15,8 @@ game/                  Godot 4.7 .NET project. The presentation layer: it shows 
   content/*.json       Data: acts, announcements, almanac, work (automation stages), premises (Last Mile)
   scripts/GameRoot.cs  Composition root: loads content, owns Simulation, builds room, wires views
   scripts/UI/          HUD + modal views (Frame, Almanac, Notebook). TierStyle = paper/terminal/db/dashboard look
-  scripts/World/       Greybox room builder + Interactable
-  scripts/Player/      First-person controller
+  scripts/World/       PlanetBuilder (terrain/ocean/trees), PlanetSky, TownBuilder, RoomBuilder, LowPoly (code-built models), Interactable
+  scripts/Player/      SphereBody (planet gravity) → FirstPersonController, Van
 docs/                  Review, decisions, build plan, business plan
 ```
 
@@ -24,13 +26,21 @@ docs/                  Review, decisions, build plan, business plan
 dotnet test Telo.slnx                                   # sim unit tests (must stay green)
 dotnet build game/Telo.Game.csproj                      # compile the game scripts
 godot --headless --path game --import                   # first run / after adding assets
-godot --headless --path game -- --smoke                 # end-to-end boot + install + 700 days + save; prints "SMOKE OK", exit 0
-godot --path game -- --shot=/abs/path/room.png          # windowed screenshot (+ room-frame.png) then quit
+godot --headless --path game -- --smoke                 # walk + drive + install + 700 days + save; prints "WORLD OK" and "SMOKE OK", exit 0
+godot --path game -- --shot=/abs/path/x.png             # saves x-town, x-street, x-aerial, x-orbit, x-dusk, x-room .png, then quits
 godot --path game                                       # play
 godot --editor --path game                              # open editor
 ```
 
-**Definition of done:** `dotnet test Telo.slnx` is green AND the `--smoke` run prints `SMOKE OK`. For UI changes, also check a `--shot` screenshot.
+## Testing policy: develop lots, test little
+
+The owner wants fast iteration. **Do not run the test suite or the smoke test after every change.**
+
+- Always: `dotnet build game/Telo.Game.csproj` (a few seconds) so the game is never left broken.
+- For anything visual: take a `--shot` screenshot and look at it. That is the main check.
+- Run `dotnet test` + `--smoke` only: before a commit that changed rules in `src/Telo.Sim`, before a release/tag, or when asked.
+- GitHub Actions (`.github/workflows/check.yml`) is **manual-trigger only** (plus `v*` tags). Never add `on: push` for branches.
+- Add new tests sparingly: one or two per new sim system, for the rules that would be painful to get wrong (determinism, saves, money).
 
 ## Non-negotiables
 
@@ -44,6 +54,22 @@ godot --editor --path game                              # open editor
 - **Notifications are for milestones and errors only.** Use `state.Emit(...)`.
 - **Tone:** wry, warm, bureaucratic comedy. Cynical about institutions, never about the people who need the network. Piracy is folk comedy, never instruction. The Last Mile is named people, not a score. Crime is abstract: no real hacking, frequencies or evasion techniques.
 - **Don't recreate existing games** or use real company or product trademarks in content. Fictionalise them ("the touchscreen phone", "the national phone monopoly").
+
+## The planet
+
+- `src/Telo.Sim/Planet/PlanetGen.cs` is the truth: `Height(dir)`, `BiomeAt(dir)`, `Sites` (flattened ground for buildings), `SurfaceDistance`. Pure maths, no trig (determinism). Positions in the sim are **directions on the unit sphere** (`V3`).
+- `game/scripts/World/PlanetBuilder.cs` meshes it as a cube-sphere (6 faces × 12×12 chunks × 20×20 quads, ~16 m facets), skips deep seabed, adds an ocean sphere and region-bucketed tree/rock MultiMeshes with distance culling.
+- **"Down" is toward the world origin.** Anything that moves derives from `SphereBody` (`MoveOnPlanet`, `AlignToPlanet`, `PlaceAt`). Never assume +Y is up outside a building's local space.
+- Place things on the surface one by one with `TownBuilder.Place(gen, eastM, southM, yawDeg, lift)`: a long flat object would float off the curve (2 cm at 10 m, 1.3 m at 80 m).
+- A new town needs a `Site` in `PlanetGen` (flattens terrain) before buildings go on it.
+- One fixed world for now: seed 1983 (`GameRoot.DefaultSeed`). The planet is rebuilt from the save's seed on load.
+- Planet size is `PlanetGen.DefaultRadiusM`. The owner chose it for travel time (5 min flight, 12–20 min drive per lap); don't change it casually.
+
+## Assets: everything is made in code
+
+- **Models:** `LowPoly` builder (boxes, cylinders/cones, gems, gable roofs), flat-shaded and vertex-coloured, sharing one material. Style: low-poly with small details (window trim, chimneys, stripes, per-facet colour jitter). Colours are sRGB.
+- **No imported textures or model files.** Sound should be synthesised in code too (tones, clicks, noise) when audio work starts.
+- Room interiors still use `RoomBuilder.Box` primitives; migrate them to `LowPoly` when touched.
 
 ## Sim architecture cheatsheet
 
@@ -65,6 +91,9 @@ godot --editor --path game                              # open editor
 ## Gotchas
 
 - Godot C# classes that derive from Godot types must be `partial`.
+- A class named `Sky` clashes with `Godot.Sky`; ours is `PlanetSky`.
+- Vertex colours need `VertexColorIsSrgb = true` or everything looks washed out.
+- `LookAt` fails when the up vector is parallel to the view direction (e.g. looking straight down at the planet).
 - Use `SetAnchorsAndOffsetsPreset`, not `SetAnchorsPreset`, for full-screen Controls (the latter left modals collapsed).
 - Content JSON is camelCase and enums are camelCase strings (`"mode": "delegated"`).
 - Exported builds need `include_filter="content/*.json"` (already in `export_presets.cfg`).

@@ -30,7 +30,7 @@ public partial class Hud : Control
         }
         _left = Make(new Vector2(24, 18));
         _right = Make(new Vector2(0, 18), HorizontalAlignment.Right);
-        _right.AnchorLeft = 1; _right.AnchorRight = 1; _right.OffsetLeft = -520; _right.OffsetRight = -24;
+        _right.AnchorLeft = 1; _right.AnchorRight = 1; _right.OffsetLeft = -900; _right.OffsetRight = -24; _right.GrowHorizontal = GrowDirection.Begin;
         _feed = Make(new Vector2(24, 0), size: 16);
         _feed.AnchorTop = 1; _feed.AnchorBottom = 1; _feed.OffsetTop = -190; _feed.AutowrapMode = TextServer.AutowrapMode.WordSmart; _feed.Size = new Vector2(900, 170);
         _crosshair = Make(Vector2.Zero, HorizontalAlignment.Center, 22);
@@ -41,14 +41,13 @@ public partial class Hud : Control
         _prompt.OffsetLeft = -400; _prompt.OffsetRight = 400; _prompt.OffsetTop = 30;
     }
 
-    public void Refresh(Simulation sim, string? prompt, float dayProgress)
+    public void Refresh(Simulation sim, string? prompt, float hour, string where)
     {
         var s = sim.State;
         var act = sim.Content.ActAt(s.ActIndex);
-        int hour = 8 + (int)(dayProgress * 12);
-        _left.Text = $"{s.Date}  {hour:00}:00\nAct {act.Index} — {act.Name}\nCash ${s.Cash}   Subscribers {s.LiveSubscribers}   Awaiting install {s.PendingInstalls}";
-        _right.Text = $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n[Tab] PIP  [N] Notebook  [F5] Save";
-        _prompt.Text = prompt is null ? "" : $"[E] {prompt}";
+        _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\nCash ${s.Cash}   Subscribers {s.LiveSubscribers}   Awaiting install {s.PendingInstalls}";
+        _right.Text = $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n{where}\n[Tab] PIP  [N] Notebook  [F] Survey flight  [F5] Save";
+        _prompt.Text = prompt ?? "";
         _feed.Text = string.Join("\n", s.Log.TakeLast(5).Select(e => $"{new Telo.Sim.Core.GameDate(e.Day)} — {e.Text}"));
     }
 

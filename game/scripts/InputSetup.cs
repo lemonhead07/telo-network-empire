@@ -12,7 +12,7 @@ public static class InputSetup
         Key("sprint", Godot.Key.Shift); Key("jump", Godot.Key.Space);
         Key("interact", Godot.Key.E); Key("cancel", Godot.Key.Escape);
         Key("almanac", Godot.Key.Tab); Key("notebook", Godot.Key.N);
-        Key("save", Godot.Key.F5); Key("load", Godot.Key.F9);
+        Key("save", Godot.Key.F5); Key("load", Godot.Key.F9); Key("fly", Godot.Key.F);
     }
 
     private static void Key(string action, Key key)

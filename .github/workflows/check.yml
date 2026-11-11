@@ -1,0 +1,47 @@
+# Manual-only checks. Nothing runs on ordinary pushes, so day-to-day development uses no CI minutes.
+# Run it from GitHub: Actions tab -> "Check" -> "Run workflow". It also runs when a release tag (v*) is pushed.
+# Cost: free. Private repos get 2,000 Actions minutes/month on the GitHub Free plan; one run here is ~3-5 minutes.
+name: Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      smoke:
+        description: "Also boot the game headless (downloads Godot, slower)"
+        type: boolean
+        default: true
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Simulation tests
+        run: dotnet test Telo.slnx --nologo
+
+      - name: Compile game scripts
+        run: dotnet build game/Telo.Game.csproj --nologo -v q
+
+      - name: Headless smoke test (walk, drive, install, 700 days, save/load)
+        if: ${{ github.event_name == 'push' || inputs.smoke }}
+        env:
+          GODOT_VERSION: 4.7.1
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip"
+          unzip -q godot.zip
+          GODOT="$PWD/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64/Godot_v${GODOT_VERSION}-stable_mono_linux.x86_64"
+          "$GODOT" --headless --path game --import || true
+          "$GODOT" --headless --path game -- --smoke | tee smoke.log
+          grep -q "SMOKE OK" smoke.log
