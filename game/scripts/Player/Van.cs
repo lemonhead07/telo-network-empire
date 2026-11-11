@@ -9,13 +9,16 @@ namespace Telo.Game.Player;
 /// </summary>
 public partial class Van : SphereBody
 {
-    public const float MaxSpeed = 22f, ReverseSpeed = 7f, Accel = 9f, Brake = 16f, WaterSpeed = 2.2f, TurnRate = 1.7f;
+    public const float MaxSpeed = 22f, OffRoadSpeed = 11f, ReverseSpeed = 7f, Accel = 9f, Brake = 16f, WaterSpeed = 2.2f, TurnRate = 1.7f;
 
     public Camera3D Camera { get; private set; } = null!;
     public Interactable Door { get; private set; } = null!;
     public bool Driven { get; private set; }
     public float Speed { get; private set; }
     private Node3D _visual = null!;
+    /// <summary>Is this world position on a road or in a settlement? Off-road the van is half as fast.</summary>
+    public Func<Vector3, bool> IsPaved { get; set; } = _ => true;
+    public bool OnRoad { get; private set; } = true;
 
     public override void _Ready()
     {
@@ -60,7 +63,8 @@ public partial class Van : SphereBody
         float throttle = Driven ? Input.GetAxis("move_back", "move_forward") : 0;
         float steer = Driven ? Input.GetAxis("move_right", "move_left") : 0;
 
-        float target = throttle > 0 ? MaxSpeed * throttle : ReverseSpeed * throttle;
+        OnRoad = IsPaved(GlobalPosition);
+        float target = throttle > 0 ? (OnRoad ? MaxSpeed : OffRoadSpeed) * throttle : ReverseSpeed * throttle;
         if (InWater) target = Mathf.Clamp(target, -WaterSpeed, WaterSpeed);
         float rate = Mathf.Abs(target) < Mathf.Abs(Speed) || Mathf.Sign(target) != Mathf.Sign(Speed) ? Brake : Accel;
         Speed = Mathf.MoveToward(Speed, target, rate * dt);

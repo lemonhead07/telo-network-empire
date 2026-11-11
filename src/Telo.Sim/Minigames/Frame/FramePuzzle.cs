@@ -49,7 +49,10 @@ public sealed class FramePuzzle
     /// <param name="customers">(id, display name) per line, usually 4–6.</param>
     public static FramePuzzle Generate(ulong seed, IReadOnlyList<(string Id, string Name)> customers, int unreadable = 2, bool withFault = true, bool withPartyLine = true)
     {
-        if (customers.Count < 3) throw new ArgumentException("The Frame needs at least 3 lines.");
+        if (customers.Count < 1) throw new ArgumentException("The Frame needs at least one line.");
+        // Small jobs are simpler: the twists arrive as the work order grows.
+        if (customers.Count < 3) withPartyLine = false;
+        if (customers.Count < 2) { withFault = false; unreadable = 0; }
         var rng = new DetRng(seed);
         int n = customers.Count;
         var targets = Enumerable.Range(0, n).ToList();
@@ -58,7 +61,7 @@ public sealed class FramePuzzle
         int party = withPartyLine ? rng.Next(n) : -1;
         var others = Enumerable.Range(0, n).Where(i => i != party).ToList();
         rng.Shuffle(others);
-        var hidden = others.Take(Math.Min(unreadable, others.Count - 1)).ToHashSet();
+        var hidden = others.Take(Math.Max(0, Math.Min(unreadable, others.Count - 1))).ToHashSet();
         var faulty = new HashSet<int>();
         if (withFault) faulty.Add(targets[others[^1]]); // never the party line's port
 

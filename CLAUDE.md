@@ -65,6 +65,24 @@ The owner wants fast iteration. **Do not run the test suite or the smoke test af
 - One fixed world for now: seed 1983 (`GameRoot.DefaultSeed`). The planet is rebuilt from the save's seed on load.
 - Planet size is `PlanetGen.DefaultRadiusM`. The owner chose it for travel time (5 min flight, 12–20 min drive per lap); don't change it casually.
 
+## No floating menus: screens live in the world
+
+The owner wants to avoid GUIs. Anything you read or click is the surface of an object in the world.
+
+- `WorldScreen` renders a `ModalView` into a `SubViewport` shown on a quad (the frame board, PIP's handset, the notebook). Using the object leans the camera in (`GameRoot.LeanInto`); mouse clicks are projected onto the surface. Esc steps back.
+- Screens stay visible and live when idle (`view.Show(tier)`); `IsOpen` means the player is using one.
+- New "menus" must be added as a `WorldScreen` on a prop, never as a `CanvasLayer` overlay.
+- The remaining overlay is the small HUD strip (date, cash, the "▶ next" line, event feed). It is a placeholder to be replaced by a wall calendar, cash tin, pager and fax roll.
+- **Placeholders are fine.** The owner wants gameplay first and polish later: boxes with labels are acceptable for new buildings and props.
+
+## Town gameplay (Act 0–1)
+
+- `game/content/lots.json`: every building someone lives or works in (site, east/south offsets, resident, archetype, fee). `TownBuilder` builds them; `GameRoot.LotAction` decides what each door offers from sim state.
+- `Telo.Sim/Town/TownRules.cs`: door-knocking, odd jobs (cash + goodwill), modem stock, fitting sockets. `Guidance.Next` gives the "what next" line and target lot (shown as ▼ above the building; `$` marks an odd job).
+- Install flow: sign up (knock or answering machine) → fit socket at their house (uses a modem from Sol's Electronics) → wire at the frame → billed monthly.
+- Work costs in-game time via `GameRoot.SpendHours`.
+- `PlanetGen.Roads`: graded routes that cut/fill terrain; `IsPaved` makes the van full speed on roads and in settlements, half speed off-road. Road surfaces are ray-cast onto the terrain (`TownBuilder.BuildRoads`).
+
 ## Assets: everything is made in code
 
 - **Models:** `LowPoly` builder (boxes, cylinders/cones, gems, gable roofs), flat-shaded and vertex-coloured, sharing one material. Style: low-poly with small details (window trim, chimneys, stripes, per-facet colour jitter). Colours are sRGB.

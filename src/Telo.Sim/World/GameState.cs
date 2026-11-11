@@ -19,6 +19,31 @@ public sealed class Customer
     public bool Installed { get; set; } = true;
     /// <summary>Set when this customer came from the Promise Ledger — a named person, not a number.</summary>
     public string? PremiseId { get; set; }
+    /// <summary>The building they live in, if any.</summary>
+    public string? LotId { get; set; }
+    /// <summary>The wall socket and modem are in at their house. Needed before the frame work means anything.</summary>
+    public bool SocketFitted { get; set; } = true;
+}
+
+public enum HouseholdStatus { Unknown, Declined, Signed }
+
+public sealed class Household
+{
+    public HouseholdStatus Status { get; set; }
+    /// <summary>Earliest day it is polite to knock again.</summary>
+    public int RetryDay { get; set; }
+    /// <summary>Favours done here make them likelier to say yes (permille bonus).</summary>
+    public int Goodwill { get; set; }
+}
+
+public sealed class OddJob
+{
+    public required string Id { get; set; }
+    public required string LotId { get; set; }
+    public required string Title { get; set; }
+    public long Pay { get; set; }
+    public int Hours { get; set; }
+    public int ExpiresDay { get; set; }
 }
 
 public sealed class LatentDefect
@@ -57,6 +82,11 @@ public sealed class GameState
     public int Staff { get; set; }
     /// <summary>Enquiries waiting on the answering machine. Word of mouth grows this.</summary>
     public int MessagesWaiting { get; set; }
+    /// <summary>Modems in stock. One goes into every new customer's house.</summary>
+    public int Modems { get; set; } = 1;
+    public Dictionary<string, Household> Households { get; set; } = new();
+    public List<OddJob> Jobs { get; set; } = new();
+    public int JobsDone { get; set; }
 
     // Almanac spine
     public long ArchiveMilli { get; set; }
@@ -80,6 +110,7 @@ public sealed class GameState
     public int Archive => (int)(ArchiveMilli / 1000);
     public int LiveSubscribers => Customers.Count(c => c.Live && c.Installed);
     public int PendingInstalls => Customers.Count(c => c.Live && !c.Installed);
+    public int ReadyForFrame => Customers.Count(c => c.Live && !c.Installed && c.SocketFitted);
     public int LedgerServed => Ledger.Values.Count(p => p.Status == PromiseStatus.Served);
 
     public string NewId(string prefix) => $"{prefix}-{NextId++}";

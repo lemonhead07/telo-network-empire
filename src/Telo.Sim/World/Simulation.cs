@@ -3,6 +3,7 @@ using Telo.Sim.Content;
 using Telo.Sim.Core;
 using Telo.Sim.Ledger;
 using Telo.Sim.Minigames.Frame;
+using Telo.Sim.Town;
 using Telo.Sim.Work;
 
 namespace Telo.Sim.World;
@@ -32,7 +33,9 @@ public sealed class Simulation
         var s = new GameState { Seed = seed, RngState = seed, Day = StartDate.Day, Cash = StartingCash, MessagesWaiting = 3 };
         foreach (var w in content.Work.Keys) s.WorkStage[w] = 0;
         s.Emit(EventKind.Info, "PIP: \"…signal. Low battery. Year reads 1983. That can't be right.\"");
-        return new Simulation(content, s);
+        var sim = new Simulation(content, s);
+        if (content.Lots.Count > 0) { TownRules.OfferJob(s, content, sim._rng); TownRules.OfferJob(s, content, sim._rng); s.RngState = sim._rng.State; }
+        return sim;
     }
 
     public void AdvanceDays(int days) { for (int i = 0; i < days; i++) AdvanceDay(); }
@@ -43,6 +46,7 @@ public sealed class Simulation
         s.Day++;
         AlmanacRules.Tick(s, Content);
         LedgerRules.Tick(s, Content);
+        TownRules.Tick(s, Content, _rng);
         SurfaceDefects();
         DriftSatisfaction();
         // Word of mouth: happy subscribers bring enquiries.
@@ -104,19 +108,37 @@ public sealed class Simulation
     private static readonly (string Archetype, long Fee)[] Archetypes =
         { ("curious", 8), ("student", 6), ("family", 10), ("gamer", 12), ("small-business", 25), ("price-sensitive", 5), ("reliability-sensitive", 15), ("tech-inexperienced", 9) };
 
-    /// <summary>A message on the answering machine: someone wants a line. They pay once they're wired in.</summary>
-    public Customer TakeEnquiry()
+    /// <summary>
+    /// A message on the answering machine: word of mouth has reached a neighbour and they want a line.
+    /// If everyone in reach has already signed, it is someone with an odd job instead (returns null).
+    /// </summary>
+    public Customer? TakeEnquiry()
     {
         if (State.MessagesWaiting > 0) State.MessagesWaiting--;
-        var (arch, fee) = Archetypes[_rng.Next(Archetypes.Length)];
-        var c = AddCustomer($"{First[_rng.Next(First.Length)]} {Last[_rng.Next(Last.Length)]}", arch, fee, installed: false);
+        Customer? c = null;
+        var prospects = TownRules.Prospects(State, Content).ToList();
+        if (prospects.Count > 0) c = TownRules.SignUp(State, prospects[_rng.Next(prospects.Count)]);
+        else if (Content.Lots.Count == 0)
+        {
+            var (arch, fee) = Archetypes[_rng.Next(Archetypes.Length)];
+            c = AddCustomer($"{First[_rng.Next(First.Length)]} {Last[_rng.Next(Last.Length)]}", arch, fee, installed: false);
+        }
+        else if (TownRules.OfferJob(State, Content, _rng) is { } job)
+            State.Emit(EventKind.Info, $"Message: \"{job.Title}\" — ${job.Pay} if you can come by.", job.LotId);
         State.RngState = _rng.State;
         return c;
     }
 
-    /// <summary>Lines for the next frame visit: pending installs first, then existing subscribers to re-terminate.</summary>
+    public KnockResult Knock(string lotId)
+    {
+        var r = TownRules.Knock(State, Content, _rng, lotId);
+        State.RngState = _rng.State;
+        return r;
+    }
+
+    /// <summary>Lines for the next frame visit: new customers whose sockets are in, then existing subscribers to re-terminate.</summary>
     public List<Customer> FrameWorkOrder(int max = 6) =>
-        State.Customers.Where(c => c.Live && !c.Installed)
+        State.Customers.Where(c => c.Live && !c.Installed && c.SocketFitted)
             .Concat(State.Customers.Where(c => c.Live && c.Installed))
             .Take(max).ToList();
 

@@ -17,14 +17,15 @@ godot --path game
 | E | Use what you're looking at (answering machine, frame, handset, notebook, bed, van) / get out of the van |
 | W/S, A/D in the van | Drive / steer |
 | F | Survey flight on/off (fly where you look; Shift = fast, Space = up). Fly high enough and you're in space |
-| Tab | PIP's Almanac (recall future tech) |
-| N | Company notebook (automation + Promise Ledger) |
+| E on the handset / notebook / frame | Lean in and use it with the mouse. These are objects in the room, not menus. Esc steps back |
 | F5 / F9 | Save / load |
 | Esc | Close menu / free the mouse |
 
 **The world** is one small planet (2.5 km radius): walk out of your room, take the van down Main Street, or press F and fly around it.
 
-**First minute:** play the answering machine three times, then work the frame. Click a customer line, then click its port. Probe smudged labels, test ports, reroute faulty ones to a spare, and leave the party line alone.
+**First minutes:** follow the yellow "▶" line at the top of the screen; a ▼ floats over the building it means, and `$` marks a paid odd job. A typical start: do an odd job for cash, knock on doors until someone signs up, fit their wall socket at their house (you start with one modem; Sol's Electronics at the east end of the street sells more), then wire their line at the frame in your room. Drive the road out to Hollow Farm for better-paid jobs.
+
+**At the frame:** click a customer line, then click its port. Probe smudged labels, test ports, reroute faulty ones to a spare, and leave the party line alone.
 
 ## Develop
 

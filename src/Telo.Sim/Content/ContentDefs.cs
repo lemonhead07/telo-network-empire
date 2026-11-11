@@ -83,3 +83,21 @@ public sealed record PremiseDef
     public int Act { get; init; }
     public string Story { get; init; } = "";
 }
+
+public enum LotKind { House, Shop, Farm }
+
+/// <summary>A building someone lives or works in. Offsets are metres east/south of its site centre on the planet.</summary>
+public sealed record LotDef
+{
+    public required string Id { get; init; }
+    public LotKind Kind { get; init; }
+    public required string Site { get; init; }
+    public double East { get; init; }
+    public double South { get; init; }
+    public double Yaw { get; init; }
+    public string Resident { get; init; } = "";
+    public string Archetype { get; init; } = "family";
+    public long Fee { get; init; } = 8;
+    /// <summary>Set when this household is a Last Mile case: too far or too costly to sign up by knocking.</summary>
+    public string? Premise { get; init; }
+}

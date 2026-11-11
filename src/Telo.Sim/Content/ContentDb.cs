@@ -11,6 +11,7 @@ public sealed class ContentDb
     public IReadOnlyDictionary<string, AlmanacEntryDef> Almanac { get; }
     public IReadOnlyDictionary<string, WorkKindDef> Work { get; }
     public IReadOnlyDictionary<string, PremiseDef> Premises { get; }
+    public IReadOnlyDictionary<string, LotDef> Lots { get; }
 
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -23,13 +24,15 @@ public sealed class ContentDb
     };
 
     public ContentDb(IEnumerable<ActDef> acts, IEnumerable<AnnouncementDef> announcements,
-        IEnumerable<AlmanacEntryDef> almanac, IEnumerable<WorkKindDef> work, IEnumerable<PremiseDef> premises)
+        IEnumerable<AlmanacEntryDef> almanac, IEnumerable<WorkKindDef> work, IEnumerable<PremiseDef> premises,
+        IEnumerable<LotDef>? lots = null)
     {
         Acts = acts.OrderBy(a => a.Index).ToList();
         Announcements = announcements.ToDictionary(a => a.Id);
         Almanac = almanac.ToDictionary(a => a.Id);
         Work = work.ToDictionary(w => w.Id);
         Premises = premises.ToDictionary(p => p.Id);
+        Lots = (lots ?? Array.Empty<LotDef>()).ToDictionary(l => l.Id);
         var errors = Validate();
         if (errors.Count > 0) throw new InvalidDataException("Content invalid:\n" + string.Join("\n", errors));
     }
@@ -43,10 +46,10 @@ public sealed class ContentDb
                 : throw new InvalidDataException($"Missing content file {name}.json");
 
         return new ContentDb(Load<ActDef>("acts"), Load<AnnouncementDef>("announcements"),
-            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"));
+            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"));
     }
 
-    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json" };
+    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json" };
 
     public ActDef ActAt(int index) => Acts[Math.Clamp(index, 0, Acts.Count - 1)];
 
@@ -74,6 +77,8 @@ public sealed class ContentDb
             foreach (var s in w.Stages)
                 if (s.RequiresEntry is { } r && !Almanac.ContainsKey(r)) e.Add($"work {w.Id}: unknown entry '{r}'");
         }
+        foreach (var l in Lots.Values)
+            if (l.Premise is { } pr && !Premises.ContainsKey(pr)) e.Add($"lot {l.Id}: unknown premise '{pr}'");
         return e;
     }
 }

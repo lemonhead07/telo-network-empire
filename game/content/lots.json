@@ -1,0 +1,16 @@
+[
+  { "id": "lot-n1", "kind": "house", "site": "town-start", "east": -52, "south": 0, "yaw": 0, "resident": "Dot Brennan", "archetype": "tech-inexperienced", "fee": 9 },
+  { "id": "lot-n2", "kind": "house", "site": "town-start", "east": -36, "south": 0, "yaw": 0, "resident": "Chidi Achebe", "archetype": "curious", "fee": 8 },
+  { "id": "lot-n3", "kind": "house", "site": "town-start", "east": -20, "south": 0, "yaw": 0, "resident": "The Lindqvists", "archetype": "family", "fee": 10 },
+  { "id": "lot-n4", "kind": "house", "site": "town-start", "east": 20, "south": 0, "yaw": 0, "resident": "Tobi Okafor", "archetype": "gamer", "fee": 12 },
+  { "id": "lot-n5", "kind": "house", "site": "town-start", "east": 36, "south": 0, "yaw": 0, "resident": "Hilde Moss", "archetype": "reliability-sensitive", "fee": 15 },
+  { "id": "lot-n6", "kind": "house", "site": "town-start", "east": 52, "south": 0, "yaw": 0, "resident": "Gus Pike", "archetype": "price-sensitive", "fee": 5 },
+  { "id": "lot-s1", "kind": "house", "site": "town-start", "east": -46, "south": 33, "yaw": 180, "resident": "Priya Duarte", "archetype": "student", "fee": 6 },
+  { "id": "lot-s2", "kind": "house", "site": "town-start", "east": -30, "south": 33, "yaw": 180, "resident": "The Kowalskis", "archetype": "family", "fee": 10 },
+  { "id": "lot-s3", "kind": "house", "site": "town-start", "east": -14, "south": 33, "yaw": 180, "resident": "Marek Thorne", "archetype": "curious", "fee": 8 },
+  { "id": "lot-s4", "kind": "house", "site": "town-start", "east": 4, "south": 33, "yaw": 180, "resident": "Nell Hale", "archetype": "small-business", "fee": 25 },
+  { "id": "lot-s5", "kind": "house", "site": "town-start", "east": 22, "south": 33, "yaw": 180, "resident": "Eamon Reyes", "archetype": "price-sensitive", "fee": 5 },
+  { "id": "lot-s6", "kind": "house", "site": "town-start", "east": 40, "south": 33, "yaw": 180, "resident": "Rosa Vasquez", "archetype": "reliability-sensitive", "fee": 15 },
+  { "id": "lot-shop", "kind": "shop", "site": "town-start", "east": 72, "south": 1, "yaw": 0, "resident": "Sol's Electronics", "archetype": "small-business", "fee": 25 },
+  { "id": "lot-hollow-farm", "kind": "farm", "site": "farm-hollow", "east": 0, "south": 0, "yaw": 0, "resident": "Ruth Adeyemi", "archetype": "family", "fee": 5, "premise": "prem-adeyemi-farm" }
+]

@@ -10,7 +10,7 @@ namespace Telo.Game.UI;
 /// </summary>
 public partial class Hud : Control
 {
-    private Label _left = null!, _right = null!, _prompt = null!, _feed = null!, _crosshair = null!;
+    private Label _left = null!, _right = null!, _prompt = null!, _feed = null!, _crosshair = null!, _next = null!;
 
     public override void _Ready()
     {
@@ -33,6 +33,9 @@ public partial class Hud : Control
         _right.AnchorLeft = 1; _right.AnchorRight = 1; _right.OffsetLeft = -900; _right.OffsetRight = -24; _right.GrowHorizontal = GrowDirection.Begin;
         _feed = Make(new Vector2(24, 0), size: 16);
         _feed.AnchorTop = 1; _feed.AnchorBottom = 1; _feed.OffsetTop = -190; _feed.AutowrapMode = TextServer.AutowrapMode.WordSmart; _feed.Size = new Vector2(900, 170);
+        _next = Make(Vector2.Zero, HorizontalAlignment.Center, 20);
+        _next.AnchorLeft = 0.5f; _next.AnchorRight = 0.5f; _next.OffsetLeft = -500; _next.OffsetRight = 500; _next.OffsetTop = 18;
+        _next.AddThemeColorOverride("font_color", new Color(1f, 0.86f, 0.45f));
         _crosshair = Make(Vector2.Zero, HorizontalAlignment.Center, 22);
         _crosshair.Text = "·";
         _crosshair.SetAnchorsPreset(LayoutPreset.Center);
@@ -41,15 +44,19 @@ public partial class Hud : Control
         _prompt.OffsetLeft = -400; _prompt.OffsetRight = 400; _prompt.OffsetTop = 30;
     }
 
-    public void Refresh(Simulation sim, string? prompt, float hour, string where)
+    public void Refresh(Simulation sim, string? prompt, float hour, string where, string next)
     {
         var s = sim.State;
         var act = sim.Content.ActAt(s.ActIndex);
-        _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\nCash ${s.Cash}   Subscribers {s.LiveSubscribers}   Awaiting install {s.PendingInstalls}";
-        _right.Text = $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n{where}\n[Tab] PIP  [N] Notebook  [F] Survey flight  [F5] Save";
+        _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\nCash ${s.Cash}   Subscribers {s.LiveSubscribers}   Awaiting install {s.PendingInstalls}   Modems {s.Modems}";
+        _right.Text = $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n{where}\n[F] Survey flight  [F5] Save";
         _prompt.Text = prompt ?? "";
+        _next.Text = next;
         _feed.Text = string.Join("\n", s.Log.TakeLast(5).Select(e => $"{new Telo.Sim.Core.GameDate(e.Day)} — {e.Text}"));
     }
 
     public void SetCrosshair(bool visible) => _crosshair.Visible = visible;
+
+    /// <summary>Hide the status strip while the player is reading something in the world.</summary>
+    public void SetReading(bool reading) { _left.Visible = _right.Visible = _feed.Visible = !reading; }
 }

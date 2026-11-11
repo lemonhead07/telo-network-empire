@@ -110,6 +110,10 @@ public class InstallFlowTests
         for (int i = 0; i < 3; i++) sim.TakeEnquiry();
         Assert.Equal(0, sim.State.LiveSubscribers);
         Assert.Equal(3, sim.State.PendingInstalls);
+        Assert.Empty(sim.FrameWorkOrder()); // nothing to wire until sockets are in at their houses
+        sim.State.Modems = 3;
+        foreach (var c in sim.State.Customers.ToList()) Assert.True(Town.TownRules.FitSocket(sim.State, c.Id));
+        Assert.Equal(0, sim.State.Modems);
 
         var job = sim.NewFrameJob(sim.FrameWorkOrder());
         foreach (var l in job.Lines.Where(l => !l.IsPartyLine))
@@ -120,5 +124,34 @@ public class InstallFlowTests
         sim.ApplyFrameOutcome(job.Evaluate());
         Assert.Equal(3, sim.State.LiveSubscribers);
         Assert.Contains(sim.State.Log, e => e.Text.StartsWith("First customer"));
+    }
+}
+
+public class TownTests
+{
+    [Fact]
+    public void OddJobsPayAndBuildGoodwill()
+    {
+        var sim = TestContent.NewGame(11);
+        Assert.NotEmpty(sim.State.Jobs);
+        var job = sim.State.Jobs[0];
+        long before = sim.State.Cash;
+        Assert.NotNull(Town.TownRules.CompleteJob(sim.State, sim.Content, job.Id));
+        Assert.Equal(before + job.Pay, sim.State.Cash);
+        Assert.True(Town.TownRules.HouseholdOf(sim.State, job.LotId).Goodwill > 0);
+    }
+
+    [Fact]
+    public void KnockingEventuallySignsNeighbours_AndGuidanceAlwaysHasAnAnswer()
+    {
+        var sim = TestContent.NewGame(5);
+        for (int day = 0; day < 60; day++)
+        {
+            foreach (var lot in sim.Content.Lots.Values) sim.Knock(lot.Id);
+            Assert.False(string.IsNullOrWhiteSpace(Town.Guidance.Next(sim.State, sim.Content).Text));
+            sim.AdvanceDay();
+        }
+        Assert.True(sim.State.Customers.Count >= 5, $"only {sim.State.Customers.Count} signed");
+        Assert.Equal(Town.KnockResult.LastMile, sim.Knock("lot-hollow-farm"));
     }
 }

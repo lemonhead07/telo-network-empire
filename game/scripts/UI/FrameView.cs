@@ -14,6 +14,9 @@ public partial class FrameView : ModalView
     public Simulation Sim { get; set; } = null!;
     public FramePuzzle? Job { get; private set; }
     private int? _selected;
+    public int? SelectedLine => _selected;
+    /// <summary>The on-screen button for the first customer line (used by the automated click check).</summary>
+    public Button? FirstLineButton { get; private set; }
     private FrameOutcome? _result;
 
     public void Start(FramePuzzle job) { Job = job; _selected = null; _result = null; }
@@ -21,7 +24,15 @@ public partial class FrameView : ModalView
     public override void Rebuild()
     {
         Clear(Body); Clear(Footer);
-        if (Job is null) return;
+        if (Job is null || (!IsOpen && _result is null))
+        {
+            Title.Text = "THE FRAME";
+            int ready = Sim.State.ReadyForFrame;
+            Text(Body, ready > 0 ? $"{ready} new line(s) waiting to be jumpered." : "No work order on the board.", 26);
+            Text(Body, "\nEvery customer's pair of wires ends here. Nothing works until its jumper is in.", 20);
+            foreach (var c in Sim.State.Customers.Where(c => c.Live && c.Installed).Take(8)) Text(Body, $"   ● {c.Name}", 20);
+            return;
+        }
         Title.Text = $"THE FRAME — {Job.Lines.Count} lines   ⏱ {Job.ElapsedSeconds}s / {FramePuzzle.SoftClockSeconds}s{(Job.OverClock ? "  (running late — customers notice)" : "")}";
 
         if (_result is { } r) { ShowResult(r); return; }
@@ -44,6 +55,7 @@ public partial class FrameView : ModalView
             string wired = jumper is { } j ? $"   jumpered to {PortName(j)}{(Job.IsHotWired(l.Index) ? " (hot-wired)" : "")}" : "";
             var b = Btn(lines, $"{(_selected == l.Index ? "▶ " : "  ")}L{l.Index + 1}  {l.CustomerName}  {label}{party}{wired}", () => { _selected = l.Index; Rebuild(); });
             b.Alignment = HorizontalAlignment.Left;
+            if (l.Index == 0) FirstLineButton = b;
         }
 
         var ports = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
