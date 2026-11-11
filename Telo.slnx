@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Telo.Sim/Telo.Sim.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Telo.Sim.Tests/Telo.Sim.Tests.csproj" />
+  </Folder>
+</Solution>

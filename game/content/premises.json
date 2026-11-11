@@ -1,0 +1,16 @@
+[
+  { "id": "prem-adeyemi-farm", "name": "Ruth Adeyemi (Hollow Farm)", "reason": "distance", "costToServe": 350, "act": 1,
+    "story": "Three miles of pole line past the last subscriber. She has asked politely twice." },
+  { "id": "prem-pell", "name": "Mr. Pell", "reason": "just past the limit", "costToServe": 180, "act": 2,
+    "story": "His house is 40 metres beyond what the modem bank can reach. He measured it himself." },
+  { "id": "prem-library", "name": "Eastgate Library", "reason": "institution", "costToServe": 220, "act": 1,
+    "story": "The librarian wants one public terminal. The council wants a form for the form." },
+  { "id": "prem-okonkwo", "name": "Mrs. Okonkwo", "reason": "language", "costToServe": 90, "act": 1,
+    "story": "Your leaflet is only in English. Her grandson translates the price, not the contract." },
+  { "id": "prem-st-brendans", "name": "St. Brendan's School", "reason": "cost", "costToServe": 400, "act": 2,
+    "story": "Thirty children, one budget line, and a headteacher who knows every customer by name." },
+  { "id": "prem-caravan-park", "name": "Riverside Caravan Park", "reason": "landlord", "costToServe": 260, "act": 2,
+    "story": "The owner won't allow a cabinet. The residents would like to be asked too." },
+  { "id": "prem-clinic", "name": "Northfield Clinic", "reason": "policy", "costToServe": 300, "act": 3,
+    "story": "Results arrive by courier. Some days the courier is a nurse on a bicycle." }
+]

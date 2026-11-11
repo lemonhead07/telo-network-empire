@@ -1,0 +1,13 @@
+<Project Sdk="Godot.NET.Sdk/4.7.1">
+  <!-- Presentation layer only: reads/drives Telo.Sim, never owns game rules. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Telo.Game</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../src/Telo.Sim/Telo.Sim.csproj" />
+  </ItemGroup>
+</Project>

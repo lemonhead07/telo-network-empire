@@ -1,0 +1,17 @@
+[
+  { "id": "ann-2400", "title": "2400-baud modems", "date": "1984-03-01", "headline": "TRADE PRESS: 2400 baud modems promised 'by next year'. Nobody believes it." },
+  { "id": "ann-breakup", "title": "Monopoly breakup", "date": "1984-01-01", "headline": "TV: the national phone monopoly is broken into pieces. The pieces look annoyed." },
+  { "id": "ann-fidonet", "title": "Hobbyist mail networks", "date": "1984-06-01", "headline": "Bulletin boards start passing mail to each other overnight. Long-distance bills explode." },
+  { "id": "ann-hunt", "title": "Multi-line hunt groups for small business", "date": "1986-02-01", "headline": "The phone company will now roll a busy line to the next free one. For a fee." },
+  { "id": "ann-billing-sw", "title": "Small-business billing software", "date": "1987-05-01", "headline": "A floppy-disk billing package goes on sale. The manual is heavier than the computer." },
+  { "id": "ann-snmp", "title": "Network management protocol", "date": "1990-05-01", "headline": "Engineers agree on a way for equipment to report its own health. Equipment is unaware." },
+  { "id": "ann-14k", "title": "14.4k modems", "date": "1991-02-01", "headline": "14,400 bits per second. Magazines call it 'the end of waiting'." },
+  { "id": "ann-www", "title": "The World Wide Web", "date": "1991-08-06", "headline": "A physicist posts something called 'the web' to a newsgroup. Almost nobody notices." },
+  { "id": "ann-radius", "title": "Dial-in authentication servers", "date": "1993-04-01", "headline": "One server to check every dial-in password. One server to fail them all." },
+  { "id": "ann-browser", "title": "Graphical web browsers on sale", "date": "1994-12-15", "headline": "You can now buy a browser in a box. Queues outside the computer shop." },
+  { "id": "ann-adsl", "title": "Consumer ADSL", "date": "1999-06-01", "headline": "Always-on internet over the same copper as your phone. 'Always' is doing a lot of work." },
+  { "id": "ann-smartphone", "title": "The touchscreen phone", "date": "2007-06-29", "headline": "A phone that is mostly screen. Data usage graphs develop a new shape." },
+  { "id": "ann-4g", "title": "4G / LTE", "date": "2010-12-01", "headline": "Mobile data fast enough to make home broadband nervous." },
+  { "id": "ann-5g", "title": "5G", "date": "2019-04-01", "headline": "5G launches. Nobody can explain what it is for, including the people selling it." },
+  { "id": "ann-exchange0", "title": "Exchange 0", "date": "2035-12-31", "headline": "WORK ORDER: Exchange 0. Assigned engineer: you." }
+]

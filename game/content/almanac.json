@@ -1,0 +1,12 @@
+[
+  { "id": "alm-2400", "title": "2400-baud modem", "blurb": "Twice as fast as anything in the shop. The circuit diagram is half-burnt, but the half you have is the important half.", "announcement": "ann-2400", "act": 0, "archiveCost": 8, "echoPerYearEarly": 4 },
+  { "id": "alm-bbs", "title": "Bulletin board software", "blurb": "Message boards, file areas, overnight mail. A town square that fits on a hard disk.", "announcement": "ann-fidonet", "act": 0, "archiveCost": 10, "echoPerYearEarly": 5 },
+  { "id": "alm-hunt", "title": "Multi-line hunt group", "blurb": "Busy signal? Roll to the next line. Customers stop hearing 'engaged'.", "announcement": "ann-hunt", "act": 1, "archiveCost": 12, "echoPerYearEarly": 5, "requires": ["alm-bbs"] },
+  { "id": "alm-billing", "title": "Automated billing", "blurb": "Invoices that write themselves. Mistakes that copy themselves.", "announcement": "ann-billing-sw", "act": 1, "archiveCost": 10, "echoPerYearEarly": 3 },
+  { "id": "alm-monitoring", "title": "Network monitoring", "blurb": "Equipment that tells you it is ill before customers do. Most of the time.", "announcement": "ann-snmp", "act": 1, "archiveCost": 15, "echoPerYearEarly": 6 },
+  { "id": "alm-14k", "title": "14.4k modem bank", "blurb": "A shelf of modems answering in turn. Heat, noise, and a bigger upstream bill.", "announcement": "ann-14k", "act": 1, "archiveCost": 18, "echoPerYearEarly": 6, "requires": ["alm-2400", "alm-hunt"] },
+  { "id": "alm-web", "title": "The web", "blurb": "Pages that link to pages. PIP's notes underline this three times.", "announcement": "ann-www", "act": 2, "archiveCost": 20, "echoPerYearEarly": 8 },
+  { "id": "alm-radius", "title": "Dial-in authentication", "blurb": "One server checks every login. Put a second one somewhere else.", "announcement": "ann-radius", "act": 2, "archiveCost": 14, "echoPerYearEarly": 5, "requires": ["alm-14k"] },
+  { "id": "alm-adsl", "title": "ADSL", "blurb": "Always-on over copper. Distance from the exchange becomes destiny.", "announcement": "ann-adsl", "act": 3, "archiveCost": 30, "echoPerYearEarly": 8, "requires": ["alm-web"] },
+  { "id": "alm-exchange0", "title": "Exchange 0", "blurb": "The last page. Your name is on the work order. The date will not stay still.", "announcement": "ann-exchange0", "act": 7, "archiveCost": 100, "echoPerYearEarly": 0 }
+]

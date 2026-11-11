@@ -1,0 +1,41 @@
+# Build Plan
+
+Each milestone ends playable, with green tests and `SMOKE OK`. Week counts assume one part-time developer working with AI help.
+
+## M0 — Scaffold ✅ (done 2026-11-11)
+Pure sim + tests; Godot room; answering machine → Frame install → billing; Almanac; Notebook (automation + Promise Ledger); save/load; smoke test.
+
+## M1 — "The first hour is fun" (4–6 weeks) → **private playtest**
+- [ ] **Counter trade** (Act 0 income): fix telex machines and sell modems at the electronics shop counter. Balances the economy so Act 0 makes money.
+- [ ] Make the Frame **diegetic**: click the actual terminal blocks on the wall and see jumper wires drawn in 3D. Keep the menu as an accessibility mode.
+- [ ] Audio pass: relay clicks, dial tone, modem handshake, room ambience. This matters more than art for "feel".
+- [ ] Paper props: wall calendar shows the date, a cash tin, a fax roll for events (replaces the HUD text in Act 0).
+- [ ] Settings: mouse sensitivity, key rebinding, no-timer mode, subtitles.
+- [ ] Tutorial through PIP lines, driven by state (no scripted sequence).
+
+## M2 — "Steam page + demo" (6–8 weeks) → **announce**
+- [ ] Art direction: low-poly 80s with warm tungsten light and CRT glow. Use a consistent asset pack, or commission a few hero props.
+- [ ] Second location: the **exchange building** (move out of the bedroom) and **1 Main Street** as the Act 1 office.
+- [ ] Door-knocking in a small street (8 houses), with appointments.
+- [ ] Hire the first technician as a *person* with a name and a line of dialogue (delegation exists already).
+- [ ] Steamworks integration (Steamworks.NET or Facepunch.Steamworks): achievements, cloud saves.
+- [ ] **Demo = Act 0 + the start of Act 1 (≈60–90 min).** Capsule art, trailer, store page live.
+
+## M3 — "Early Access content" (3–5 months)
+- [ ] Act 1 (BBS): BBS file-area curation (Borrowed Library), hunt groups, the first rival (incumbent carrier).
+- [ ] Act 2 (dial-up): modem bank minigame, upstream bill, heat/power, second rival (discount provider).
+- [ ] Outage diagnosis minigame: clues, travel, root cause.
+- [ ] Contracts v1: two templates, one hidden clause, SLA credits.
+- [ ] Van + town map; travel time.
+- [ ] Economy balancing pass with a telemetry log (local file only).
+- [ ] Steam Next Fest with the demo. **Early Access launch.**
+
+## Post-launch (funded by sales)
+Acts 3–4 → 1.0. Office designer, crime/evidence, Acts 5–7, Steam Workshop (content JSON is already mod-friendly), console ports.
+
+## Engineering backlog
+- Customer names/archetypes into `content/` (currently a placeholder array in `Simulation.cs`).
+- The party-line slot sometimes lands on a *pending* customer, which gets them installed for free. Generate the party line from existing subscribers only.
+- Save slots and autosave on quit.
+- CI: a GitHub Action running `dotnet test` + headless `--smoke`.
+- Localisation: move strings out of the sim into keyed tables before Early Access.

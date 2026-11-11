@@ -1,0 +1,29 @@
+; Engine configuration file. Godot 4.7 (.NET).
+
+config_version=5
+
+[application]
+
+config/name="TELO: Network Empire"
+config/description="First-person telecom business sim, 1983–2035. The job changes as you play."
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[dotnet]
+
+project/assembly_name="Telo.Game"
+
+[physics]
+
+common/physics_ticks_per_second=60
+
+[rendering]
+
+anti_aliasing/quality/msaa_3d=2
