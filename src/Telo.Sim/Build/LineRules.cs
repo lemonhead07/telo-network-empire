@@ -71,6 +71,13 @@ public static class LineRules
         {
             s.Emit(EventKind.Milestone, $"The last span is up. {l.Planted} poles, every one of them yours. There is dial tone at {p.Name}.", p.Id);
             LedgerRules.Serve(s, c, p.Id, alreadyBuilt: true);
+            if (p.PoleLine!.Grant > 0)
+            {
+                s.Cash += p.PoleLine.Grant;
+                s.Emit(EventKind.Money, $"The county's rural lines grant arrives: ${p.PoleLine.Grant}, for building what the national phone monopoly said could not be built.", p.Id);
+            }
+            // word gets round: you are the one who ran a line out to the farm
+            foreach (var lot in c.Lots.Values) TownRules.HouseholdOf(s, lot.Id).Goodwill = Math.Min(300, TownRules.HouseholdOf(s, lot.Id).Goodwill + 100);
         }
         return true;
     }

@@ -1,6 +1,6 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "PIP bubbles, held-back world, asset list". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-12, commit "god keys, faster pay, hands-on odd jobs". Everything is pushed; the working tree is clean.*
 
 ## Where things stand (the demo loop so far)
 1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
@@ -17,6 +17,10 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 **PIP talks as you work.** One short speech bubble the first time you do each thing (`PipTips.cs`). The "▶ next" line is now short. The desk (Almanac, notebook) opens once the basic round is learned; the farm road has a council barrier until the first hire.
 
 **Owner playtest, 2026-11-12 (10 minutes):** pacing good; still a lot of information; wants polish and each part reviewed in more detail; bubbles are welcome; floating name text on doors should go once there are real models; wants models, textures, walking talking residents, then a gameplay trailer. See `docs/ASSET_LIST.md`.
+
+**Owner playtest 2, 2026-11-12 (39 minutes, reached 15 Jan 1983):** 13 subscribers (the whole town), technician hired, farm line built. Liked the pacing and the "quiet day" line. Problems: too slow on the calendar; the farm line "didn't feel like I accomplished anything" and paid almost nothing; odd jobs too shallow; wants a way to skip through stages and ages. Done in response: god keys (F1–F4, F6), connection fees, the rural lines grant, sleeping through quiet days, hands-on odd jobs.
+
+**The biggest gap now: the town runs out.** 12 houses, a shop and a farm is about 40 minutes of content. After that the only thing left is waiting for June 1984. The next age (Act 1, the bulletin board) has data but no gameplay. That, or a second settlement, is what makes "overlap and pace increase between rounds" real.
 
 ## Plan for next time (in order)
 1. **Start the art** from `docs/ASSET_LIST.md`, step 1: a Blender-scripted house exterior with a nameplate (removes the floating door text), the van, and the five carried items. Set up `tools/` for Blender scripts and `game/assets/` for `.glb` output, and update the "no imported models" line in `CLAUDE.md`.

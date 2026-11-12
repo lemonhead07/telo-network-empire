@@ -10,6 +10,10 @@ namespace Telo.Sim.Town;
 /// </summary>
 public static class Guidance
 {
+    public const string QuietText = "Quiet day. Sleep until something needs you, or read PIP's Almanac.";
+    /// <summary>Nothing needs the player right now.</summary>
+    public static bool IsQuiet(GameState s, ContentDb c) => Next(s, c).Text == QuietText;
+
     public static (string Text, string? LotId) Next(GameState s, ContentDb c)
     {
         // The first hour: one new thing at a time, each explained once in the line the player is already reading.
@@ -64,7 +68,7 @@ public static class Guidance
         var prospect = TownRules.Prospects(s, c).FirstOrDefault(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay);
         if (prospect is not null) return ($"Knock on doors to find customers. Try {prospect.Resident}'s.", prospect.Id);
         if (BestJob(s, c) is { } any) return ($"Odd job: {any.Title.ToLowerInvariant()} at {Who(c, any)}'s (${any.Pay}).", any.LotId);
-        return ("Quiet day. Sleep until morning, or read PIP's Almanac.", null);
+        return (QuietText, null);
     }
 
     private static OddJob? BestJob(GameState s, ContentDb c) => s.Jobs.OrderByDescending(j => j.Pay).FirstOrDefault();

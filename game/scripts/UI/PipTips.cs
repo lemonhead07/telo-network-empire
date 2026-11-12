@@ -32,6 +32,9 @@ public sealed class PipTips
         ["hired"] = "Your technician starts tomorrow: one install a day while there are modems. Your hands are free. The farm road has reopened.",
         ["fault"] = "A fault. Someone's line has gone bad. Take the toolbox to their door, the one marked !",
         ["pole"] = "First pole in. Thirteen to go. String each span with the drum and the ladder from the blue marker.",
+        ["oddstart"] = "They've let you in. The patient is on the rug. Toolbox first, then E your way through it. R is a thump.",
+        ["thump"] = "A firm thump and a confident nod. They'll pay. They'll also remember.",
+        ["linedone"] = "The farm has dial tone. The county has paid its rural lines grant, and the whole town has heard who built it.",
         ["closed"] = "Road closed. The council is resurfacing it. Nobody has seen the council.",
     };
 
@@ -40,6 +43,9 @@ public sealed class PipTips
     {
         if (_said.Add(key) && Lines.TryGetValue(key, out var text)) _hud.Say(text);
     }
+
+    /// <summary>Say something that isn't a one-off tip.</summary>
+    public void Say(string text) => _hud.Say(text);
 
     /// <summary>Mark lines as already known (a loaded save past the first hour shouldn't be talked through it).</summary>
     public void Skip(params string[] keys) { foreach (var k in keys) _said.Add(k); }

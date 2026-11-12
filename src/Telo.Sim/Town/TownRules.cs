@@ -144,15 +144,17 @@ public static class TownRules
         return job;
     }
 
-    public static OddJob? CompleteJob(GameState s, ContentDb c, string jobId)
+    /// <param name="bodged">It was thumped, not fixed. They pay now and think less of you later.</param>
+    public static OddJob? CompleteJob(GameState s, ContentDb c, string jobId, bool bodged = false)
     {
         var job = s.Jobs.FirstOrDefault(j => j.Id == jobId);
         if (job is null) return null;
         s.Jobs.Remove(job);
         s.Cash += job.Pay; s.JobsDone++;
-        HouseholdOf(s, job.LotId).Goodwill = Math.Min(300, HouseholdOf(s, job.LotId).Goodwill + 150);
+        var home = HouseholdOf(s, job.LotId);
+        home.Goodwill = bodged ? Math.Max(-300, home.Goodwill - 150) : Math.Min(300, home.Goodwill + 150);
         string who = c.Lots.TryGetValue(job.LotId, out var lot) ? lot.Resident : "the customer";
-        s.Emit(EventKind.Money, $"{job.Title}: done. {who} pays ${job.Pay} and puts the kettle on.", job.LotId);
+        s.Emit(EventKind.Money, bodged ? $"{job.Title}: \"done\". {who} pays ${job.Pay}. It rattles." : $"{job.Title}: done. {who} pays ${job.Pay} and puts the kettle on.", job.LotId);
         return job;
     }
 

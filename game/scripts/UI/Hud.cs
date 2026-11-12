@@ -103,7 +103,7 @@ public partial class Hud : Control
             + (step >= OnboardingStep.Install ? $"   Awaiting install {s.PendingInstalls}   Modems {s.Modems}" : "")
             + (s.Faults.Count > 0 ? $"   Faults {s.Faults.Count}" : "");
         _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\n{counters}";
-        _right.Text = (step >= OnboardingStep.Free ? $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n" : "") + $"{where}\n[F] Survey flight  [F5] Save";
+        _right.Text = (step >= OnboardingStep.Free ? $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n" : "") + $"{where}\n[F1] God keys  [F5] Save";
         _prompt.Text = prompt ?? "";
         _next.Text = next;
         _feed.Text = string.Join("\n", s.Log.TakeLast(step >= OnboardingStep.Free ? 5 : 3).Select(e => $"{new Telo.Sim.Core.GameDate(e.Day)} — {e.Text}"));

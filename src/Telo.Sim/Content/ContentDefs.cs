@@ -82,6 +82,8 @@ public sealed record PoleLineDef
     public required string Road { get; init; }
     public double SpacingM { get; init; } = 60;
     public long PoleCost { get; init; } = 15;
+    /// <summary>Paid when the line is finished: the county's rural lines grant.</summary>
+    public long Grant { get; init; }
 }
 
 public sealed record PremiseDef

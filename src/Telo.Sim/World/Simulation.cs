@@ -3,7 +3,10 @@ using Telo.Sim.Content;
 using Telo.Sim.Core;
 using Telo.Sim.Ledger;
 using Telo.Sim.Minigames.Frame;
+using Telo.Sim.Build;
 using Telo.Sim.Minigames.Install;
+using Telo.Sim.Minigames.OddJob;
+using Telo.Sim.Planet;
 using Telo.Sim.Town;
 using Telo.Sim.Work;
 
@@ -21,6 +24,8 @@ public sealed class Simulation
     public const long RentPerMonth = 120;
     /// <summary>A part-time junior on 1983 small-town wages. (Economy is not balanced yet.)</summary>
     public const long WagePerStaffPerMonth = 90;
+    /// <summary>A new line pays a one-off connection fee, this many months' worth, the day it goes live.</summary>
+    public const int ConnectionFeeMonths = 2;
 
     public Simulation(ContentDb content, GameState state)
     {
@@ -111,12 +116,101 @@ public sealed class Simulation
             }
             s.Modems--; cust.SocketFitted = true;
         }
-        cust.Installed = true;
+        GoLive(cust);
         s.TechInstalls++;
         if (!_rng.ChancePermille(stage.AccuracyPermille))
             s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + _rng.Range(7, 41), Source = "technician", CustomerId = cust.Id, Text = "an install the technician swore was tested" });
         if (s.TechInstalls == 1) s.Emit(EventKind.Milestone, $"Your technician connected {cust.Name} while you were doing something else. Nobody needed you. It is a strange feeling.", cust.Id);
-        if (s.LiveSubscribers == 1) s.Emit(EventKind.Milestone, $"First customer: {cust.Name}.", cust.Id);
+    }
+
+    /// <summary>A line goes live: the customer starts paying, beginning with a connection fee in your hand today.</summary>
+    private void GoLive(Customer c)
+    {
+        var s = State;
+        c.Installed = true;
+        long fee = c.MonthlyFee * ConnectionFeeMonths;
+        s.Cash += fee;
+        if (s.LiveSubscribers == 1) s.Emit(EventKind.Milestone, $"First customer: {c.Name}. A dial tone, a modem shriek, a thank-you, and ${fee} for the connection.", c.Id);
+        else s.Emit(EventKind.Money, $"{c.Name}'s line is live. ${fee} connection fee, then ${c.MonthlyFee} a month.", c.Id);
+    }
+
+    /// <summary>Sleep through the quiet: days pass until something needs the player (a message, a fault, a job, the monthly bill). Returns days slept.</summary>
+    public int RestUntilNeeded(int maxDays = 30)
+    {
+        int n = 0;
+        do { AdvanceDay(); n++; }
+        while (n < maxDays && Guidance.IsQuiet(State, Content) && !State.Date.IsFirstOfMonth);
+        return n;
+    }
+
+    public OddJobTask? NewOddJobTask(string jobId) =>
+        State.Jobs.FirstOrDefault(j => j.Id == jobId) is { } job ? new OddJobTask(job.Id, job.Title, job.Hours) : null;
+
+    // ---- god keys: skip ahead to see later stages (testing and impatient owners) ----------------
+    public string GodCash(long amount) { State.Cash += amount; return $"+${amount}."; }
+
+    /// <summary>Finish whatever the game is currently asking for, by decree.</summary>
+    public string GodNextStage(PlanetGen? gen)
+    {
+        var s = State; var c = Content;
+        Customer? SignNext() => TownRules.Prospects(s, c).FirstOrDefault() is { } lot ? TownRules.SignUp(s, lot) : null;
+        void Connect(Customer cust) { if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); } if (!cust.Installed) GoLive(cust); }
+        string done;
+        switch (Onboarding.Current(s, c))
+        {
+            case OnboardingStep.Enquiry:
+                s.MessagesWaiting = Math.Max(1, s.MessagesWaiting);
+                done = TakeEnquiry() is { } first ? $"{first.Name} signed up." : "Nobody left to sign."; break;
+            case OnboardingStep.Install:
+                foreach (var cust in s.Customers.Where(x => x.Live && !x.SocketFitted).ToList()) { s.Modems++; TownRules.FitSocket(s, cust.Id); }
+                done = "House installs done."; break;
+            case OnboardingStep.Frame:
+                foreach (var cust in s.Customers.Where(x => x.Live && !x.Installed).ToList()) Connect(cust);
+                done = "Lines wired and live."; break;
+            case OnboardingStep.OddJob:
+                if (s.Jobs.Count == 0) TownRules.OfferJob(s, c, _rng);
+                done = s.Jobs.FirstOrDefault() is { } job && TownRules.CompleteJob(s, c, job.Id) is not null ? "Odd job done." : "No odd job to do."; break;
+            case OnboardingStep.Knock:
+                done = SignNext() is { } knocked ? $"{knocked.Name} said yes on the doorstep." : "Nobody left to ask."; break;
+            default:
+                foreach (var cust in s.Customers.Where(x => x.Live && !x.Installed).ToList()) Connect(cust);
+                if (s.Staff == 0)
+                {
+                    while (s.LiveSubscribers < (WorkRules.Next(s, c, "install")?.RequiresSubscribers ?? 0) && SignNext() is { } extra) Connect(extra);
+                    s.Cash = Math.Max(s.Cash, WorkRules.Next(s, c, "install")?.Cost ?? 0);
+                    done = WorkRules.Upgrade(s, c, "install") == UpgradeResult.Ok ? "Technician hired." : "Could not hire.";
+                }
+                else if (gen is not null && c.Premises.Values.FirstOrDefault(p => p.PoleLine is not null && !LineRules.Complete(s, gen, p)) is { } far)
+                {
+                    int n = LineRules.PoleSites(gen, far).Count;
+                    s.Cash += n * far.PoleLine!.PoleCost;
+                    for (int i = 0; i < n; i++) LineRules.Plant(s, gen, far, Tools.All);
+                    for (int i = 0; i < n; i++) LineRules.String(s, c, gen, far, Tools.All);
+                    done = $"Pole line to {far.Name} built.";
+                }
+                else if (TownRules.Prospects(s, c).Any())
+                {
+                    while (SignNext() is { } rest) Connect(rest);
+                    done = "The whole town is connected.";
+                }
+                else done = GodNextAct();
+                break;
+        }
+        s.RngState = _rng.State;
+        return done;
+    }
+
+    /// <summary>Jump to the next act (age), whatever the calendar and the milestones say.</summary>
+    public string GodNextAct()
+    {
+        var s = State;
+        if (s.ActIndex + 1 >= Content.Acts.Count) return "This is the last act.";
+        var next = Content.Acts[s.ActIndex + 1];
+        if (next.GateAnnouncement is { } g) s.FiredAnnouncements.Add(g);
+        s.ActIndex++;
+        s.Emit(EventKind.ActChanged, $"Act {next.Index}: {next.Name}. {next.BusinessModel}. What holds you back now: {next.BindingConstraint}.", next.Id);
+        AlmanacRules.RefreshStatuses(s, Content);
+        return $"Act {next.Index}: {next.Name} ({next.Years}).";
     }
 
     private void DriftSatisfaction()
@@ -257,8 +351,7 @@ public sealed class Simulation
         var failed = o.CrossedCustomerIds.Concat(o.DeadCustomerIds).ToHashSet();
         foreach (var c in s.Customers.Where(c => !c.Installed && c.Live && !failed.Contains(c.Id) && o.Involved.Contains(c.Id)).ToList())
         {
-            c.Installed = true;
-            if (s.LiveSubscribers == 1) s.Emit(EventKind.Milestone, $"First customer: {c.Name}. A dial tone, a modem shriek, a thank-you.", c.Id);
+            GoLive(c);
         }
         foreach (var c in s.Customers) c.Satisfaction = Math.Clamp(c.Satisfaction, 0, 100);
         // the first line is live: now, and only now, the neighbours start asking for odd jobs

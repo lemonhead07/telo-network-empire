@@ -5,6 +5,7 @@ using Telo.Game.World;
 using Telo.Sim.Build;
 using Telo.Sim.Content;
 using Telo.Sim.Minigames.Install;
+using Telo.Sim.Minigames.OddJob;
 using Telo.Sim.Planet;
 using Telo.Sim.Save;
 using Telo.Sim.Town;
@@ -41,6 +42,8 @@ public partial class GameRoot : Node3D
     private PipTips _pip = null!;
     private OnboardingStep _lastStep;
     private Node3D? _roadBarrier;
+    /// <summary>Odd jobs being done by hand indoors, by lot: the task and the thing on the rug.</summary>
+    private readonly Dictionary<string, (OddJobTask Task, Interactable Bench)> _oddJobs = new();
     private readonly List<Action> _lineRefresh = new();
     private readonly List<(PremiseDef Premise, PoleLineView View)> _lines = new();
     /// <summary>Automated checks pretend all the kit is to hand.</summary>
@@ -229,7 +232,15 @@ public partial class GameRoot : Node3D
 
         // Camp bed. Sleeping is how days pass quickly.
         RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
-            () => "Sleep until morning", () => { Sim.AdvanceDay(); _dayClock = DayLengthSeconds * 0.05f; RefreshIdleScreens(); });
+            () => Guidance.IsQuiet(Sim.State, _content) ? "Sleep until something needs you (days may pass)" : "Sleep until morning",
+            () =>
+            {
+                int days = 1;
+                if (Guidance.IsQuiet(Sim.State, _content)) days = Sim.RestUntilNeeded(); else Sim.AdvanceDay();
+                _dayClock = DayLengthSeconds * 0.05f;
+                if (days > 1) _pip.Say($"{days} days went by. {Sim.State.Date}. Something needs you.");
+                RefreshIdleScreens();
+            });
     }
 
     private static WorldScreen Screen(Node3D room, ModalView view, float widthM, Vector3 pos, Vector3 rotDeg, bool glows)
@@ -305,9 +316,18 @@ public partial class GameRoot : Node3D
                 ? ($"Fix {broken.Name}'s line: {fault.Text} ({TownRules.RepairMinutes} min)", () => { if (TownRules.Repair(s, fault.Id, KitOnSite())) SpendHours(TownRules.RepairMinutes / 60f); })
                 : ($"{broken.Name} has a fault: {fault.Text}. You need {Cargo.Names(missing)} from the van", null);
         }
-        if (TownRules.JobAt(s, lot.Id) is { } job)
-            return ($"{job.Title} for {lot.Resident} (+${job.Pay}, {job.Hours} h)", () => { TownRules.CompleteJob(s, _content, job.Id); SpendHours(job.Hours); });
-
+        if (TownRules.JobAt(s, lot.Id) is { } job && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } jobHome)
+        {
+            // houses: the job is done by hand indoors
+            if (_oddJobs.TryGetValue(lot.Id, out var doing))
+                return ($"{job.Title}: {(doing.Task.Next is { } n ? n.Verb.ToLowerInvariant() : "hand it back")} (indoors, on the rug)", null);
+            return ($"{job.Title} for {lot.Resident} (+${job.Pay}): they let you in. Bring the toolbox", () => StartOddJob(jobHome, job));
+        }
+        if (TownRules.JobAt(s, lot.Id) is { } quick)
+        {
+            // the shop and the farm aren't enterable yet: the job is still done at the door
+            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay}, {quick.Hours} h)", () => { TownRules.CompleteJob(s, _content, quick.Id); SpendHours(quick.Hours); });
+        }
         var cust = TownRules.CustomerAt(s, lot.Id);
         if (cust is { SocketFitted: false } && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } view)
         {
@@ -392,9 +412,58 @@ public partial class GameRoot : Node3D
             // Whatever else happens, you are never shut in: a door with you behind it opens.
             if (!v.DoorOpen && Indoors(v, playerPos, 0)) OpenDoor(v, true);
             // The door closes behind you: only once the job is signed off, you have stepped off the doorstep, and none of your kit is still indoors.
-            if (v.DoorOpen && !_installs.ContainsKey(v.Lot.Id) && !Indoors(v, playerPos, 1.1f)
+            if (_oddJobs.ContainsKey(v.Lot.Id) && TownRules.JobAt(Sim.State, v.Lot.Id) is null) EndOddJob(v.Lot.Id); // they got someone else in
+            if (v.DoorOpen && !_installs.ContainsKey(v.Lot.Id) && !_oddJobs.ContainsKey(v.Lot.Id) && !Indoors(v, playerPos, 1.1f)
                 && !_cargo.Items.Any(i => i.Where == Carryable.Place.Ground && Indoors(v, i.GlobalPosition, 0))) OpenDoor(v, false);
         }
+    }
+
+    // ---- odd jobs by hand: the thing to fix sits on the rug in their front room ------------------
+    private void StartOddJob(LotView view, OddJob job)
+    {
+        if (Sim.NewOddJobTask(job.Id) is not { } task) return;
+        var s = Sim.State;
+        var bench = new Interactable { Position = new Vector3(1.5f, TownBuilder.HouseFloor + 0.17f, -0.9f), CollisionLayer = 2, CollisionMask = 0 };
+        bench.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(0.6f, 0.5f, 0.5f) } });
+        bench.AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.42f, 0.26f, 0.3f), new Color(0.22f, 0.2f, 0.18f))
+            .Box(new Vector3(0, 0.14f, 0), new Vector3(0.3f, 0.03f, 0.2f), new Color(0.8f, 0.72f, 0.5f))
+            .Box(new Vector3(0.12f, 0.05f, 0.155f), new Vector3(0.08f, 0.08f, 0.02f), new Color(0.85f, 0.2f, 0.15f)).Instance());
+        bench.Prompt = () =>
+        {
+            if (task.Done) return $"Hand it back to {view.Lot.Resident} (+${job.Pay})";
+            var d = task.Next!;
+            var missing = task.Missing(KitOnSite());
+            return missing != Tools.None ? $"{d.Verb}: you need {Cargo.Names(missing)} here (from the van)"
+                : $"{d.Verb} ({task.Progress(d.Step) + 1}/{d.Clicks}, {task.MinutesFor(d)} min)";
+        };
+        bench.CanUse = () => task.Done || task.Missing(KitOnSite()) == Tools.None;
+        bench.OnUse = () =>
+        {
+            int before = task.ElapsedMinutes;
+            if (!task.Done) { if (task.Do(KitOnSite())) SpendHours((task.ElapsedMinutes - before) / 60f); return; }
+            TownRules.CompleteJob(s, _content, job.Id, task.Bodged);
+            EndOddJob(view.Lot.Id);
+        };
+        bench.AltPrompt = () => task.Done ? null : "Give it a thump and call it fixed";
+        bench.OnAlt = () => { if (task.Bodge()) { SpendHours(OddJobTask.BodgeMinutes / 60f); _pip.Once("thump"); } };
+        view.Body.AddChild(bench);
+        _oddJobs[view.Lot.Id] = (task, bench);
+        OpenDoor(view, true);
+        _pip.Once("oddstart");
+    }
+
+    private void EndOddJob(string lotId)
+    {
+        if (!_oddJobs.Remove(lotId, out var doing)) return;
+        doing.Bench.QueueFree();
+    }
+
+    /// <summary>God keys: decree that something has happened, then let every view catch up.</summary>
+    private void God(string what)
+    {
+        _pip.Say("By decree: " + what);
+        foreach (var v in _town.Lots) if (_installs.Remove(v.Lot.Id)) v.Install?.ShowFitted();
+        RefreshIdleScreens();
     }
 
     /// <summary>Is this world position inside the house (plus a margin, e.g. the doorstep)?</summary>
@@ -421,6 +490,7 @@ public partial class GameRoot : Node3D
         if (s.Staff > 0) _pip.Once("hired");
         if (s.Faults.Count > 0) _pip.Once("fault");
         if (s.Lines.Values.Any(l => l.Planted > 0)) _pip.Once("pole");
+        if (_lines.Any(l => LineRules.Complete(s, _planet, l.Premise))) _pip.Once("linedone");
         if (_roadBarrier is not null)
         {
             bool open = Onboarding.RoadOpen(s, _content);
@@ -516,6 +586,11 @@ public partial class GameRoot : Node3D
         if (AnyScreenOpen) return;
         if (_van.Driven && e.IsActionPressed("interact")) { ExitVan(); GetViewport().SetInputAsHandled(); }
         else if (e.IsActionPressed("drop") && !_van.Driven) _cargo.Drop();
+        else if (e.IsActionPressed("god_help")) _pip.Say("God keys. F2: $500. F3: next day. F4: finish what the game is asking for. F6: jump to the next act.");
+        else if (e.IsActionPressed("god_cash")) God(Sim.GodCash(500));
+        else if (e.IsActionPressed("god_day")) { Sim.AdvanceDay(); _dayClock = DayLengthSeconds * 0.05f; God($"it is {Sim.State.Date}."); }
+        else if (e.IsActionPressed("god_stage")) God(Sim.GodNextStage(_planet));
+        else if (e.IsActionPressed("god_act")) God(Sim.GodNextAct());
         else if (e.IsActionPressed("save")) Save();
         else if (e.IsActionPressed("load")) Load();
         else if (e.IsActionPressed("cancel")) Input.MouseMode = Input.MouseModeEnum.Visible;
@@ -571,7 +646,17 @@ public partial class GameRoot : Node3D
         Sim.OfferJob();
         var jobLot = _town.Lots.First(l => TownRules.JobAt(Sim.State, l.Lot.Id) is not null);
         jobLot.Door.OnUse!();
-        bool paid = quietStart && Sim.State.Cash > cash;
+        bool handsOn = true;
+        if (_oddJobs.TryGetValue(jobLot.Lot.Id, out var oj))
+        {
+            bool needsToolbox = !oj.Bench.CanUse();
+            _kitEverywhere = true;
+            for (int i = 0; i < 12 && _oddJobs.ContainsKey(jobLot.Lot.Id); i++) oj.Bench.OnUse!();
+            _kitEverywhere = false;
+            handsOn = needsToolbox && jobLot.DoorOpen && !_oddJobs.ContainsKey(jobLot.Lot.Id);
+            GD.Print($"ODDJOB {(handsOn ? "OK" : "FAIL")}: needsToolbox={needsToolbox} doorOpened={jobLot.DoorOpen}");
+        }
+        bool paid = quietStart && handsOn && Sim.State.Cash > cash;
 
         // --- house install: sign someone up, get let in, walk through the door, do every step by hand ---
         Customer? first = null;
@@ -733,6 +818,15 @@ public partial class GameRoot : Node3D
             for (int i = 2; i < 8; i++) order[i].OnUse!();
             await Shot("-house", L(2.6f, 1.7f, 2.6f), L(-3.2f, 0.7f, 0.6f));
             await Shot("-house2", L(-2.8f, 1.7f, 2.4f), L(2.5f, 0.9f, -2.2f));
+        }
+        // an odd job being done by hand on someone's rug
+        OddJob? odd = null;
+        for (int i = 0; i < 12 && (odd is null || _town.Lots.First(l => l.Lot.Id == odd.LotId).Install is null || _installs.ContainsKey(odd.LotId)); i++) odd = Sim.OfferJob();
+        if (odd is not null && _town.Lots.First(l => l.Lot.Id == odd.LotId) is { Install: not null } jv)
+        {
+            jv.Door.OnUse!();
+            if (_oddJobs.TryGetValue(jv.Lot.Id, out var doing)) { doing.Bench.OnUse!(); doing.Bench.OnUse!(); }
+            await Shot("-oddjob", jv.Body.ToGlobal(new Vector3(-0.6f, 1.5f, 1.6f)), jv.Body.ToGlobal(new Vector3(1.5f, 0.3f, -0.9f)));
         }
         // the pole line to the farm, part built
         if (_lines.Count > 0)
