@@ -35,6 +35,12 @@ public static class Onboarding
         _ => 3,
     };
 
+    /// <summary>The desk (PIP's Almanac, the company notebook) opens once the basic round is learned.</summary>
+    public static bool DeskOpen(GameState s, ContentDb c) => Reached(s, c, OnboardingStep.Free);
+
+    /// <summary>The road out of town is "being resurfaced" until there is a reason to go: staff to mind the shop, or a line already begun.</summary>
+    public static bool RoadOpen(GameState s, ContentDb c) => c.Lots.Count == 0 || s.Staff > 0 || s.Lines.Values.Any(l => l.Planted > 0);
+
     public static bool CanKnock(GameState s, ContentDb c) => Reached(s, c, OnboardingStep.Knock);
     /// <summary>Word of mouth only starts ringing the phone once the player knows the whole loop.</summary>
     public static bool PhoneRings(GameState s, ContentDb c) => Reached(s, c, OnboardingStep.Free);

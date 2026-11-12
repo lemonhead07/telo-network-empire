@@ -34,6 +34,7 @@ public sealed class Cargo
     private readonly Func<int> _modemsSpare;
     public List<Carryable> Items { get; } = new();
     public Carryable? Held { get; private set; }
+    public event Action<Carryable>? PickedUp;
 
     public static string Name(Tools t) => t switch
     {
@@ -116,6 +117,7 @@ public sealed class Cargo
         Move(item, _player, item.HeldPose, Carryable.Place.Held);
         Held = item;
         _player.Pace = item.TwoHanded ? TwoHandedPace : 1f;
+        PickedUp?.Invoke(item);
     }
 
     /// <summary>Put what you are carrying down just in front of your feet.</summary>

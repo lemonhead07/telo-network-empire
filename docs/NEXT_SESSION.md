@@ -1,6 +1,6 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "the pole line to Hollow Farm". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-12, commit "PIP bubbles, held-back world, asset list". Everything is pushed; the working tree is clean.*
 
 ## Where things stand (the demo loop so far)
 1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
@@ -14,13 +14,17 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 
 **The first hour is staged.** A new game starts with one phone message and nothing else: no odd jobs, no door-knocking, no Almanac notices, a short HUD. Each thing appears only after the one before has been done once: answering machine → install → frame → first odd job → door-knocking → everything. Later systems were already gated (the hire needs 4 subscribers, faults come weeks later, pole-line markers appear after the hire).
 
+**PIP talks as you work.** One short speech bubble the first time you do each thing (`PipTips.cs`). The "▶ next" line is now short. The desk (Almanac, notebook) opens once the basic round is learned; the farm road has a council barrier until the first hire.
+
+**Owner playtest, 2026-11-12 (10 minutes):** pacing good; still a lot of information; wants polish and each part reviewed in more detail; bubbles are welcome; floating name text on doors should go once there are real models; wants models, textures, walking talking residents, then a gameplay trailer. See `docs/ASSET_LIST.md`.
+
 ## Plan for next time (in order)
-1. **Repairs hands-on:** the fault names a stage; fix it at that point on the house (reuse `InstallSite` click points) instead of one press at the door.
-2. **The technician as a person:** a named placeholder figure in your room and at the house they are working on, with one line of dialogue.
-3. **Ruth's farmhouse install:** make the farmhouse enterable and finish her line with the same six-stage install instead of connecting on the last span.
-4. **Second automation stage hooks:** bookkeeper (billing) and receptionist (support) can be bought but change nothing yet. Give each a manual verb first, then the hire.
-5. **More to build:** a second pole-line destination (fishing village or mountain hamlet) needs a new `Site` and road in `PlanetGen`.
-6. Odd jobs hands-on; synthesised sound; enterable shop; economy pass.
+1. **Start the art** from `docs/ASSET_LIST.md`, step 1: a Blender-scripted house exterior with a nameplate (removes the floating door text), the van, and the five carried items. Set up `tools/` for Blender scripts and `game/assets/` for `.glb` output, and update the "no imported models" line in `CLAUDE.md`.
+2. **Residents:** one base person, 12 variations, speech bubbles above heads, simple walking between home, street and shop.
+3. **The technician as a person**, and hands-on repairs at the faulty point on the house.
+4. **Sound**, synthesised.
+5. **Review pass, part by part** (the owner asked for more detail in each): install step feedback, frame readability, shop counter, odd jobs hands-on.
+6. Then the trailer mode (`--trailer`), following the shot list.
 
 ## Rules to keep
 - Outcomes and defects are decided in `src/Telo.Sim`; Godot only shows and drives it.

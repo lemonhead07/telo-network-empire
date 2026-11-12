@@ -132,7 +132,7 @@ public static class TownRules
     // ---- odd jobs --------------------------------------------------------------------------------
     public static OddJob? OfferJob(GameState s, ContentDb c, DetRng rng)
     {
-        var free = c.Lots.Values.Where(l => JobAt(s, l.Id) is null).OrderBy(l => l.Id).ToList();
+        var free = c.Lots.Values.Where(l => JobAt(s, l.Id) is null && (l.Kind != LotKind.Farm || Onboarding.RoadOpen(s, c))).OrderBy(l => l.Id).ToList();
         if (free.Count == 0) return null;
         var lot = free[rng.Next(free.Count)];
         var kinds = JobKinds.Where(k => k.Only is null || k.Only == lot.Kind).ToList();

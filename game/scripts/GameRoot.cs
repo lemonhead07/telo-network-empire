@@ -38,6 +38,9 @@ public partial class GameRoot : Node3D
     private Town _town = null!;
     private Van _van = null!;
     private Cargo _cargo = null!;
+    private PipTips _pip = null!;
+    private OnboardingStep _lastStep;
+    private Node3D? _roadBarrier;
     private readonly List<Action> _lineRefresh = new();
     private readonly List<(PremiseDef Premise, PoleLineView View)> _lines = new();
     /// <summary>Automated checks pretend all the kit is to hand.</summary>
@@ -95,6 +98,13 @@ public partial class GameRoot : Node3D
         AddChild(ui);
         _hud = new Hud(); ui.AddChild(_hud);
 
+        _pip = new PipTips(_hud);
+        _lastStep = Onboarding.Current(Sim.State, _content);
+        if (_lastStep == OnboardingStep.Enquiry) _pip.Once("hello");
+        if (_lastStep == OnboardingStep.Free) _pip.Skip("customer", "van", "carry", "install", "step", "modem", "dial", "signed", "frame", "oddjob", "knock", "free");
+        if (Sim.State.Staff > 0) _pip.Skip("canhire", "hired");
+        _cargo.PickedUp += _ => _pip.Once("carry");
+
         RefreshIdleScreens();
         if (args.Contains("--smoke")) _ = RunSmoke();
         if (args.FirstOrDefault(a => a.StartsWith("--shot=")) is { } shot) _ = TakeScreenshot(shot["--shot=".Length..]);
@@ -109,6 +119,36 @@ public partial class GameRoot : Node3D
         for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
         TownBuilder.BuildRoads(_town.Root, _planet, GetWorld3D().DirectSpaceState);
         foreach (var p in _content.Premises.Values) BuildPoleLine(p);
+        if (!Onboarding.RoadOpen(Sim.State, _content)) BuildRoadBarrier();
+    }
+
+    /// <summary>A council barrier across the road out of town, until there is a reason to leave. You can drive round it on the grass; it is a hint, not a wall.</summary>
+    private void BuildRoadBarrier()
+    {
+        if (_planet.Roads.Count == 0) return;
+        var pts = _planet.Roads[0].Points; float R = (float)_planet.RadiusM;
+        int i = Enumerable.Range(0, pts.Count).FirstOrDefault(k => (pts[k] - _planet.Town.Dir).Length * _planet.RadiusM > _planet.Town.RadiusM * 0.7);
+        if (i <= 0 || i >= pts.Count - 1) return;
+        var dir = PlanetBuilder.ToGodot(pts[i]);
+        var hit = GetWorld3D().DirectSpaceState.IntersectRay(PhysicsRayQueryParameters3D.Create(dir * (R + 400), dir * (R - 100), 1));
+        var ground = hit.Count > 0 ? (Vector3)hit["position"] : dir * (R + (float)_planet.Height(pts[i]));
+        var along = (PlanetBuilder.ToGodot(pts[i + 1]) - PlanetBuilder.ToGodot(pts[i - 1])).Normalized();
+        var across = along.Cross(dir).Normalized();
+        var body = new StaticBody3D { Name = "RoadBarrier", Transform = new Transform3D(new Basis(across, dir, across.Cross(dir)), ground) };
+        var lp = new LowPoly();
+        for (int k = -4; k <= 4; k++) lp.Box(new Vector3(k * 2f, 0.9f, 0), new Vector3(2f, 0.35f, 0.12f), k % 2 == 0 ? new Color(0.9f, 0.25f, 0.15f) : new Color(0.95f, 0.93f, 0.88f));
+        foreach (float x in new[] { -8.5f, -3f, 3f, 8.5f }) lp.Box(new Vector3(x, 0.5f, 0), new Vector3(0.12f, 1f, 0.5f), new Color(0.3f, 0.3f, 0.32f));
+        lp.Box(new Vector3(0, 1.75f, 0), new Vector3(3.4f, 1.1f, 0.08f), new Color(0.95f, 0.8f, 0.2f));
+        body.AddChild(lp.Instance());
+        body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(18f, 2.2f, 0.5f) }, Position = new Vector3(0, 1.1f, 0) });
+        foreach (int side in new[] { -1, 1 })
+            body.AddChild(new Label3D
+            {
+                Text = "ROAD CLOSED\nCouncil resurfacing\nCompletion: pending", Position = new Vector3(0, 1.75f, side * 0.06f), RotationDegrees = new Vector3(0, side < 0 ? 180 : 0, 0),
+                FontSize = 48, PixelSize = 0.006f, Modulate = new Color(0.1f, 0.08f, 0.05f), OutlineSize = 0,
+            });
+        AddChild(body);
+        _roadBarrier = body;
     }
 
     // ---- pole lines the player builds by hand --------------------------------------------------
@@ -178,11 +218,13 @@ public partial class GameRoot : Node3D
             () => Sim.State.MessagesWaiting > 0 ? $"Play messages ({Sim.State.MessagesWaiting} waiting)" : "No new messages", PlayMessages);
 
         RoomBuilder.Prop(room, "Handset", new Vector3(1.3f, 0.86f, back + 0.36f), new Vector3(0.38f, 0.26f, 0.03f), new Color(0.1f, 0.11f, 0.14f),
-            () => "Read PIP's Almanac", () => _almanac.Open(InterfaceTier.Terminal)).RotationDegrees = new Vector3(-18, 0, 0);
+            () => Onboarding.DeskOpen(Sim.State, _content) ? "Read PIP's Almanac" : "PIP's handset. It has more to show you once you know the round",
+            () => { if (Onboarding.DeskOpen(Sim.State, _content)) _almanac.Open(InterfaceTier.Terminal); }).RotationDegrees = new Vector3(-18, 0, 0);
         _pipScreen = Screen(room, _almanac, 0.34f, new Vector3(1.3f, 0.865f, back + 0.385f), new Vector3(-18, 0, 0), glows: true);
 
         RoomBuilder.Prop(room, "Notebook", new Vector3(1.85f, 0.745f, back + 0.5f), new Vector3(0.52f, 0.02f, 0.34f), new Color(0.5f, 0.12f, 0.1f),
-            () => "Read the company notebook", () => _notebook.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing")));
+            () => Onboarding.DeskOpen(Sim.State, _content) ? "Read the company notebook" : "The company notebook. Nothing in it yet: there is no company",
+            () => { if (Onboarding.DeskOpen(Sim.State, _content)) _notebook.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing")); });
         _notebookScreen = Screen(room, _notebook, 0.48f, new Vector3(1.85f, 0.758f, back + 0.5f), new Vector3(-90, 0, 0), glows: false);
 
         // Camp bed. Sleeping is how days pass quickly.
@@ -240,6 +282,7 @@ public partial class GameRoot : Node3D
     {
         if (Sim.State.ReadyForFrame == 0) return;
         var job = Sim.NewFrameJob(Sim.FrameWorkOrder());
+        _pip.Once("frame");
         _frame.Start(job);
         _frame.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "install"));
     }
@@ -247,7 +290,7 @@ public partial class GameRoot : Node3D
     private void PlayMessages()
     {
         if (Sim.State.MessagesWaiting == 0) return;
-        Sim.TakeEnquiry();
+        if (Sim.TakeEnquiry() is not null) _pip.Once("customer");
     }
 
     /// <summary>What can be done at this building right now? Decided from sim state every time it is asked.</summary>
@@ -300,13 +343,14 @@ public partial class GameRoot : Node3D
         if (Sim.NewInstallJob(cust.Id) is not { } job) return;
         _installs[view.Lot.Id] = job;
         OpenDoor(view, true);
+        _pip.Once("install");
         view.Install!.Begin(job,
             (step, rush) =>
             {
                 int before = job.ElapsedMinutes;
-                if (step == InstallStep.Test) view.Install.NoteTest(job.Test());
-                else if (rush) job.Rush(step, KitOnSite());
-                else job.Do(step, KitOnSite());
+                if (step == InstallStep.Test) { var r = job.Test(); view.Install.NoteTest(r); _pip.Once(r.DialTone ? "dial" : "nodial"); }
+                else if (rush) { if (job.Rush(step, KitOnSite())) _pip.Once("bodge"); }
+                else if (job.Do(step, KitOnSite())) _pip.Once(step == InstallStep.Modem ? "modem" : "step");
                 SpendHours((job.ElapsedMinutes - before) / 60f);
                 // the modem is out of its box and on their table: the empty box goes back on the van
                 if (job.IsDone(InstallStep.Modem) && _cargo.Items.FirstOrDefault(i => i.Tool == Tools.ModemBox && i.Where != Carryable.Place.Van) is { } boxed) _cargo.Stow(boxed);
@@ -319,6 +363,7 @@ public partial class GameRoot : Node3D
                 _installs.Remove(view.Lot.Id);
                 view.Install.ShowFitted();
                 _cargo.Refresh();
+                _pip.Once("signed");
             },
             KitOnSite, Cargo.Names);
     }
@@ -344,7 +389,41 @@ public partial class GameRoot : Node3D
                 _installs.Remove(v.Lot.Id); // the technician got there first
                 v.Install.ShowFitted();
             }
-            if (v.DoorOpen && !_installs.ContainsKey(v.Lot.Id) && (v.Position - playerPos).Length() > 6.5f) OpenDoor(v, false);
+            // The door closes behind you: only once the job is signed off, you have stepped off the doorstep, and none of your kit is still indoors.
+            if (v.DoorOpen && !_installs.ContainsKey(v.Lot.Id) && !Indoors(v, playerPos, 1.1f)
+                && !_cargo.Items.Any(i => i.Where == Carryable.Place.Ground && Indoors(v, i.GlobalPosition, 0))) OpenDoor(v, false);
+        }
+    }
+
+    /// <summary>Is this world position inside the house (plus a margin, e.g. the doorstep)?</summary>
+    private static bool Indoors(LotView v, Vector3 world, float margin)
+    {
+        var p = v.Body.ToLocal(world);
+        return Mathf.Abs(p.X) < 4f + margin && p.Z > -3.5f - margin && p.Z < 3.5f + margin && p.Y < 6f;
+    }
+
+    /// <summary>The first hour unlocks one thing at a time; PIP says so at the moment it happens.</summary>
+    private void WatchProgress()
+    {
+        var s = Sim.State;
+        var step = Onboarding.Current(s, _content);
+        if (step != _lastStep)
+        {
+            _lastStep = step;
+            if (step == OnboardingStep.OddJob) _pip.Once("oddjob");
+            if (step == OnboardingStep.Knock) _pip.Once("knock");
+            if (step == OnboardingStep.Free) _pip.Once("free");
+        }
+        if (step >= OnboardingStep.Install && s.Modems == 0 && s.Customers.Any(c => c.Live && !c.SocketFitted)) _pip.Once("nomodem");
+        if (s.Staff == 0 && WorkRules.CanUpgrade(s, _content, "install") == UpgradeResult.Ok) _pip.Once("canhire");
+        if (s.Staff > 0) _pip.Once("hired");
+        if (s.Faults.Count > 0) _pip.Once("fault");
+        if (s.Lines.Values.Any(l => l.Planted > 0)) _pip.Once("pole");
+        if (_roadBarrier is not null)
+        {
+            bool open = Onboarding.RoadOpen(s, _content);
+            if (open) { _roadBarrier.QueueFree(); _roadBarrier = null; }
+            else if ((_roadBarrier.GlobalPosition - (_van.Driven ? _van.GlobalPosition : _player.GlobalPosition)).Length() < 25) _pip.Once("closed");
         }
     }
 
@@ -374,6 +453,7 @@ public partial class GameRoot : Node3D
     {
         _player.SetActive(false);
         _van.SetDriven(true);
+        _pip.Once("van");
     }
 
     private void ExitVan()
@@ -414,6 +494,7 @@ public partial class GameRoot : Node3D
             SyncHouses(_player.GlobalPosition);
             _cargo.Refresh();
             foreach (var refresh in _lineRefresh) refresh();
+            WatchProgress();
         }
 
         if (targetLot is not null && _town.Lots.FirstOrDefault(l => l.Lot.Id == targetLot) is { } t)
@@ -516,8 +597,14 @@ public partial class GameRoot : Node3D
             GD.Print($"CARRY {(carried ? "OK" : "FAIL")}: blocked={blocked} slowed={slowed} onSite={KitOnSite()}");
             foreach (var spot in site.WorkOrder.ToList()) spot.OnUse!();
             if (_installs.ContainsKey(home.Lot.Id)) foreach (var spot in site.WorkOrder.ToList()) spot.OnUse!(); // the test found a fault: redo and sign off
+            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+            bool stayedOpen = home.DoorOpen;                       // job signed, but you and your kit are still inside
             foreach (var item in _cargo.Items) _cargo.Stow(item);
-            house = carried && walkedIn && first!.SocketFitted && site.Fitted && Sim.State.Defects.All(d => d.Source != "install");
+            _player.GlobalTransform = _town.PlayerSpawn;
+            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+            bool closedBehind = !home.DoorOpen;
+            GD.Print($"DOOR {(stayedOpen && closedBehind ? "OK" : "FAIL")}: stayedOpenWhileInside={stayedOpen} closedAfterLeaving={closedBehind}");
+            house = stayedOpen && closedBehind && carried && walkedIn && first!.SocketFitted && site.Fitted && Sim.State.Defects.All(d => d.Source != "install");
             GD.Print($"HOUSE {(house ? "OK" : "FAIL")}: walkedIn={walkedIn} at {inside} fitted={first.SocketFitted}");
             _player.GlobalTransform = _town.PlayerSpawn;
             await Physics(30);
@@ -552,6 +639,7 @@ public partial class GameRoot : Node3D
         _almanac.Open(InterfaceTier.Terminal); _almanac.Close();
         _notebook.Open(InterfaceTier.Paper); _notebook.Close();
         // --- the first automation stage: hire the technician, they connect someone without you, a fault needs a repair visit ---
+        bool roadShut = _roadBarrier is not null;
         Sim.State.Cash += 1000; Sim.State.Modems += 3;
         bool hired = WorkRules.Upgrade(Sim.State, _content, "install") == UpgradeResult.Ok;
         Customer? next = null;
@@ -565,8 +653,10 @@ public partial class GameRoot : Node3D
         _kitEverywhere = true;
         faultLot.Door.OnUse!();
         _kitEverywhere = false;
-        bool auto = hired && techDid && needsKit && Sim.State.Faults.Count == 0;
-        GD.Print($"AUTOMATION {(auto ? "OK" : "FAIL")}: hired={hired} techDid={techDid} faultNeedsKit={needsKit} faultsLeft={Sim.State.Faults.Count}");
+        await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+        bool roadGate = roadShut && _roadBarrier is null;
+        bool auto = hired && techDid && needsKit && roadGate && Sim.State.Faults.Count == 0;
+        GD.Print($"AUTOMATION {(auto ? "OK" : "FAIL")}: hired={hired} techDid={techDid} faultNeedsKit={needsKit} roadGate={roadGate} faultsLeft={Sim.State.Faults.Count}");
         // --- new infrastructure: build the whole pole line to the farm, pole by span ---
         Sim.State.Cash += 2000;
         bool lineBuilt = _lines.Count > 0;
@@ -617,6 +707,7 @@ public partial class GameRoot : Node3D
         for (int i = 0; i < 10 && (shown is null || _town.Lots.First(l => l.Lot.Id == shown.LotId).Install is null); i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }
         if (shown is not null && _town.Lots.First(l => l.Lot.Id == shown.LotId) is { Install: { } site } home)
         {
+            if (_roadBarrier is not null) await Shot("-barrier", _roadBarrier.ToGlobal(new Vector3(5, 2.2f, -14)), _roadBarrier.ToGlobal(new Vector3(0, 1.2f, 0)));
             await Shot("-van", _van.ToGlobal(new Vector3(2.6f, 2.0f, 5.2f)), _van.ToGlobal(new Vector3(0, 1.2f, 1.6f)));
             home.Door.OnUse!();
             var order = site.WorkOrder.ToList();

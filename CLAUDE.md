@@ -4,7 +4,7 @@
 
 First-person, open-world telecom business sim, 1983–2035, set on **one small planet** (2.5 km radius, ~16 km lap) that you walk, drive, sail and fly around, and eventually launch satellites from. You start alone wiring a frame in a rented room and end up running infrastructure millions depend on. **The core idea: the job itself changes as you play.** Verbs you do by hand become delegated, then automated, and the interface you see goes from paper to terminal to database to dashboard.
 
-**Starting a session? Read `docs/NEXT_SESSION.md` first.** Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`.
+**Starting a session? Read `docs/NEXT_SESSION.md` first.** Models, textures, characters and the trailer plan: `docs/ASSET_LIST.md`. Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`.
 
 ## Layout
 
@@ -81,6 +81,8 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 - `game/content/lots.json`: every building someone lives or works in (site, east/south offsets, resident, archetype, fee). `TownBuilder` builds them; `GameRoot.LotAction` decides what each door offers from sim state.
 - `Telo.Sim/Town/TownRules.cs`: door-knocking, odd jobs (cash + goodwill), modem stock, fitting sockets. `Guidance.Next` gives the "what next" line and target lot (shown as ▼ above the building; `$` marks an odd job).
 - **One thing at a time** (`Telo.Sim/Town/Onboarding.cs`): a new game introduces the answering machine → the install → the frame → an odd job → door-knocking, then everything (`Free`). The step is derived from the save, never stored. It gates odd-job offers, knocking, word-of-mouth calls, and which HUD numbers show; `Guidance.Next` explains each step once. When adding a new system, decide which step first shows it.
+- **PIP's speech bubbles** (`game/scripts/UI/PipTips.cs`, `Hud.Say`): one short bubble the first time the player does each thing, fired from the action itself (pick up kit, first step, bodge, test, sign-off, hire, first fault…). The owner approved bubbles as an exception to "no overlays". Keep the top "▶ next" line short; explanations belong in a bubble. New systems should add a line here.
+- **Held back until needed** (`Onboarding`): the Almanac and notebook open at `Free` (`DeskOpen`); the road out of town has a council barrier and no farm odd jobs until the first hire or first pole (`RoadOpen`).
 - Install flow: sign up (knock or answering machine) → hands-on install at their house (uses a modem from Sol's Electronics) → wire at the frame → billed monthly.
 - The house install is `Telo.Sim/Minigames/Install/InstallJob.cs` (drop wire → junction box → socket → skirting cable → modem → optional dial-tone test). `[E]` does a step properly, `[R]` bodges it (latent defect). `game/scripts/World/InstallSite.cs` only shows the job as click points on and in the house. A half-done job is not saved; it restarts.
 - **Van kit** (`game/scripts/Player/Cargo.cs`): cable drum, ladder, toolbox and a boxed modem ride on the van. `[E]` picks one up (one thing in your hands; drum and ladder slow you), `[G]` puts it down, using the van puts it back. Kit is "on site" when held or lying within 6 m of you. What each step needs is a sim rule (`InstallJob.Needs`, `TownRules.RepairNeeds`, the `Tools` flags). Not saved: after a load it is all back on the van.

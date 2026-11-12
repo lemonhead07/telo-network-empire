@@ -16,17 +16,17 @@ public static class Guidance
         switch (Onboarding.Current(s, c))
         {
             case OnboardingStep.Enquiry when s.MessagesWaiting > 0:
-                return ("The answering machine in your room is blinking. Play it: someone wants a line.", null);
+                return ("Play the answering machine in your room.", null);
             case OnboardingStep.Install when s.Modems > 0 && s.Customers.FirstOrDefault(x => x.Live && !x.SocketFitted) is { } firstCust:
-                return ($"Your first customer. Drive to {firstCust.Name}'s, carry the kit from the van, knock, and follow the yellow markers.", firstCust.LotId);
+                return ($"Install the line at {firstCust.Name}'s house.", firstCust.LotId);
             case OnboardingStep.Frame:
-                return ("The house is wired. Back in your room, work the frame on the wall to switch the line on.", null);
+                return ("Wire the new line at the frame in your room.", null);
             case OnboardingStep.OddJob:
                 return BestJob(s, c) is { } firstJob
-                    ? ($"One subscriber won't pay the rent. A neighbour has an odd job: {firstJob.Title.ToLowerInvariant()} at {Who(c, firstJob)}'s (${firstJob.Pay}). Look for the $.", firstJob.LotId)
-                    : ("One subscriber won't pay the rent. Sleep until morning: someone will ring with an odd job.", null);
+                    ? ($"Odd job: {firstJob.Title.ToLowerInvariant()} at {Who(c, firstJob)}'s (${firstJob.Pay}).", firstJob.LotId)
+                    : ("Sleep until morning: someone will ring with an odd job.", null);
             case OnboardingStep.Knock when TownRules.Prospects(s, c).FirstOrDefault(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay) is { } firstDoor:
-                return ($"Customers don't all ring you. Knock on a door and ask: try {firstDoor.Resident}'s.", firstDoor.Id);
+                return ($"Knock on a door to find a customer. Try {firstDoor.Resident}'s.", firstDoor.Id);
         }
 
         if (s.Faults.FirstOrDefault() is { } fault && s.Customers.FirstOrDefault(x => x.Id == fault.CustomerId) is { } faulty)
@@ -43,7 +43,7 @@ public static class Guidance
         var needSocket = tech ? null : s.Customers.FirstOrDefault(x => x.Live && !x.Installed && !x.SocketFitted);
         if (needSocket is not null)
             return s.Modems > 0
-                ? ($"Install the line at {needSocket.Name}'s house (knock, then work outside and in).", needSocket.LotId)
+                ? ($"Install the line at {needSocket.Name}'s house.", needSocket.LotId)
                 : s.Cash >= TownRules.ModemPrice
                     ? ($"Buy a modem at the electronics shop (${TownRules.ModemPrice}).", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id)
                     : BestJob(s, c) is { } pj ? ($"You can't afford a modem. Earn cash: {pj.Title.ToLowerInvariant()} at {Who(c, pj)}'s (${pj.Pay}).", pj.LotId)

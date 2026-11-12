@@ -43,6 +43,53 @@ public partial class Hud : Control
         _prompt = Make(Vector2.Zero, HorizontalAlignment.Center, 20);
         _prompt.AnchorLeft = 0.5f; _prompt.AnchorRight = 0.5f; _prompt.AnchorTop = 0.5f; _prompt.AnchorBottom = 0.5f;
         _prompt.OffsetLeft = -400; _prompt.OffsetRight = 400; _prompt.OffsetTop = 30;
+        BuildBubble();
+    }
+
+    // ---- PIP's speech bubble -------------------------------------------------------------------
+    private PanelContainer _bubble = null!;
+    private Label _bubbleText = null!;
+    private readonly Queue<string> _bubbleQueue = new();
+    private float _bubbleLeft;
+
+    private void BuildBubble()
+    {
+        _bubble = new PanelContainer { Visible = false, MouseFilter = MouseFilterEnum.Ignore };
+        var box = new StyleBoxFlat { BgColor = new Color(0.96f, 0.93f, 0.82f, 0.96f), BorderColor = new Color(0.16f, 0.14f, 0.1f) };
+        box.SetBorderWidthAll(3); box.SetCornerRadiusAll(16); box.SetContentMarginAll(14);
+        box.CornerRadiusBottomLeft = 2; // the corner that points at the speaker
+        _bubble.AddThemeStyleboxOverride("panel", box);
+        _bubble.AnchorLeft = 0.5f; _bubble.AnchorRight = 0.5f; _bubble.AnchorTop = 1; _bubble.AnchorBottom = 1;
+        _bubble.OffsetLeft = -330; _bubble.OffsetRight = 330; _bubble.OffsetBottom = -210; _bubble.GrowVertical = GrowDirection.Begin;
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 12);
+        _bubble.AddChild(row);
+        var who = new Label { Text = "PIP", VerticalAlignment = VerticalAlignment.Top };
+        who.AddThemeFontSizeOverride("font_size", 20);
+        who.AddThemeColorOverride("font_color", new Color(0.1f, 0.45f, 0.4f));
+        row.AddChild(who);
+        _bubbleText = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(560, 0) };
+        _bubbleText.AddThemeFontSizeOverride("font_size", 19);
+        _bubbleText.AddThemeColorOverride("font_color", new Color(0.12f, 0.1f, 0.08f));
+        row.AddChild(_bubbleText);
+        AddChild(_bubble);
+    }
+
+    /// <summary>PIP says something. Lines queue so they never talk over each other.</summary>
+    public void Say(string text) => _bubbleQueue.Enqueue(text);
+    public bool Speaking => _bubble.Visible;
+
+    public override void _Process(double delta)
+    {
+        _bubbleLeft -= (float)delta;
+        if (_bubbleLeft > 0) return;
+        if (_bubbleQueue.Count > 0)
+        {
+            _bubbleText.Text = _bubbleQueue.Dequeue();
+            _bubble.Visible = true;
+            _bubbleLeft = Mathf.Clamp(_bubbleText.Text.Length * 0.07f, 4.5f, 9f); // reading time
+        }
+        else _bubble.Visible = false;
     }
 
     public void Refresh(Simulation sim, string? prompt, float hour, string where, string next)
