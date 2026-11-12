@@ -389,6 +389,8 @@ public partial class GameRoot : Node3D
                 _installs.Remove(v.Lot.Id); // the technician got there first
                 v.Install.ShowFitted();
             }
+            // Whatever else happens, you are never shut in: a door with you behind it opens.
+            if (!v.DoorOpen && Indoors(v, playerPos, 0)) OpenDoor(v, true);
             // The door closes behind you: only once the job is signed off, you have stepped off the doorstep, and none of your kit is still indoors.
             if (v.DoorOpen && !_installs.ContainsKey(v.Lot.Id) && !Indoors(v, playerPos, 1.1f)
                 && !_cargo.Items.Any(i => i.Where == Carryable.Place.Ground && Indoors(v, i.GlobalPosition, 0))) OpenDoor(v, false);
@@ -603,6 +605,12 @@ public partial class GameRoot : Node3D
             _player.GlobalTransform = _town.PlayerSpawn;
             await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
             bool closedBehind = !home.DoorOpen;
+            _player.GlobalPosition = home.Body.ToGlobal(new Vector3(0, 0.4f, 0));   // back inside a closed, finished house
+            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+            bool neverTrapped = home.DoorOpen;
+            _player.GlobalTransform = _town.PlayerSpawn;
+            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+            closedBehind &= neverTrapped && !home.DoorOpen;
             GD.Print($"DOOR {(stayedOpen && closedBehind ? "OK" : "FAIL")}: stayedOpenWhileInside={stayedOpen} closedAfterLeaving={closedBehind}");
             house = stayedOpen && closedBehind && carried && walkedIn && first!.SocketFitted && site.Fitted && Sim.State.Defects.All(d => d.Source != "install");
             GD.Print($"HOUSE {(house ? "OK" : "FAIL")}: walkedIn={walkedIn} at {inside} fitted={first.SocketFitted}");
