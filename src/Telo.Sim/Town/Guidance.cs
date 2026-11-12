@@ -36,6 +36,14 @@ public static class Guidance
         if (s.MessagesWaiting > 0) return ($"Play the answering machine in your room ({s.MessagesWaiting} waiting).", null);
         if (BestJob(s, c) is { } job && (s.Cash < 150 || !TownRules.Prospects(s, c).Any(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay)))
             return ($"Odd job: {job.Title.ToLowerInvariant()} at {Who(c, job)}'s (${job.Pay}).", job.LotId);
+        // hands free: time to build something
+        if (tech && c.Premises.Values.FirstOrDefault(p => p.PoleLine is not null && p.Act <= s.ActIndex + 1 && Ledger.LedgerRules.StatusOf(s, p.Id) != PromiseStatus.Served) is { } far)
+        {
+            var line = Build.LineRules.ProgressOf(s, far.Id);
+            return (line.Strung < line.Planted - 1
+                ? $"Pole line to {far.Name}: string the next span (cable drum and ladder)."
+                : $"Pole line to {far.Name}: plant pole {line.Planted + 1} along the farm road (poles are on the van, ${far.PoleLine!.PoleCost} each).", null);
+        }
         var prospect = TownRules.Prospects(s, c).FirstOrDefault(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay);
         if (prospect is not null) return ($"Knock on doors to find customers. Try {prospect.Resident}'s.", prospect.Id);
         if (BestJob(s, c) is { } any) return ($"Odd job: {any.Title.ToLowerInvariant()} at {Who(c, any)}'s (${any.Pay}).", any.LotId);

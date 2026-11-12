@@ -37,13 +37,13 @@ public sealed class Cargo
 
     public static string Name(Tools t) => t switch
     {
-        Tools.CableDrum => "cable drum", Tools.Ladder => "ladder", Tools.Toolbox => "toolbox", Tools.ModemBox => "boxed modem", _ => "kit",
+        Tools.CableDrum => "cable drum", Tools.Ladder => "ladder", Tools.Toolbox => "toolbox", Tools.ModemBox => "boxed modem", Tools.Pole => "pole", _ => "kit",
     };
 
     /// <summary>"the cable drum and the ladder" for a set of missing kit.</summary>
     public static string Names(Tools set)
     {
-        var names = new[] { Tools.CableDrum, Tools.Ladder, Tools.Toolbox, Tools.ModemBox }.Where(t => (set & t) != 0).Select(t => "the " + Name(t)).ToList();
+        var names = new[] { Tools.Pole, Tools.CableDrum, Tools.Ladder, Tools.Toolbox, Tools.ModemBox }.Where(t => (set & t) != 0).Select(t => "the " + Name(t)).ToList();
         return names.Count <= 1 ? string.Concat(names) : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
     }
 
@@ -56,9 +56,16 @@ public sealed class Cargo
         var ladder = new LowPoly().Box(new Vector3(-0.2f, 1.5f, 0), new Vector3(0.05f, 3f, 0.05f), wood).Box(new Vector3(0.2f, 1.5f, 0), new Vector3(0.05f, 3f, 0.05f), wood);
         for (float y = 0.3f; y < 3f; y += 0.3f) ladder.Box(new Vector3(0, y, 0), new Vector3(0.4f, 0.03f, 0.04f), wood * 0.9f);
         Add(Tools.Ladder, true, ladder, new Vector3(0.6f, 3f, 0.3f), new Vector3(0, 1.5f, 0),
-            van: new Transform3D(new Basis(Vector3.Right, -Mathf.Pi / 2), new Vector3(0, 2.1f, 1.8f)),
+            van: new Transform3D(new Basis(Vector3.Right, -Mathf.Pi / 2), new Vector3(-0.3f, 2.1f, 1.8f)),
             held: new Transform3D(new Basis(Vector3.Right, -0.25f), new Vector3(0.55f, 0.15f, -0.35f)),
             ground: new Transform3D(new Basis(Vector3.Right, -0.2f), Vector3.Zero));
+
+        // a line pole: there are plenty on the van; planting one puts the next on the rack
+        var pole = new LowPoly().Cylinder(Vector3.Zero, 0.12f, 0.09f, 6f, 6, new Color(0.33f, 0.24f, 0.16f));
+        Add(Tools.Pole, true, pole, new Vector3(0.4f, 6f, 0.4f), new Vector3(0, 3f, 0),
+            van: new Transform3D(new Basis(Vector3.Right, -Mathf.Pi / 2), new Vector3(0.4f, 2.16f, 3.1f)),
+            held: new Transform3D(new Basis(Vector3.Right, -Mathf.Pi / 2 + 0.12f), new Vector3(0.42f, 1.4f, 2.4f)),
+            ground: new Transform3D(new Basis(Vector3.Right, -Mathf.Pi / 2), new Vector3(0, 0.12f, 0.5f)));
 
         var drum = new LowPoly().Cylinder(new Vector3(0, 0, 0), 0.24f, 0.24f, 0.04f, 8, wood).Cylinder(new Vector3(0, 0.04f, 0), 0.15f, 0.15f, 0.26f, 8, dark)
             .Cylinder(new Vector3(0, 0.3f, 0), 0.24f, 0.24f, 0.04f, 8, wood);

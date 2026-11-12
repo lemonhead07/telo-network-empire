@@ -1,5 +1,5 @@
 [
-  { "id": "prem-adeyemi-farm", "name": "Ruth Adeyemi (Hollow Farm)", "reason": "distance", "costToServe": 350, "act": 1,
+  { "id": "prem-adeyemi-farm", "name": "Ruth Adeyemi (Hollow Farm)", "reason": "distance", "costToServe": 350, "act": 1, "poleLine": { "road": "road-town-farm", "spacingM": 60, "poleCost": 15 },
     "story": "Three miles of pole line past the last subscriber. She has asked politely twice." },
   { "id": "prem-pell", "name": "Mr. Pell", "reason": "just past the limit", "costToServe": 180, "act": 2,
     "story": "His house is 40 metres beyond what the modem bank can reach. He measured it himself." },

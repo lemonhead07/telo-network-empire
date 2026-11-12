@@ -65,6 +65,13 @@ public sealed class Fault
     public int OpenedDay { get; set; }
 }
 
+/// <summary>How far a hand-built pole line has got.</summary>
+public sealed class LineProgress
+{
+    public int Planted { get; set; }
+    public int Strung { get; set; }
+}
+
 public sealed class PromiseRecord
 {
     public PromiseStatus Status { get; set; }
@@ -77,7 +84,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -118,6 +125,8 @@ public sealed class GameState
     /// <summary>Customers connected by staff without you (v2).</summary>
     public int TechInstalls { get; set; }
     public int FaultsFixed { get; set; }
+    /// <summary>Pole lines under construction, by premise id (v3).</summary>
+    public Dictionary<string, LineProgress> Lines { get; set; } = new();
     public List<GameEvent> Log { get; set; } = new();
     public int NextId { get; set; } = 1;
 

@@ -16,6 +16,7 @@ public static class SaveCodec
             throw new InvalidDataException($"Save is from a newer build (v{s.Version}).");
         // Migrate older versions one step at a time (v1 -> v2 -> ...).
         if (s.Version < 2) { s.Faults ??= new(); s.TechInstalls = 0; } // v2: surfaced faults became repair visits; staff installs are counted
+        if (s.Version < 3) s.Lines ??= new(); // v3: pole lines built by hand
         s.Version = GameState.CurrentVersion;
         return s;
     }

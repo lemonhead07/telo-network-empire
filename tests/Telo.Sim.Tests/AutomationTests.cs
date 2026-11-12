@@ -76,3 +76,28 @@ public class AutomationTests
         Assert.NotNull(s.Faults);
     }
 }
+
+public class PoleLineTests
+{
+    [Fact]
+    public void ThePoleLineIsBuiltPoleBySpan_AndConnectsTheFarm()
+    {
+        var sim = TestContent.NewGame();
+        var gen = new Telo.Sim.Planet.PlanetGen(1983);
+        var farm = sim.Content.Premises["prem-adeyemi-farm"];
+        var sites = Telo.Sim.Build.LineRules.PoleSites(gen, farm);
+        Assert.InRange(sites.Count, 4, 40);
+        Assert.Equal(sites, Telo.Sim.Build.LineRules.PoleSites(gen, farm));
+        Assert.False(Telo.Sim.Ledger.LedgerRules.Serve(sim.State, sim.Content, farm.Id)); // can't be bought any more
+        sim.State.Cash = 1000;
+        Assert.False(Telo.Sim.Build.LineRules.Plant(sim.State, gen, farm, Tools.Ladder));  // no pole to hand
+        Assert.False(Telo.Sim.Build.LineRules.String(sim.State, sim.Content, gen, farm, Tools.All)); // nothing to string between
+        for (int i = 0; i < sites.Count; i++) Assert.True(Telo.Sim.Build.LineRules.Plant(sim.State, gen, farm, Tools.Pole));
+        Assert.Equal(1000 - sites.Count * farm.PoleLine!.PoleCost, sim.State.Cash);
+        for (int i = 0; i < sites.Count; i++) Assert.True(Telo.Sim.Build.LineRules.String(sim.State, sim.Content, gen, farm, Tools.All));
+        Assert.Equal(PromiseStatus.Served, Telo.Sim.Ledger.LedgerRules.StatusOf(sim.State, farm.Id));
+        Assert.Contains(sim.State.Customers, c => c.PremiseId == farm.Id);
+        var reloaded = SaveCodec.FromJson(SaveCodec.ToJson(sim.State));
+        Assert.Equal(sites.Count, reloaded.Lines[farm.Id].Strung);
+    }
+}

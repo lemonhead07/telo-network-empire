@@ -21,12 +21,13 @@ public static class LedgerRules
         return true;
     }
 
-    public static bool Serve(GameState s, ContentDb c, string premiseId)
+    /// <param name="alreadyBuilt">The line was built by hand (see Build/LineRules), so there is no fee to pay.</param>
+    public static bool Serve(GameState s, ContentDb c, string premiseId, bool alreadyBuilt = false)
     {
-        if (!c.Premises.TryGetValue(premiseId, out var p) || StatusOf(s, premiseId) == PromiseStatus.Served || s.Cash < p.CostToServe)
-            return false;
+        if (!c.Premises.TryGetValue(premiseId, out var p) || StatusOf(s, premiseId) == PromiseStatus.Served) return false;
+        if (!alreadyBuilt && (s.Cash < p.CostToServe || p.PoleLine is not null)) return false; // a pole line can't be bought, only built
         bool late = StatusOf(s, premiseId) == PromiseStatus.Broken;
-        s.Cash -= p.CostToServe;
+        if (!alreadyBuilt) s.Cash -= p.CostToServe;
         s.Ledger[premiseId] = new PromiseRecord { Status = PromiseStatus.Served, DueDay = s.Day };
         s.Customers.Add(new Customer { Id = s.NewId("cust"), Name = p.Name, Archetype = "lastmile", MonthlyFee = LifelineFee, JoinedDay = s.Day, PremiseId = p.Id });
         s.Emit(EventKind.Ledger, late ? $"{p.Name} is connected. Late, but connected." : $"{p.Name} is connected.", premiseId);

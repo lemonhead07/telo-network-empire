@@ -1,6 +1,6 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "van kit, the technician, and repair visits". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-12, commit "the pole line to Hollow Farm". Everything is pushed; the working tree is clean.*
 
 ## Where things stand (the demo loop so far)
 1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
@@ -10,13 +10,15 @@
 
 Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and ladder are two-handed and slow you. Parking close matters.
 
+5. **New infrastructure:** with installs running themselves, the "what next" line sends the player to build the pole line to Hollow Farm: 14 poles beside the farm road. Take a pole off the van roof, plant it at the yellow marker ($15, 30 min), then string each span from the blue marker (cable drum and ladder, 15 min). The last span reaches the farmhouse and connects Ruth Adeyemi. The old "Connect them ($350)" button is gone for her: this line can only be built.
+
 ## Plan for next time (in order)
-1. **New infrastructure loop: the pole line to Hollow Farm.** Now that installs run themselves, the player's hands are free for building. Carry poles/cable on the van, plant poles along the farm road, string the line, connect Ruth (replaces the "Connect them ($350)" button in the notebook).
-2. **Repairs hands-on:** the fault names a stage; fix it at that point on the house (reuse `InstallSite` click points) instead of one press at the door.
-3. **The technician as a person:** a named placeholder figure in your room and at the house they are working on, with one line of dialogue.
+1. **Repairs hands-on:** the fault names a stage; fix it at that point on the house (reuse `InstallSite` click points) instead of one press at the door.
+2. **The technician as a person:** a named placeholder figure in your room and at the house they are working on, with one line of dialogue.
+3. **Ruth's farmhouse install:** make the farmhouse enterable and finish her line with the same six-stage install instead of connecting on the last span.
 4. **Second automation stage hooks:** bookkeeper (billing) and receptionist (support) can be bought but change nothing yet. Give each a manual verb first, then the hire.
-5. Odd jobs hands-on; synthesised sound for the install; enterable shop.
-6. Economy pass: wage, rent, fees and odd-job pay are placeholders.
+5. **More to build:** a second pole-line destination (fishing village or mountain hamlet) needs a new `Site` and road in `PlanetGen`.
+6. Odd jobs hands-on; synthesised sound; enterable shop; economy pass.
 
 ## Rules to keep
 - Outcomes and defects are decided in `src/Telo.Sim`; Godot only shows and drives it.
@@ -25,6 +27,7 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 
 ## Known rough edges
 - A half-finished install and anything you put down are forgotten on save/load (the job restarts, the kit is back on the van).
+- Pole line: poles go in fixed sites in order; you can't choose the route. Wires are straight (no sag).
 - Repair is a single press at the door (needs the toolbox with you).
 - The technician is invisible; you only see the results.
 - Act 1 itself still waits for the June 1984 announcement; the first hire no longer does.

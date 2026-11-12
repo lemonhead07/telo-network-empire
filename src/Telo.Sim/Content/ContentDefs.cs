@@ -76,6 +76,14 @@ public sealed record WorkKindDef
     public required List<WorkStageDef> Stages { get; init; }
 }
 
+/// <summary>A line the player builds by hand to reach a premise: poles along a planet road.</summary>
+public sealed record PoleLineDef
+{
+    public required string Road { get; init; }
+    public double SpacingM { get; init; } = 60;
+    public long PoleCost { get; init; } = 15;
+}
+
 public sealed record PremiseDef
 {
     public required string Id { get; init; }
@@ -84,6 +92,8 @@ public sealed record PremiseDef
     public long CostToServe { get; init; }
     public int Act { get; init; }
     public string Story { get; init; } = "";
+    /// <summary>Set when reaching them means building a pole line yourself rather than paying a fee.</summary>
+    public PoleLineDef? PoleLine { get; init; }
 }
 
 public enum LotKind { House, Shop, Farm }

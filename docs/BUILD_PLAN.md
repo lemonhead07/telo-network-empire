@@ -19,7 +19,7 @@ Odd jobs at neighbours' doors for cash; door-knocking to win customers; modems b
 - [ ] Replace the HUD strip with in-world objects (wall calendar, cash tin, pager, fax roll).
 - [ ] The frame as real terminal blocks and wires rather than a printed work sheet.
 - [x] Go inside houses (2026-11-12). [ ] Go inside the shop and the farmhouse.
-- [ ] Connect Hollow Farm for real: poles along the road, then Ruth's line.
+- [x] Connect Hollow Farm for real: 14 poles planted and strung by hand along the farm road (2026-11-12).
 
 ### Planet backlog (build features on top of the world)
 - [x] First road (town → Hollow Farm), fast on-road / slow off-road. [ ] A road *network* with junctions and curves.

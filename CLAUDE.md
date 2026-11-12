@@ -85,6 +85,7 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 - **Van kit** (`game/scripts/Player/Cargo.cs`): cable drum, ladder, toolbox and a boxed modem ride on the van. `[E]` picks one up (one thing in your hands; drum and ladder slow you), `[G]` puts it down, using the van puts it back. Kit is "on site" when held or lying within 6 m of you. What each step needs is a sim rule (`InstallJob.Needs`, `TownRules.RepairNeeds`, the `Tools` flags). Not saved: after a load it is all back on the van.
 - **First automation stage** (`work.json` → `install` stage 1, $300, needs 4 paying subscribers): once hired, the technician connects one waiting customer a day on their own (`Simulation.TechnicianDay`), needs modems in stock, and is right 85% of the time. The player can still do any install by hand.
 - **Faults**: a latent defect that surfaces at a real address becomes a `Fault` in `GameState.Faults`. The line stays bad (satisfaction −2 a day) until the player drives out with the toolbox and fixes it at the door (`TownRules.Repair`). `!` marks the house.
+- **Pole lines** (`Telo.Sim/Build/LineRules.cs`, `game/scripts/World/PoleLineView.cs`): a premise with `poleLine` in `premises.json` can't be bought, only built. Pole sites run beside a `PlanetGen` road; plant each pole (needs a pole from the van, $15, 30 min), then string each span (cable drum + ladder, 15 min). The last span connects the premise. Progress is `GameState.Lines` (save version 3).
 - Houses (`LotKind.House`) are hollow and enterable: the door opens when the resident lets you in for an install. The shop and farm are still solid boxes.
 - Work costs in-game time via `GameRoot.SpendHours`.
 - `PlanetGen.Roads`: graded routes that cut/fill terrain; `IsPaved` makes the van full speed on roads and in settlements, half speed off-road. Road surfaces are ray-cast onto the terrain (`TownBuilder.BuildRoads`).
@@ -98,7 +99,7 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 
 ## Sim architecture cheatsheet
 
-- `World/Simulation.cs`: facade. `NewGame`, `AdvanceDay`, `TakeEnquiry`, `FrameWorkOrder`, `NewFrameJob`, `ApplyFrameOutcome`, `NewInstallJob`, `ApplyInstallOutcome`. Saves are at version 2.
+- `World/Simulation.cs`: facade. `NewGame`, `AdvanceDay`, `TakeEnquiry`, `FrameWorkOrder`, `NewFrameJob`, `ApplyFrameOutcome`, `NewInstallJob`, `ApplyInstallOutcome`. Saves are at version 3.
 - `World/GameState.cs`: all mutable state (serialisable).
 - `Almanac/AlmanacRules.cs`: research is recall. Archive (earned from your network) is spent to recall future tech. Recalling it early adds Echo, and too much Echo triggers a Correction (the entry drifts).
 - `Work/WorkRules.cs`: earned automation. Manual → Delegated → Automated, plus the interface tier.

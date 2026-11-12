@@ -51,7 +51,12 @@ public partial class NotebookView : ModalView
             Body.AddChild(row);
             if (st is PromiseStatus.Unserved)
                 Btn(row, "Promise a line within 90 days", () => { LedgerRules.Promise(s, c, p.Id, s.Day + 90); Rebuild(); });
-            if (st is not PromiseStatus.Served)
+            if (st is not PromiseStatus.Served && p.PoleLine is not null)
+            {
+                var line = Telo.Sim.Build.LineRules.ProgressOf(s, p.Id);
+                Text(row, $"  No fee buys this. Build the pole line along the road yourself: {line.Planted} pole(s) planted, {line.Strung} span(s) strung. Poles are on the van, ${p.PoleLine.PoleCost} each.", 14);
+            }
+            else if (st is not PromiseStatus.Served)
                 Btn(row, $"Connect them (${p.CostToServe})", () => { LedgerRules.Serve(s, c, p.Id); Rebuild(); }, s.Cash >= p.CostToServe);
         }
         CloseButton();

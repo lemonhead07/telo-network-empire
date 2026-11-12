@@ -79,7 +79,7 @@ public class SimulationTests
         sim.AdvanceDays(11);
         Assert.Equal(PromiseStatus.Broken, LedgerRules.StatusOf(sim.State, "prem-adeyemi-farm"));
         sim.State.Cash = 1000;
-        Assert.True(LedgerRules.Serve(sim.State, sim.Content, "prem-adeyemi-farm"));
+        Assert.True(LedgerRules.Serve(sim.State, sim.Content, "prem-adeyemi-farm", alreadyBuilt: true));
         Assert.Contains(sim.State.Customers, c => c.PremiseId == "prem-adeyemi-farm");
     }
 

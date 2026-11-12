@@ -2,6 +2,7 @@ using Godot;
 using Telo.Game.Player;
 using Telo.Game.UI;
 using Telo.Game.World;
+using Telo.Sim.Build;
 using Telo.Sim.Content;
 using Telo.Sim.Minigames.Install;
 using Telo.Sim.Planet;
@@ -37,6 +38,8 @@ public partial class GameRoot : Node3D
     private Town _town = null!;
     private Van _van = null!;
     private Cargo _cargo = null!;
+    private readonly List<Action> _lineRefresh = new();
+    private readonly List<(PremiseDef Premise, PoleLineView View)> _lines = new();
     /// <summary>Automated checks pretend all the kit is to hand.</summary>
     private bool _kitEverywhere;
     private Transform3D _cameraHome;
@@ -105,6 +108,58 @@ public partial class GameRoot : Node3D
     {
         for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
         TownBuilder.BuildRoads(_town.Root, _planet, GetWorld3D().DirectSpaceState);
+        foreach (var p in _content.Premises.Values) BuildPoleLine(p);
+    }
+
+    // ---- pole lines the player builds by hand --------------------------------------------------
+    private void BuildPoleLine(PremiseDef p)
+    {
+        var sites = LineRules.PoleSites(_planet, p);
+        if (sites.Count == 0) return;
+        var end = _town.Lots.FirstOrDefault(l => l.Lot.Premise == p.Id) is { } lot ? lot.Body.ToGlobal(new Vector3(-3.5f, 3f, 3.5f)) : PlanetBuilder.ToGodot(sites[^1]) * (float)_planet.RadiusM;
+        var view = new PoleLineView(_planet, sites, end, GetWorld3D().DirectSpaceState);
+        AddChild(view);
+        _lines.Add((p, view));
+        var s = Sim.State;
+        void Refresh()
+        {
+            var l = LineRules.ProgressOf(s, p.Id);
+            bool mine = l.Planted > 0 || _cargo.Held is { Tool: Tools.Pole } || WorkRules.Current(s, _content, "install").Mode != WorkMode.Manual;
+            view.Sync(l.Planted, l.Strung, mine);
+        }
+        _lineRefresh.Add(Refresh);
+
+        view.PlantSpot.Prompt = () =>
+        {
+            int k = LineRules.ProgressOf(s, p.Id).Planted + 1;
+            if (s.Cash < p.PoleLine!.PoleCost) return $"Pole {k} of {view.Count} goes here. A pole is ${p.PoleLine.PoleCost}; you have ${s.Cash}";
+            var missing = LineRules.PlantNeeds & ~KitOnSite();
+            return missing != Tools.None ? $"Pole {k} of {view.Count} goes here: bring {Cargo.Names(missing)} from the van"
+                : $"Plant pole {k} of {view.Count} ({LineRules.PlantMinutes} min, ${p.PoleLine.PoleCost})";
+        };
+        view.PlantSpot.CanUse = () => LineRules.CanPlant(s, _planet, p) && (LineRules.PlantNeeds & ~KitOnSite()) == Tools.None;
+        view.PlantSpot.OnUse = () =>
+        {
+            if (!LineRules.Plant(s, _planet, p, KitOnSite())) return;
+            SpendHours(LineRules.PlantMinutes / 60f);
+            if (_cargo.Items.FirstOrDefault(i => i.Tool == Tools.Pole && i.Where != Carryable.Place.Van) is { } used) _cargo.Stow(used); // the next pole is on the rack
+            Refresh();
+        };
+        view.StringSpot.Prompt = () =>
+        {
+            var missing = LineRules.StringNeeds & ~KitOnSite();
+            int k = LineRules.ProgressOf(s, p.Id).Strung + 1;
+            return missing != Tools.None ? $"Span {k} of {view.Count} is strung from here: you need {Cargo.Names(missing)}"
+                : k == view.Count ? $"String the last span, to {p.Name} ({LineRules.StringMinutes} min)" : $"String span {k} of {view.Count} to this pole ({LineRules.StringMinutes} min)";
+        };
+        view.StringSpot.CanUse = () => LineRules.CanString(s, _planet, p) && (LineRules.StringNeeds & ~KitOnSite()) == Tools.None;
+        view.StringSpot.OnUse = () =>
+        {
+            if (!LineRules.String(s, _content, _planet, p, KitOnSite())) return;
+            SpendHours(LineRules.StringMinutes / 60f);
+            Refresh();
+        };
+        Refresh();
     }
 
     // ---- the room: every "menu" is an object -------------------------------------------------
@@ -356,6 +411,7 @@ public partial class GameRoot : Node3D
             if (!AnyScreenOpen) RefreshIdleScreens();
             SyncHouses(_player.GlobalPosition);
             _cargo.Refresh();
+            foreach (var refresh in _lineRefresh) refresh();
         }
 
         if (targetLot is not null && _town.Lots.FirstOrDefault(l => l.Lot.Id == targetLot) is { } t)
@@ -507,9 +563,23 @@ public partial class GameRoot : Node3D
         _kitEverywhere = false;
         bool auto = hired && techDid && needsKit && Sim.State.Faults.Count == 0;
         GD.Print($"AUTOMATION {(auto ? "OK" : "FAIL")}: hired={hired} techDid={techDid} faultNeedsKit={needsKit} faultsLeft={Sim.State.Faults.Count}");
+        // --- new infrastructure: build the whole pole line to the farm, pole by span ---
+        Sim.State.Cash += 2000;
+        bool lineBuilt = _lines.Count > 0;
+        foreach (var (premise, view) in _lines)
+        {
+            bool needsPole = !view.PlantSpot.CanUse();
+            _kitEverywhere = true;
+            for (int i = 0; i < 200 && (view.PlantSpot.CanUse() || view.StringSpot.CanUse()); i++)
+                if (view.PlantSpot.CanUse()) view.PlantSpot.OnUse!(); else view.StringSpot.OnUse!();
+            _kitEverywhere = false;
+            bool served = Sim.State.Customers.Any(c => c.PremiseId == premise.Id);
+            lineBuilt &= needsPole && served;
+            GD.Print($"LINE {(needsPole && served ? "OK" : "FAIL")}: {premise.Name} poles={view.Count} needsPole={needsPole} served={served}");
+        }
         Sim.AdvanceDays(700);
         var reloaded = new Simulation(_content, SaveCodec.FromJson(SaveCodec.ToJson(Sim.State)));
-        bool ok = world && doors && paid && house && auto && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
+        bool ok = world && doors && paid && house && auto && lineBuilt && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
         GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: doors={doors} paid={paid} perfect={outcome.Perfect} {Sim.State.Date} act={Sim.State.ActIndex} subs={Sim.State.LiveSubscribers} cash={Sim.State.Cash}");
         GetTree().Quit(ok ? 0 : 1);
     }
@@ -560,6 +630,17 @@ public partial class GameRoot : Node3D
             for (int i = 2; i < 8; i++) order[i].OnUse!();
             await Shot("-house", L(2.6f, 1.7f, 2.6f), L(-3.2f, 0.7f, 0.6f));
             await Shot("-house2", L(-2.8f, 1.7f, 2.4f), L(2.5f, 0.9f, -2.2f));
+        }
+        // the pole line to the farm, part built
+        if (_lines.Count > 0)
+        {
+            var (_, line) = _lines[0];
+            _kitEverywhere = true;
+            Sim.State.Cash += 500;
+            for (int i = 0; i < 6; i++) line.PlantSpot.OnUse!();
+            for (int i = 0; i < 4; i++) line.StringSpot.OnUse!();
+            Vector3 a = line.PolePosition(1), b = line.PolePosition(5), u = a.Normalized();
+            await Shot("-poles", a + u * 4f + (a - b).Normalized() * 14f + (b - a).Cross(u).Normalized() * 9f, b + u * 4f);
         }
         await Shot("-orbit", (up + _town.Hq.GlobalBasis.X * 0.5f + _town.Hq.GlobalBasis.Z * 0.35f).Normalized() * (float)_planet.RadiusM * 3.3f, Vector3.Zero, Vector3.Up);
 
