@@ -1,5 +1,7 @@
 # Build Plan
 
+> **2026-11-12:** the order of work after M0.6 is now set by `docs/EXPANSION_DESIGN.md` (rounds and phases A–J). The milestones below are kept for history and for the release checkpoints (playtest, demo, Early Access).
+
 Each milestone ends playable, with green tests and `SMOKE OK`. Week counts assume one part-time developer working with AI help.
 
 ## M0 — Scaffold ✅ (done 2026-11-11)

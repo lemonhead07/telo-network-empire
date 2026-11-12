@@ -4,7 +4,7 @@
 
 First-person, open-world telecom business sim, 1983–2035, set on **one small planet** (2.5 km radius, ~16 km lap) that you walk, drive, sail and fly around, and eventually launch satellites from. You start alone wiring a frame in a rented room and end up running infrastructure millions depend on. **The core idea: the job itself changes as you play.** Verbs you do by hand become delegated, then automated, and the interface you see goes from paper to terminal to database to dashboard.
 
-**Starting a session? Read `docs/NEXT_SESSION.md` first.** Models, textures, characters and the trailer plan: `docs/ASSET_LIST.md`. Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`.
+**Starting a session? Read `docs/NEXT_SESSION.md` first.** **What the game becomes after the first hour, and the order to build it: `docs/EXPANSION_DESIGN.md`** (the five-job loop, the Board and line capacity, places on the planet, rounds, phases A–J). Models, textures, characters and the trailer plan: `docs/ASSET_LIST.md`. Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`.
 
 ## Layout
 

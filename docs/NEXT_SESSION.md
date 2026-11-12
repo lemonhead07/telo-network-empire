@@ -1,6 +1,6 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "god keys, faster pay, hands-on odd jobs". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-12, commit "expansion design". Everything is pushed; the working tree is clean.*
 
 ## Where things stand (the demo loop so far)
 1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
@@ -22,13 +22,13 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 
 **The biggest gap now: the town runs out.** 12 houses, a shop and a farm is about 40 minutes of content. After that the only thing left is waiting for June 1984. The next age (Act 1, the bulletin board) has data but no gameplay. That, or a second settlement, is what makes "overlap and pace increase between rounds" real.
 
-## Plan for next time (in order)
-1. **Start the art** from `docs/ASSET_LIST.md`, step 1: a Blender-scripted house exterior with a nameplate (removes the floating door text), the van, and the five carried items. Set up `tools/` for Blender scripts and `game/assets/` for `.glb` output, and update the "no imported models" line in `CLAUDE.md`.
-2. **Residents:** one base person, 12 variations, speech bubbles above heads, simple walking between home, street and shop.
-3. **The technician as a person**, and hands-on repairs at the faulty point on the house.
-4. **Sound**, synthesised.
-5. **Review pass, part by part** (the owner asked for more detail in each): install step feedback, frame readability, shop counter, odd jobs hands-on.
-6. Then the trailer mode (`--trailer`), following the shot list.
+## Plan for next time
+**Follow `docs/EXPANSION_DESIGN.md`.** It was written with the owner on 2026-11-12 and replaces the earlier ad-hoc list. Its decisions D17–D21 are *recommendations awaiting the owner's yes*; check whether they have been answered before building on them.
+
+1. **Phase A, Unblock:** Act 1 startable early by recalling its page from the Almanac (D17), the pager, saving mid-job, first money pass.
+2. **Phase B, Carry:** a network model in the sim, evening calls, engaged tones, line lamps and tally on the frame, line cards.
+3. **Phase C, The Board**, then **D, Count and listen** (completes Round 1).
+4. Art track alongside, from `docs/ASSET_LIST.md`: house exterior, van and kit after phase B.
 
 ## Rules to keep
 - Outcomes and defects are decided in `src/Telo.Sim`; Godot only shows and drives it.
