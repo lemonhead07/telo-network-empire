@@ -96,12 +96,15 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 - Work costs in-game time via `GameRoot.SpendHours`.
 - `PlanetGen.Roads`: graded routes that cut/fill terrain; `IsPaved` makes the van full speed on roads and in settlements, half speed off-road. Road surfaces are ray-cast onto the terrain (`TownBuilder.BuildRoads`).
 
-## Assets: everything is made in code
+## Assets: prototype in code, then model in Blender
 
-- **Models:** `LowPoly` builder (boxes, cylinders/cones, gems, gable roofs), flat-shaded and vertex-coloured, sharing one material. Style: low-poly with small details (window trim, chimneys, stripes, per-facet colour jitter). Colours are sRGB.
-- **No imported textures or model files yet.** Sound should be synthesised in code too (tones, clicks, noise) when audio work starts.
-- **Blender is planned for later models.** The owner wants to build models in Blender in future; the cloud environment has Blender installed (`blender -b --python script.py`, export `.glb` into `game/`). Until that work starts, keep building props in code.
-- Room interiors still use `RoomBuilder.Box` primitives; migrate them to `LowPoly` when touched.
+Decision D15 (changed 2026-11-12). Two stages:
+
+- **Prototype in code.** Every new thing ships first as a labelled box built with the `LowPoly` builder (boxes, cylinders/cones, gems, gable roofs; flat-shaded, vertex-coloured, one shared material, sRGB colours). Gameplay never waits for art.
+- **Then a real model.** Models and textures are made in **Blender from Python scripts** (`blender -b --python tools/<name>.py`), exported as `.glb` into `game/assets/`, and imported by Godot (`godot --headless --path game --import`). Scripts are committed so any model can be regenerated. Small textures (128–512 px) are allowed. What to make and in what order: `docs/ASSET_LIST.md`.
+- Style: low-poly, early-1980s small town, a few colours per object, small readable details (nameplate, dial, sticker).
+- **Sound is synthesised in code** (tones, clicks, noise) when audio work starts.
+- Room interiors still use `RoomBuilder.Box` primitives; migrate them when touched.
 
 ## Sim architecture cheatsheet
 
