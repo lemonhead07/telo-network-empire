@@ -1,0 +1,50 @@
+[
+  { "id": "prod-extension", "name": "Extension telephone", "pitch": "Could the telephone reach the kitchen as well?",
+    "price": 30, "cost": 8, "monthlyExtra": 1,
+    "steps": [
+      { "verb": "Run the cable to the next room", "clicks": 2, "minutes": 6, "needs": ["cableDrum"] },
+      { "verb": "Fit the extension socket", "clicks": 2, "minutes": 5, "needs": ["toolbox"] },
+      { "verb": "Ring one telephone from the other", "clicks": 1, "minutes": 3 } ],
+    "bodgeDefect": "an extension that only rings when the other one is off the hook" },
+
+  { "id": "prod-answerphone", "name": "Answering machine", "pitch": "I keep missing my sister. Can a machine answer it?",
+    "price": 55, "cost": 30, "archetypes": ["small-business", "family", "reliability-sensitive", "curious"],
+    "steps": [
+      { "verb": "Unbox it and wire it in", "clicks": 1, "minutes": 5, "needs": ["toolbox"] },
+      { "verb": "Record their greeting. Again. Once more", "clicks": 3, "minutes": 3 },
+      { "verb": "Ring it and leave a message", "clicks": 1, "minutes": 3 } ],
+    "bodgeDefect": "an answering machine that greets callers in your voice" },
+
+  { "id": "prod-bell", "name": "Loud outdoor bell", "pitch": "I never hear it from the garden.",
+    "price": 25, "cost": 6, "archetypes": ["tech-inexperienced", "family", "price-sensitive", "reliability-sensitive"],
+    "steps": [
+      { "verb": "Mount the bell under the eave", "clicks": 2, "minutes": 5, "needs": ["toolbox", "ladder"] },
+      { "verb": "Wire it back to the socket", "clicks": 1, "minutes": 5, "needs": ["cableDrum"] },
+      { "verb": "Ring it. Stand well back", "clicks": 1, "minutes": 2 } ],
+    "bodgeDefect": "an outdoor bell that rings for next door's calls too" },
+
+  { "id": "prod-secondline", "name": "Second line", "pitch": "One of us is always on it. We need another.",
+    "price": 45, "cost": 35, "monthlyExtra": 8, "callLengthPermille": 1400, "archetypes": ["small-business", "family", "gamer", "student"],
+    "steps": [
+      { "verb": "Clip a second drop wire", "clicks": 3, "minutes": 6, "needs": ["cableDrum", "ladder"] },
+      { "verb": "Fit the second socket", "clicks": 2, "minutes": 5, "needs": ["toolbox"] },
+      { "verb": "Test both lines at once", "clicks": 1, "minutes": 4 } ],
+    "bodgeDefect": "a second line that is really the first line twice" },
+
+  { "id": "prod-fax", "name": "Fax machine", "pitch": "A supplier wants orders 'by facsimile'. Whatever that is, I want one.",
+    "price": 150, "cost": 110, "monthlyExtra": 6, "archetypes": ["small-business"],
+    "steps": [
+      { "verb": "Carry it in and wire it up", "clicks": 1, "minutes": 6, "needs": ["toolbox"] },
+      { "verb": "Feed in the paper roll", "clicks": 2, "minutes": 3 },
+      { "verb": "Send a test page to yourself", "clicks": 2, "minutes": 4 } ],
+    "bodgeDefect": "a fax machine that prints everything as one long grey stripe" },
+
+  { "id": "prod-fastmodem", "name": "2400 fast modem", "pitch": "I heard there's one twice as fast. Is that real?",
+    "price": 80, "cost": 45, "monthlyExtra": 4, "callLengthPermille": 500, "requiresEntry": "alm-2400",
+    "archetypes": ["gamer", "student", "curious", "small-business"],
+    "steps": [
+      { "verb": "Swap the old modem for the new one", "clicks": 1, "minutes": 5, "needs": ["toolbox"] },
+      { "verb": "Set the little switches on the back", "clicks": 2, "minutes": 4 },
+      { "verb": "Ring the Board and time it", "clicks": 1, "minutes": 4 } ],
+    "bodgeDefect": "a fast modem with its switches set to slow" }
+]

@@ -17,6 +17,12 @@ public static class SaveCodec
         // Migrate older versions one step at a time (v1 -> v2 -> ...).
         if (s.Version < 2) { s.Faults ??= new(); s.TechInstalls = 0; } // v2: surfaced faults became repair visits; staff installs are counted
         if (s.Version < 3) s.Lines ??= new(); // v3: pole lines built by hand
+        if (s.Version < 4) // v4: exchanges and lines in, line cards, evening reports, saved installs, head starts
+        {
+            s.Installs ??= new(); s.HeadStartDays ??= new(); s.Orders ??= new();
+            foreach (var cust in s.Customers) cust.Products ??= new();
+            if (s.Exchanges is null || s.Exchanges.Count == 0) s.Exchanges = new() { new Exchange { Id = "ex-town", Name = "Main Street" } };
+        }
         s.Version = GameState.CurrentVersion;
         return s;
     }

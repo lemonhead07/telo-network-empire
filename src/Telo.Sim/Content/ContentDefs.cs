@@ -98,6 +98,36 @@ public sealed record PremiseDef
     public PoleLineDef? PoleLine { get; init; }
 }
 
+public sealed record ProductStepDef
+{
+    public required string Verb { get; init; }
+    public int Clicks { get; init; } = 1;
+    public int Minutes { get; init; } = 4;
+    public List<Town.Tools> Needs { get; init; } = new();
+}
+
+/// <summary>Something a subscriber can order besides the line: an extension, an answering machine, a faster modem.</summary>
+public sealed record ProductDef
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    /// <summary>What the customer says when they ring to ask for it.</summary>
+    public string Pitch { get; init; } = "";
+    /// <summary>What they pay you, once.</summary>
+    public long Price { get; init; }
+    /// <summary>What Sol charges you for the hardware.</summary>
+    public long Cost { get; init; }
+    public long MonthlyExtra { get; init; }
+    public int RequiresAct { get; init; }
+    public string? RequiresEntry { get; init; }
+    /// <summary>Which kinds of household want it. Empty means anyone.</summary>
+    public List<string> Archetypes { get; init; } = new();
+    public required List<ProductStepDef> Steps { get; init; }
+    /// <summary>How it changes the length of their evening calls to the Board (1000 = no change; a fast modem halves it).</summary>
+    public int CallLengthPermille { get; init; } = 1000;
+    public string BodgeDefect { get; init; } = "something fitted in a hurry";
+}
+
 public enum LotKind { House, Shop, Farm }
 
 /// <summary>A building someone lives or works in. Offsets are metres east/south of its site centre on the planet.</summary>

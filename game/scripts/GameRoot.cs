@@ -6,6 +6,7 @@ using Telo.Sim.Build;
 using Telo.Sim.Content;
 using Telo.Sim.Minigames.Install;
 using Telo.Sim.Minigames.OddJob;
+using Telo.Sim.Net;
 using Telo.Sim.Planet;
 using Telo.Sim.Save;
 using Telo.Sim.Town;
@@ -42,8 +43,10 @@ public partial class GameRoot : Node3D
     private PipTips _pip = null!;
     private OnboardingStep _lastStep;
     private Node3D? _roadBarrier;
+    private LineRack _rack = null!;
+    private HashSet<string>? _paged;
     /// <summary>Odd jobs being done by hand indoors, by lot: the task and the thing on the rug.</summary>
-    private readonly Dictionary<string, (OddJobTask Task, Interactable Bench)> _oddJobs = new();
+    private readonly Dictionary<string, (OddJobTask Task, Interactable Bench, Func<bool> Wanted)> _oddJobs = new();
     private readonly List<Action> _lineRefresh = new();
     private readonly List<(PremiseDef Premise, PoleLineView View)> _lines = new();
     /// <summary>Automated checks pretend all the kit is to hand.</summary>
@@ -92,7 +95,7 @@ public partial class GameRoot : Node3D
         _van = new Van { SeaRadius = radius, IsPaved = p => _planet.IsPaved(PlanetBuilder.ToSim(p)) };
         AddChild(_van);
         _van.GlobalTransform = _town.VanSpawn;
-        _cargo = new Cargo(_van, _player, this, () => Sim.State.Modems - _installs.Values.Count(j => j.IsDone(InstallStep.Modem)));
+        _cargo = new Cargo(_van, _player, this, () => Sim.State.Modems - _installs.Values.Count(j => j.IsDone(InstallStep.Modem)), () => Sim.State.LineCards);
         _van.Door.Prompt = () => _cargo.Held is { } h ? $"Put the {h.Label} back on the van" : "Drive the van";
         _van.Door.OnUse = () => { if (_cargo.Held is not null) _cargo.StowHeld(); else EnterVan(); };
 
@@ -107,6 +110,10 @@ public partial class GameRoot : Node3D
         if (_lastStep == OnboardingStep.Free) _pip.Skip("customer", "van", "carry", "install", "step", "modem", "dial", "signed", "frame", "oddjob", "knock", "free");
         if (Sim.State.Staff > 0) _pip.Skip("canhire", "hired");
         _cargo.PickedUp += _ => _pip.Once("carry");
+        // a save made in the middle of a house install comes back with the door open and the job where it was
+        foreach (var id in Sim.State.Installs.Keys.ToList())
+            if (Sim.State.Customers.FirstOrDefault(c => c.Id == id) is { LotId: not null } mid && _town.Lots.FirstOrDefault(l => l.Lot.Id == mid.LotId) is { Install: not null } midView)
+                StartInstall(midView, mid);
 
         RefreshIdleScreens();
         if (args.Contains("--smoke")) _ = RunSmoke();
@@ -215,6 +222,28 @@ public partial class GameRoot : Node3D
         _frameScreen = Screen(room, _frame, 1.44f, new Vector3(-1.4f, 1.35f, back + 0.05f), Vector3.Zero, glows: false);
         RoomBuilder.Label(room, "FRAME", new Vector3(-1.4f, 2.0f, back + 0.06f), 0.12f);
 
+        // The Board's lines in: lamps, empty sockets for cards not yet bought, and the tally of engaged tones.
+        _rack = new LineRack { Position = new Vector3(-0.22f, 1.4f, back + 0.04f) };
+        room.AddChild(_rack);
+        _rack.Slot.Prompt = () =>
+        {
+            var s = Sim.State; var ex = BoardRules.Home(s);
+            if (s.LineCards > 0)
+                return (BoardRules.FitNeeds & ~KitOnSite()) != Tools.None ? "A line card is waiting on the van: carry it in here" : $"Slot in the line card ({BoardRules.FitMinutes} min)";
+            return s.LastEvening is { } eve
+                ? $"The Board: {ex.LinesIn} line(s) in. Last night {eve.Attempts} calls, {eve.Engaged} engaged tones, busiest at {BoardRules.Clock(eve.BusiestSlot)}"
+                : $"The Board: {ex.LinesIn} line(s) in";
+        };
+        _rack.Slot.CanUse = () => Sim.State.LineCards > 0 && (BoardRules.FitNeeds & ~KitOnSite()) == Tools.None;
+        _rack.Slot.OnUse = () =>
+        {
+            if (!BoardRules.FitCard(Sim.State, KitOnSite())) return;
+            SpendHours(BoardRules.FitMinutes / 60f);
+            if (_cargo.Items.FirstOrDefault(i => i.Tool == Tools.LineCard && i.Where != Carryable.Place.Van) is { } used) _cargo.Stow(used);
+            _cargo.Refresh();
+            _pip.Once("cardfit");
+        };
+
         // Desk with answering machine, PIP's handset on a stand, and the notebook lying open.
         RoomBuilder.Box(room, new Vector3(1.3f, 0.37f, back + 0.45f), new Vector3(1.7f, 0.74f, 0.8f), RoomBuilder.Wood, solid: true);
         RoomBuilder.Prop(room, "AnsweringMachine", new Vector3(0.72f, 0.8f, back + 0.4f), new Vector3(0.26f, 0.1f, 0.2f), new Color(0.08f, 0.08f, 0.08f),
@@ -316,11 +345,18 @@ public partial class GameRoot : Node3D
                 ? ($"Fix {broken.Name}'s line: {fault.Text} ({TownRules.RepairMinutes} min)", () => { if (TownRules.Repair(s, fault.Id, KitOnSite())) SpendHours(TownRules.RepairMinutes / 60f); })
                 : ($"{broken.Name} has a fault: {fault.Text}. You need {Cargo.Names(missing)} from the van", null);
         }
+        if (OrderRules.OrderAt(s, lot.Id) is { } order && _content.Products.TryGetValue(order.ProductId, out var product)
+            && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } orderHome)
+        {
+            if (_oddJobs.TryGetValue(lot.Id, out var fitting))
+                return ($"{fitting.Task.Title}: {(fitting.Task.Next is { } n ? n.Verb.ToLowerInvariant() : "show them how it works")} (indoors, on the rug)", null);
+            return ($"{lot.Resident} ordered: {product.Name.ToLowerInvariant()} (+${product.Price}). They let you in", () => StartOrder(orderHome, order, product));
+        }
         if (TownRules.JobAt(s, lot.Id) is { } job && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } jobHome)
         {
             // houses: the job is done by hand indoors
             if (_oddJobs.TryGetValue(lot.Id, out var doing))
-                return ($"{job.Title}: {(doing.Task.Next is { } n ? n.Verb.ToLowerInvariant() : "hand it back")} (indoors, on the rug)", null);
+                return ($"{doing.Task.Title}: {(doing.Task.Next is { } nx ? nx.Verb.ToLowerInvariant() : "hand it back")} (indoors, on the rug)", null);
             return ($"{job.Title} for {lot.Resident} (+${job.Pay}): they let you in. Bring the toolbox", () => StartOddJob(jobHome, job));
         }
         if (TownRules.JobAt(s, lot.Id) is { } quick)
@@ -371,6 +407,7 @@ public partial class GameRoot : Node3D
                 if (step == InstallStep.Test) { var r = job.Test(); view.Install.NoteTest(r); _pip.Once(r.DialTone ? "dial" : "nodial"); }
                 else if (rush) { if (job.Rush(step, KitOnSite())) _pip.Once("bodge"); }
                 else if (job.Do(step, KitOnSite())) _pip.Once(step == InstallStep.Modem ? "modem" : "step");
+                Sim.RecordInstall(job);
                 SpendHours((job.ElapsedMinutes - before) / 60f);
                 // the modem is out of its box and on their table: the empty box goes back on the van
                 if (job.IsDone(InstallStep.Modem) && _cargo.Items.FirstOrDefault(i => i.Tool == Tools.ModemBox && i.Where != Carryable.Place.Van) is { } boxed) _cargo.Stow(boxed);
@@ -412,44 +449,54 @@ public partial class GameRoot : Node3D
             // Whatever else happens, you are never shut in: a door with you behind it opens.
             if (!v.DoorOpen && Indoors(v, playerPos, 0)) OpenDoor(v, true);
             // The door closes behind you: only once the job is signed off, you have stepped off the doorstep, and none of your kit is still indoors.
-            if (_oddJobs.ContainsKey(v.Lot.Id) && TownRules.JobAt(Sim.State, v.Lot.Id) is null) EndOddJob(v.Lot.Id); // they got someone else in
+            if (_oddJobs.TryGetValue(v.Lot.Id, out var bench) && !bench.Wanted()) EndOddJob(v.Lot.Id); // they got someone else in
             if (v.DoorOpen && !_installs.ContainsKey(v.Lot.Id) && !_oddJobs.ContainsKey(v.Lot.Id) && !Indoors(v, playerPos, 1.1f)
                 && !_cargo.Items.Any(i => i.Where == Carryable.Place.Ground && Indoors(v, i.GlobalPosition, 0))) OpenDoor(v, false);
         }
     }
 
     // ---- odd jobs by hand: the thing to fix sits on the rug in their front room ------------------
-    private void StartOddJob(LotView view, OddJob job)
+    private void StartOddJob(LotView view, OddJob job) =>
+        StartBenchJob(view, Sim.NewOddJobTask(job.Id), new Color(0.22f, 0.2f, 0.18f), $"Hand it back to {view.Lot.Resident} (+${job.Pay})",
+            bodged => TownRules.CompleteJob(Sim.State, _content, job.Id, bodged), () => TownRules.JobAt(Sim.State, view.Lot.Id)?.Id == job.Id, "oddstart");
+
+    /// <summary>Something from the catalogue, fitted in the customer's front room.</summary>
+    private void StartOrder(LotView view, Order order, ProductDef product) =>
+        StartBenchJob(view, OrderRules.NewTask(_content, order), new Color(0.78f, 0.72f, 0.58f), $"Show {view.Lot.Resident} how it works (+${product.Price})",
+            bodged => Sim.CompleteOrder(order.Id, bodged), () => Sim.State.Orders.Any(o => o.Id == order.Id), "order");
+
+    /// <summary>A small job done by hand indoors: the thing sits on the rug, E works through its steps, R thumps it.</summary>
+    private void StartBenchJob(LotView view, OddJobTask? task, Color colour, string handBack, Action<bool> complete, Func<bool> wanted, string pipKey)
     {
-        if (Sim.NewOddJobTask(job.Id) is not { } task) return;
-        var s = Sim.State;
+        if (task is null) return;
         var bench = new Interactable { Position = new Vector3(1.5f, TownBuilder.HouseFloor + 0.17f, -0.9f), CollisionLayer = 2, CollisionMask = 0 };
         bench.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(0.6f, 0.5f, 0.5f) } });
-        bench.AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.42f, 0.26f, 0.3f), new Color(0.22f, 0.2f, 0.18f))
+        bench.AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.42f, 0.26f, 0.3f), colour)
             .Box(new Vector3(0, 0.14f, 0), new Vector3(0.3f, 0.03f, 0.2f), new Color(0.8f, 0.72f, 0.5f))
             .Box(new Vector3(0.12f, 0.05f, 0.155f), new Vector3(0.08f, 0.08f, 0.02f), new Color(0.85f, 0.2f, 0.15f)).Instance());
+        bench.AddChild(new Label3D { Text = task.Title, Position = new Vector3(0, 0.36f, 0), FontSize = 40, PixelSize = 0.002f, Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, Modulate = new Color(0.98f, 0.95f, 0.85f), OutlineSize = 10 });
         bench.Prompt = () =>
         {
-            if (task.Done) return $"Hand it back to {view.Lot.Resident} (+${job.Pay})";
+            if (task.Done) return handBack;
             var d = task.Next!;
             var missing = task.Missing(KitOnSite());
             return missing != Tools.None ? $"{d.Verb}: you need {Cargo.Names(missing)} here (from the van)"
-                : $"{d.Verb} ({task.Progress(d.Step) + 1}/{d.Clicks}, {task.MinutesFor(d)} min)";
+                : $"{d.Verb} ({task.NextProgress + 1}/{d.Clicks}, {task.MinutesFor(d)} min)";
         };
         bench.CanUse = () => task.Done || task.Missing(KitOnSite()) == Tools.None;
         bench.OnUse = () =>
         {
             int before = task.ElapsedMinutes;
             if (!task.Done) { if (task.Do(KitOnSite())) SpendHours((task.ElapsedMinutes - before) / 60f); return; }
-            TownRules.CompleteJob(s, _content, job.Id, task.Bodged);
+            complete(task.Bodged);
             EndOddJob(view.Lot.Id);
         };
-        bench.AltPrompt = () => task.Done ? null : "Give it a thump and call it fixed";
+        bench.AltPrompt = () => task.Done ? null : "Give it a thump and call it done";
         bench.OnAlt = () => { if (task.Bodge()) { SpendHours(OddJobTask.BodgeMinutes / 60f); _pip.Once("thump"); } };
         view.Body.AddChild(bench);
-        _oddJobs[view.Lot.Id] = (task, bench);
+        _oddJobs[view.Lot.Id] = (task, bench, wanted);
         OpenDoor(view, true);
-        _pip.Once("oddstart");
+        _pip.Once(pipKey);
     }
 
     private void EndOddJob(string lotId)
@@ -490,7 +537,34 @@ public partial class GameRoot : Node3D
         if (s.Staff > 0) _pip.Once("hired");
         if (s.Faults.Count > 0) _pip.Once("fault");
         if (s.Lines.Values.Any(l => l.Planted > 0)) _pip.Once("pole");
+        if (s.Orders.Count > 0) _pip.Once("catalogue");
         if (_lines.Any(l => LineRules.Complete(s, _planet, l.Premise))) _pip.Once("linedone");
+
+        // the Board: lamps follow tonight as it happens; the tally is last night's
+        var ex = BoardRules.Home(s);
+        var tonight = BoardRules.Evening(s, s.Day, ex);
+        int slot = Mathf.FloorToInt((Hour - BoardRules.FirstHour) * 2);
+        string tally = s.LastEvening is { } eve
+            ? $"ENGAGED TONES\nlast night: {eve.Engaged}\nthis month: {s.EngagedThisMonth}" + (eve.GaveUp.Count > 0 ? $"\ngave up: {string.Join(", ", eve.GaveUp.Select(id => s.Customers.FirstOrDefault(c => c.Id == id)?.Name).Where(n => n is not null).Take(3))}" : "")
+            : "ENGAGED TONES\nnone yet";
+        _rack.Show(ex.LinesIn, slot >= 0 && slot < BoardRules.Slots ? tonight.InUse[slot] : 0, tally);
+        if (s.LastEvening is { GaveUp.Count: > 0 } && step >= OnboardingStep.Free)
+        {
+            _pip.Once("engaged");
+            if (!BoardRules.CanAddLine(s) && s.LineCards == 0) _pip.Once("cap");
+        }
+        if (ActRules.EarlyStartEntry(s, _content) is { } page && s.Archive >= page.ArchiveCost) _pip.Once("almanac");
+        if (s.HeadStartDays.Count > 0) _pip.Once("headstart");
+
+        // the pager: beeps once for each new thing that needs you
+        if (Attention.HasPager(s))
+        {
+            _pip.Once("pager");
+            var now = Attention.Needs(s, _content);
+            if (_paged is not null)
+                foreach (var need in now.Where(n => !_paged.Contains(n.Key))) _pip.Say("Pager: " + need.Text);
+            _paged = now.Select(n => n.Key).ToHashSet();
+        }
         if (_roadBarrier is not null)
         {
             bool open = Onboarding.RoadOpen(s, _content);
@@ -511,6 +585,10 @@ public partial class GameRoot : Node3D
                 : $"A modem is ${TownRules.ModemPrice}. You have ${Sim.State.Cash}";
             counter.CanUse = () => Sim.State.Cash >= TownRules.ModemPrice;
             counter.OnUse = () => TownRules.BuyModem(Sim.State);
+            // a second thing on Sol's counter, once the Board has started filling up
+            counter.AltPrompt = () => Onboarding.DeskOpen(Sim.State, _content) && Sim.State.LastEvening is { Engaged: > 0 } && BoardRules.CanAddLine(Sim.State) && Sim.State.Cash >= BoardRules.CardPrice
+                ? $"Buy a line card for the Board: ${BoardRules.CardPrice}" : null;
+            counter.OnAlt = () => { if (BoardRules.BuyCard(Sim.State)) { _cargo.Refresh(); _pip.Once("card"); } };
         }
     }
 
@@ -764,9 +842,34 @@ public partial class GameRoot : Node3D
             lineBuilt &= needsPole && served;
             GD.Print($"LINE {(needsPole && served ? "OK" : "FAIL")}: {premise.Name} poles={view.Count} needsPole={needsPole} served={served}");
         }
+        // --- catalogue: a subscriber orders something; it is fitted by hand and their bill goes up ---
+        bool catalogue = false;
+        if (Sim.OfferOrder() is { } ord && Sim.State.Customers.First(c => c.Id == ord.CustomerId) is { } buyer && _town.Lots.First(l => l.Lot.Id == buyer.LotId) is { } shopper)
+        {
+            long feeBefore = buyer.MonthlyFee, cashBefore = Sim.State.Cash;
+            shopper.Door.OnUse!();
+            _kitEverywhere = true;
+            for (int i = 0; i < 14 && _oddJobs.TryGetValue(shopper.Lot.Id, out var fit); i++) fit.Bench.OnUse!();
+            _kitEverywhere = false;
+            var bought = _content.Products[ord.ProductId];
+            catalogue = buyer.Products.Contains(bought.Id) && buyer.MonthlyFee == feeBefore + bought.MonthlyExtra && Sim.State.Cash == cashBefore + bought.Price - bought.Cost;
+            GD.Print($"CATALOGUE {(catalogue ? "OK" : "FAIL")}: {buyer.Name} bought {bought.Name}, fee {feeBefore}->{buyer.MonthlyFee}");
+        }
+        // --- carry: the whole town rings the Board on two lines; a line card is bought, carried and fitted ---
+        Sim.GodNextStage(_planet);                                   // connect everyone
+        Sim.AdvanceDays(3);
+        int engagedBefore = Sim.State.LastEvening?.Engaged ?? 0;
+        Sim.State.Cash += 500;
+        var solCounter = _town.Lots.First(l => l.Counter is not null).Counter!;
+        bool offered = solCounter.AltPrompt() is not null;
+        solCounter.OnAlt!();
+        bool needsCard = Sim.State.LineCards == 1 && !_rack.Slot.CanUse();
+        _kitEverywhere = true; _rack.Slot.OnUse!(); _kitEverywhere = false;
+        bool board = engagedBefore > 0 && offered && needsCard && BoardRules.Home(Sim.State).LinesIn == 3 && Sim.State.LineCards == 0;
+        GD.Print($"BOARD {(board ? "OK" : "FAIL")}: engagedOnTwoLines={engagedBefore} cardOffered={offered} needsCarrying={needsCard} linesNow={BoardRules.Home(Sim.State).LinesIn}");
         Sim.AdvanceDays(700);
         var reloaded = new Simulation(_content, SaveCodec.FromJson(SaveCodec.ToJson(Sim.State)));
-        bool ok = world && doors && paid && house && auto && lineBuilt && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
+        bool ok = world && doors && paid && house && auto && lineBuilt && catalogue && board && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
         GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: doors={doors} paid={paid} perfect={outcome.Perfect} {Sim.State.Date} act={Sim.State.ActIndex} subs={Sim.State.LiveSubscribers} cash={Sim.State.Cash}");
         GetTree().Quit(ok ? 0 : 1);
     }
@@ -851,6 +954,15 @@ public partial class GameRoot : Node3D
         UseFrame(); await Inside("-frame"); _frame.Close(); await ToSignal(GetTree().CreateTimer(0.5), SceneTreeTimer.SignalName.Timeout);
         _almanac.Open(InterfaceTier.Terminal); await Inside("-pip"); _almanac.Close(); await ToSignal(GetTree().CreateTimer(0.5), SceneTreeTimer.SignalName.Timeout);
         _notebook.Open(InterfaceTier.Paper); await Inside("-notebook"); _notebook.Close();
+        // the Board at half past seven with the whole town on two lines
+        for (int i = 0; i < 12 && (Sim.State.Staff == 0 || TownRules.Prospects(Sim.State, _content).Any() || !_lines.All(l => LineRules.Complete(Sim.State, _planet, l.Premise))); i++) Sim.GodNextStage(_planet);
+        Sim.AdvanceDays(2);
+        _dayClock = DayLengthSeconds * (19.6f - 6f) / 24f;
+        await ToSignal(GetTree().CreateTimer(1.2), SceneTreeTimer.SignalName.Timeout);
+        _player.Camera.Current = false; cam.Current = true;
+        cam.GlobalTransform = _rack.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0.1f, 0.05f, 1.15f));
+        await Frames(12);
+        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-board.png"));
         GD.Print($"SHOTS OK fps={Engine.GetFramesPerSecond()}");
         GetTree().Quit();
     }

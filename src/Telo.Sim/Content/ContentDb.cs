@@ -12,6 +12,7 @@ public sealed class ContentDb
     public IReadOnlyDictionary<string, WorkKindDef> Work { get; }
     public IReadOnlyDictionary<string, PremiseDef> Premises { get; }
     public IReadOnlyDictionary<string, LotDef> Lots { get; }
+    public IReadOnlyDictionary<string, ProductDef> Products { get; }
 
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -25,7 +26,7 @@ public sealed class ContentDb
 
     public ContentDb(IEnumerable<ActDef> acts, IEnumerable<AnnouncementDef> announcements,
         IEnumerable<AlmanacEntryDef> almanac, IEnumerable<WorkKindDef> work, IEnumerable<PremiseDef> premises,
-        IEnumerable<LotDef>? lots = null)
+        IEnumerable<LotDef>? lots = null, IEnumerable<ProductDef>? products = null)
     {
         Acts = acts.OrderBy(a => a.Index).ToList();
         Announcements = announcements.ToDictionary(a => a.Id);
@@ -33,6 +34,7 @@ public sealed class ContentDb
         Work = work.ToDictionary(w => w.Id);
         Premises = premises.ToDictionary(p => p.Id);
         Lots = (lots ?? Array.Empty<LotDef>()).ToDictionary(l => l.Id);
+        Products = (products ?? Array.Empty<ProductDef>()).ToDictionary(p => p.Id);
         var errors = Validate();
         if (errors.Count > 0) throw new InvalidDataException("Content invalid:\n" + string.Join("\n", errors));
     }
@@ -46,10 +48,10 @@ public sealed class ContentDb
                 : throw new InvalidDataException($"Missing content file {name}.json");
 
         return new ContentDb(Load<ActDef>("acts"), Load<AnnouncementDef>("announcements"),
-            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"));
+            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"), Load<ProductDef>("products"));
     }
 
-    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json" };
+    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json", "products.json" };
 
     public ActDef ActAt(int index) => Acts[Math.Clamp(index, 0, Acts.Count - 1)];
 
@@ -76,6 +78,12 @@ public sealed class ContentDb
             if (w.Stages.Count == 0) e.Add($"work {w.Id}: no stages");
             foreach (var s in w.Stages)
                 if (s.RequiresEntry is { } r && !Almanac.ContainsKey(r)) e.Add($"work {w.Id}: unknown entry '{r}'");
+        }
+        foreach (var p in Products.Values)
+        {
+            if (p.Steps.Count == 0) e.Add($"product {p.Id}: no steps");
+            if (p.RequiresEntry is { } r && !Almanac.ContainsKey(r)) e.Add($"product {p.Id}: unknown entry '{r}'");
+            if (p.Cost > p.Price) e.Add($"product {p.Id}: costs more than it sells for");
         }
         foreach (var l in Lots.Values)
             if (l.Premise is { } pr && !Premises.ContainsKey(pr)) e.Add($"lot {l.Id}: unknown premise '{pr}'");

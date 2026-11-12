@@ -31,26 +31,26 @@ public sealed class Cargo
     private readonly Van _van;
     private readonly FirstPersonController _player;
     private readonly Node3D _world;
-    private readonly Func<int> _modemsSpare;
+    private readonly Func<int> _modemsSpare, _cardsSpare;
     public List<Carryable> Items { get; } = new();
     public Carryable? Held { get; private set; }
     public event Action<Carryable>? PickedUp;
 
     public static string Name(Tools t) => t switch
     {
-        Tools.CableDrum => "cable drum", Tools.Ladder => "ladder", Tools.Toolbox => "toolbox", Tools.ModemBox => "boxed modem", Tools.Pole => "pole", _ => "kit",
+        Tools.CableDrum => "cable drum", Tools.Ladder => "ladder", Tools.Toolbox => "toolbox", Tools.ModemBox => "boxed modem", Tools.Pole => "pole", Tools.LineCard => "line card", _ => "kit",
     };
 
     /// <summary>"the cable drum and the ladder" for a set of missing kit.</summary>
     public static string Names(Tools set)
     {
-        var names = new[] { Tools.Pole, Tools.CableDrum, Tools.Ladder, Tools.Toolbox, Tools.ModemBox }.Where(t => (set & t) != 0).Select(t => "the " + Name(t)).ToList();
+        var names = new[] { Tools.Pole, Tools.CableDrum, Tools.Ladder, Tools.Toolbox, Tools.ModemBox, Tools.LineCard }.Where(t => (set & t) != 0).Select(t => "the " + Name(t)).ToList();
         return names.Count <= 1 ? string.Concat(names) : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
     }
 
-    public Cargo(Van van, FirstPersonController player, Node3D world, Func<int> modemsSpare)
+    public Cargo(Van van, FirstPersonController player, Node3D world, Func<int> modemsSpare, Func<int> cardsSpare)
     {
-        _van = van; _player = player; _world = world; _modemsSpare = modemsSpare;
+        _van = van; _player = player; _world = world; _modemsSpare = modemsSpare; _cardsSpare = cardsSpare;
         var wood = new Color(0.72f, 0.58f, 0.36f); var dark = new Color(0.1f, 0.1f, 0.11f);
 
         // ladder: modelled standing up, foot at the origin
@@ -82,6 +82,11 @@ public sealed class Cargo
             .Box(new Vector3(0, 0.141f, 0), new Vector3(0.2f, 0.004f, 0.1f), new Color(0.2f, 0.3f, 0.5f));
         Add(Tools.ModemBox, false, modem, new Vector3(0.42f, 0.26f, 0.34f), new Vector3(0, 0.1f, 0),
             van: new Transform3D(Basis.Identity, new Vector3(0.6f, 0.55f, 2.45f)), held: new Transform3D(Basis.Identity, new Vector3(0.36f, 0.85f, -0.5f)));
+        var card = new LowPoly().Box(new Vector3(0, 0.02f, 0), new Vector3(0.3f, 0.03f, 0.2f), new Color(0.1f, 0.36f, 0.2f))
+            .Box(new Vector3(-0.08f, 0.05f, 0), new Vector3(0.08f, 0.03f, 0.1f), new Color(0.1f, 0.1f, 0.11f))
+            .Box(new Vector3(0.13f, 0.045f, 0), new Vector3(0.03f, 0.02f, 0.16f), new Color(0.8f, 0.7f, 0.3f));
+        Add(Tools.LineCard, false, card, new Vector3(0.38f, 0.2f, 0.28f), new Vector3(0, 0.06f, 0),
+            van: new Transform3D(Basis.Identity, new Vector3(0.28f, 0.55f, 2.66f)), held: new Transform3D(Basis.Identity, new Vector3(0.34f, 0.95f, -0.5f)));
         Refresh();
     }
 
@@ -153,9 +158,9 @@ public sealed class Cargo
     /// <summary>The boxed modem on the van is only there while there is a modem in stock that isn't already in someone's house.</summary>
     public void Refresh()
     {
-        foreach (var i in Items.Where(i => i.Tool == Tools.ModemBox && i.Where == Carryable.Place.Van))
+        foreach (var i in Items.Where(i => i.Tool is Tools.ModemBox or Tools.LineCard && i.Where == Carryable.Place.Van))
         {
-            bool have = _modemsSpare() > 0;
+            bool have = (i.Tool == Tools.ModemBox ? _modemsSpare() : _cardsSpare()) > 0;
             i.Visible = have;
             i.CollisionLayer = have ? 2u : 0u;
         }

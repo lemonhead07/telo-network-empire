@@ -1,6 +1,6 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "expansion design". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-12, commit "the Board fills up, line cards, the catalogue". Everything is pushed; the working tree is clean.*
 
 ## Where things stand (the demo loop so far)
 1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
@@ -23,12 +23,17 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 **The biggest gap now: the town runs out.** 12 houses, a shop and a farm is about 40 minutes of content. After that the only thing left is waiting for June 1984. The next age (Act 1, the bulletin board) has data but no gameplay. That, or a second settlement, is what makes "overlap and pace increase between rounds" real.
 
 ## Plan for next time
-**Follow `docs/EXPANSION_DESIGN.md`.** It was written with the owner on 2026-11-12 and replaces the earlier ad-hoc list. Its decisions D17–D21 are *recommendations awaiting the owner's yes*; check whether they have been answered before building on them.
+**Follow `docs/EXPANSION_DESIGN.md`.** The owner agreed to all its decisions (D17–D22 in `DECISIONS.md`). Phases A and B and a first catalogue are built. **D15 changed: Blender models are allowed now.**
 
-1. **Phase A, Unblock:** Act 1 startable early by recalling its page from the Almanac (D17), the pager, saving mid-job, first money pass.
-2. **Phase B, Carry:** a network model in the sim, evening calls, engaged tones, line lamps and tally on the frame, line cards.
-3. **Phase C, The Board**, then **D, Count and listen** (completes Round 1).
-4. Art track alongside, from `docs/ASSET_LIST.md`: house exterior, van and kit after phase B.
+1. **Phase C, the Board:** a green terminal on the desk (`WorldScreen`, terminal tier) with three jobs: let new callers in, tend the file area, run the night mail call (long-distance bill; the 2400 modem halves it). Tobi Okafor as co-sysop.
+2. **Phase D, count and listen:** invoices by hand and late payers; mixed phone messages (enquiries, orders, complaints, fault reports); make the bookkeeper and receptionist real; move to 1 Main Street. Completes Round 1.
+3. **Catalogue, next steps** (section 4a of the design): more products, choosing at the door, stock.
+4. **Art track:** start `tools/` Blender scripts and `game/assets/`: house exterior with nameplate, van, carried kit (`ASSET_LIST.md` step 1).
+
+Things to watch from this session:
+- The engaged-tone numbers are first guesses. A whole town on 2 lines gives a few engaged tones a night; check it feels like pressure, not noise.
+- Orders use the same box-on-the-rug as odd jobs. They want their own objects and places (a bell under the eave, a fax on a desk).
+- Buying a line card is `[R]` at Sol's counter, which is easy to miss; the shop needs a proper counter with things on it.
 
 ## Rules to keep
 - Outcomes and defects are decided in `src/Telo.Sim`; Godot only shows and drives it.
@@ -36,7 +41,7 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 - Develop lots, test little: compile + screenshot; full tests only before a commit that changes sim rules.
 
 ## Known rough edges
-- A half-finished install and anything you put down are forgotten on save/load (the job restarts, the kit is back on the van).
+- Kit you put down, and odd jobs or orders in progress, are forgotten on save/load (the install itself is now saved).
 - Pole line: poles go in fixed sites in order; you can't choose the route. Wires are straight (no sag).
 - Repair is a single press at the door (needs the toolbox with you).
 - The technician is invisible; you only see the results.

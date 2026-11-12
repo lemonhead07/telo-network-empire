@@ -34,7 +34,7 @@ public class PacingTests
         var frame = sim.NewFrameJob(sim.FrameWorkOrder());
         foreach (var l in frame.Lines) frame.Jumper(l.Index, l.TargetPort);
         sim.ApplyFrameOutcome(frame.Evaluate());
-        Assert.Equal(before + cust.MonthlyFee * World.Simulation.ConnectionFeeMonths, sim.State.Cash);
+        Assert.Equal(before + World.Simulation.ConnectionFee(cust), sim.State.Cash);
 
         int day = sim.State.Day;
         int slept = sim.RestUntilNeeded();
@@ -50,7 +50,7 @@ public class PacingTests
         var task = sim.NewOddJobTask(job.Id)!;
         Assert.False(task.Do(Tools.None));               // needs the toolbox to open it up
         while (!task.Done) Assert.True(task.Do());
-        Assert.True(task.ElapsedMinutes >= 20 && !task.Bodged);
+        Assert.True(task.ElapsedMinutes >= 20 && !task.Bodged && task.Steps.Count == 4);
         Assert.NotNull(TownRules.CompleteJob(sim.State, sim.Content, job.Id));
         int good = TownRules.HouseholdOf(sim.State, job.LotId).Goodwill;
         Assert.True(good > 0);

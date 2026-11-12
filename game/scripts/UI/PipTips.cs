@@ -35,6 +35,15 @@ public sealed class PipTips
         ["oddstart"] = "They've let you in. The patient is on the rug. Toolbox first, then E your way through it. R is a thump.",
         ["thump"] = "A firm thump and a confident nod. They'll pay. They'll also remember.",
         ["linedone"] = "The farm has dial tone. The county has paid its rural lines grant, and the whole town has heard who built it.",
+        ["engaged"] = "Last night someone rang the Board and got the engaged tone. The lamps beside your frame are its lines in. Two is not enough for this many people.",
+        ["card"] = "A line card. It's on the van's tailboard. Carry it in and slot it into the rack beside the frame.",
+        ["cardfit"] = "One more line in from tonight. Watch the lamps around seven. It also costs rental every month.",
+        ["cap"] = "Four lines is all a home-made board can answer. There's a page in my Almanac about rolling calls across more: hunt groups.",
+        ["almanac"] = "You've outgrown this chapter and the world hasn't caught up. My Almanac has the page. Recall it early and you start ahead of everyone. It costs Archive, and the world notices.",
+        ["headstart"] = "You're ahead of the calendar now. When other companies come, and they will, they start from the day the world finds out.",
+        ["pager"] = "Your technician left you a pager. It beeps when something needs you, wherever you are.",
+        ["order"] = "This one isn't a repair, it's a sale. Fit it step by step, then show them how it works. Some of these add to their bill every month.",
+        ["catalogue"] = "People who already have a line start wanting things to go with it. Extensions. Answering machines. It all goes through you.",
         ["closed"] = "Road closed. The council is resurfacing it. Nobody has seen the council.",
     };
 

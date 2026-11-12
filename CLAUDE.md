@@ -12,7 +12,7 @@ First-person, open-world telecom business sim, 1983–2035, set on **one small p
 src/Telo.Sim/          Pure C# simulation (net8.0). ALL game rules live here.
 tests/Telo.Sim.Tests/  xUnit tests for the sim. Loads the real game/content JSON.
 game/                  Godot 4.7 .NET project. The presentation layer: it shows the sim and drives it, but holds no rules.
-  content/*.json       Data: acts, announcements, almanac, work (automation stages), premises (Last Mile)
+  content/*.json       Data: acts, announcements, almanac, work (automation stages), premises (Last Mile), lots, products (the catalogue)
   scripts/GameRoot.cs  Composition root: loads content, owns Simulation, builds room, wires views
   scripts/UI/          HUD + modal views (Frame, Almanac, Notebook). TierStyle = paper/terminal/db/dashboard look
   scripts/World/       PlanetBuilder (terrain/ocean/trees), PlanetSky, TownBuilder, RoomBuilder, LowPoly (code-built models), Interactable
@@ -86,8 +86,14 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 - **God keys** (owner's testing tool): `F1` lists them, `F2` +$500, `F3` next day, `F4` finishes whatever the game is asking for (`Simulation.GodNextStage`: each first-hour step, then the hire, the pole line, the rest of the town, then the next act), `F6` jumps to the next act (`GodNextAct`).
 - **Pace**: a line going live pays a connection fee that day (2 months' fee). When `Guidance.IsQuiet`, the bed sleeps until something needs the player (`Simulation.RestUntilNeeded`, up to 30 days), so the calendar speeds up as the work gets delegated. Finishing a pole line pays its `grant` and lifts goodwill in every household.
 - **Odd jobs by hand** (`Telo.Sim/Minigames/OddJob/OddJobTask.cs`): in a house, the resident lets you in and the thing to fix is on the rug: open it up, trace, fix, test, hand it back. `[R]` thumps it: paid today, goodwill lost. The shop and farm still do odd jobs at the door.
+- **The Board and lines in** (`Telo.Sim/Net/BoardRules.cs`): every evening (ten half-hours from 18:00) subscribers ring the Board; `Exchange.LinesIn` (starts at 2) is how many it can answer. Extra callers get the engaged tone, redial once, then give up (−2 satisfaction). `BoardRules.Evening` is pure and seeded per day, so `LineRack` (lamps and tally beside the frame) can show tonight live. Line cards: `[R]` at Sol's counter ($60), carry from the van, slot into the rack; $6 a month per line; 4 lines at most until `alm-hunt` is recalled (then 12). This is the pattern for every later bottleneck.
+- **The catalogue** (`game/content/products.json`, `Telo.Sim/Town/OrderRules.cs`): existing subscribers ring to order extensions, answering machines, a second line, a fax, a fast modem… Each is a short indoor job with its own steps and kit (the same bench mechanic as odd jobs, `GameRoot.StartBenchJob`). Add products as data; tie new ones to Almanac pages with `requiresEntry`.
+- **The pager** (`Telo.Sim/Town/Attention.cs`): after the first hire, PIP's bubble beeps once for each new thing that needs the player.
+- **Starting an act early** (D17): recalling the Almanac page for the next act's gate announcement opens the gate now (`ActRules.GateOpen`); the head start is recorded in `GameState.HeadStartDays` for future rivals.
+- **Saved mid-job**: a half-done house install is in `GameState.Installs` and comes back on load. Kit you put down, odd jobs and orders in progress are not saved.
+- **Money**: a line going live pays the modem's price plus the first month. A fully connected town with a technician is modestly profitable (a test guards this).
 - Install flow: sign up (knock or answering machine) → hands-on install at their house (uses a modem from Sol's Electronics) → wire at the frame → billed monthly.
-- The house install is `Telo.Sim/Minigames/Install/InstallJob.cs` (drop wire → junction box → socket → skirting cable → modem → optional dial-tone test). `[E]` does a step properly, `[R]` bodges it (latent defect). `game/scripts/World/InstallSite.cs` only shows the job as click points on and in the house. A half-done job is not saved; it restarts.
+- The house install is `Telo.Sim/Minigames/Install/InstallJob.cs` (drop wire → junction box → socket → skirting cable → modem → optional dial-tone test). `[E]` does a step properly, `[R]` bodges it (latent defect). `game/scripts/World/InstallSite.cs` only shows the job as click points on and in the house. A half-done install is saved and restored (`GameState.Installs`).
 - **Van kit** (`game/scripts/Player/Cargo.cs`): cable drum, ladder, toolbox and a boxed modem ride on the van. `[E]` picks one up (one thing in your hands; drum and ladder slow you), `[G]` puts it down, using the van puts it back. Kit is "on site" when held or lying within 6 m of you. What each step needs is a sim rule (`InstallJob.Needs`, `TownRules.RepairNeeds`, the `Tools` flags). Not saved: after a load it is all back on the van.
 - **First automation stage** (`work.json` → `install` stage 1, $300, needs 4 paying subscribers): once hired, the technician connects one waiting customer a day on their own (`Simulation.TechnicianDay`), needs modems in stock, and is right 85% of the time. The player can still do any install by hand.
 - **Faults**: a latent defect that surfaces at a real address becomes a `Fault` in `GameState.Faults`. The line stays bad (satisfaction −2 a day) until the player drives out with the toolbox and fixes it at the door (`TownRules.Repair`). `!` marks the house.
@@ -108,7 +114,7 @@ Decision D15 (changed 2026-11-12). Two stages:
 
 ## Sim architecture cheatsheet
 
-- `World/Simulation.cs`: facade. `NewGame`, `AdvanceDay`, `TakeEnquiry`, `FrameWorkOrder`, `NewFrameJob`, `ApplyFrameOutcome`, `NewInstallJob`, `ApplyInstallOutcome`. Saves are at version 3.
+- `World/Simulation.cs`: facade. `NewGame`, `AdvanceDay`, `TakeEnquiry`, `FrameWorkOrder`, `NewFrameJob`, `ApplyFrameOutcome`, `NewInstallJob`, `ApplyInstallOutcome`. Saves are at version 4.
 - `World/GameState.cs`: all mutable state (serialisable).
 - `Almanac/AlmanacRules.cs`: research is recall. Archive (earned from your network) is spent to recall future tech. Recalling it early adds Echo, and too much Echo triggers a Correction (the entry drifts).
 - `Work/WorkRules.cs`: earned automation. Manual → Delegated → Automated, plus the interface tier.

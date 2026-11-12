@@ -110,6 +110,7 @@ public static class TownRules
         var cust = s.Customers.FirstOrDefault(x => x.Id == customerId);
         if (cust is null || cust.SocketFitted || s.Modems <= 0) return false;
         s.Modems--; cust.SocketFitted = true;
+        s.Installs.Remove(cust.Id);
         s.Emit(EventKind.Work, $"Socket and modem fitted at {cust.Name}'s. Now wire their pair at the frame.", cust.Id);
         return true;
     }

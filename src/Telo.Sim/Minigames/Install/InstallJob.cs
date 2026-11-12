@@ -1,5 +1,6 @@
 using Telo.Sim.Core;
 using Telo.Sim.Town;
+using Telo.Sim.World;
 
 namespace Telo.Sim.Minigames.Install;
 
@@ -69,6 +70,24 @@ public sealed class InstallJob
         var rng = new DetRng(seed);
         InstallStep? fault = rng.ChancePermille(faultPermille) ? FaultCandidates[rng.Next(FaultCandidates.Length)] : null;
         return new InstallJob(customerId, customerName, fault);
+    }
+
+    // ---- saving a job in the middle --------------------------------------------------------------
+    public InstallProgress Snapshot() => new()
+    {
+        Progress = (int[])_progress.Clone(), Rushed = (bool[])_rushed.Clone(), ElapsedMinutes = ElapsedMinutes, Tested = Tested,
+        FaultFixed = _fault is null, KnownFault = KnownFault is { } k ? (int)k : -1,
+    };
+
+    /// <summary>Put a freshly generated job back to where a save left it. A snapshot from a different shape of job is ignored.</summary>
+    public InstallJob Restore(InstallProgress p)
+    {
+        if (p.Progress.Length != _progress.Length || p.Rushed.Length != _rushed.Length) return this;
+        p.Progress.CopyTo(_progress, 0); p.Rushed.CopyTo(_rushed, 0);
+        ElapsedMinutes = p.ElapsedMinutes; Tested = p.Tested;
+        if (p.FaultFixed) _fault = null;
+        KnownFault = p.KnownFault >= 0 && p.KnownFault < Steps.Count ? (InstallStep)p.KnownFault : null;
+        return this;
     }
 
     // ---- what the player can see -------------------------------------------------------------

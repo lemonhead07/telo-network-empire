@@ -2,6 +2,8 @@
 
 Written 2026-11-12 after the owner's second playtest (39 minutes, whole town connected, farm line built, nothing left to do). This is the plan for what the game *is* after the first hour and how we build it. It fits the canon in `TELO_GAMEPLAY_HANDOFF.md`; where it changes a locked decision it says so in section 10.
 
+> **Status, 2026-11-12.** The owner agreed to all of section 10 (now D17–D21 in `DECISIONS.md`) and added D22, the catalogue. **Built so far:** phase A (early act start, pager, saved installs, money pass), phase B (evening calls, engaged tones, line lamps and tally, line cards), and a first version of the catalogue (section 4a). **Next:** phase C, the Board's terminal.
+
 ## 1. What the playtest told us
 
 - **The first 40 minutes work.** Pacing good, the "quiet day" line liked, the hands-on install liked.
@@ -104,6 +106,32 @@ Every entry is something real telephone and network companies do, fictionalised.
 | **Contracts** | School, clinic, quarry: a promise with a date and a penalty | Steady money | A clock | Sales, later | 3 |
 
 Later eras (canon Acts 2 to 7) reuse the same slots with bigger kit: modem banks, the trench, towers and aiming for mobile, datacentres, and finally satellites launched off this planet. They are not designed here.
+
+## 4a. The catalogue: more to sell than "a line"
+
+Owner, 2026-11-12: ordering only lines "can feel monotonous". So a subscriber is not finished once they are connected. They ring back wanting things, and each thing is a different small job.
+
+**How it works (built, first version).** Once the basic round is learned, some answering-machine messages are existing subscribers ordering from the catalogue. You go to their house, they let you in, and you fit it by hand: each product has its own steps and its own kit. It pays a price today (less what Sol charges you for the hardware) and sometimes adds to their monthly bill. Thump it instead and it comes back as a fault. An order left for ten days goes to the national phone monopoly.
+
+| Product | Who wants it | Pays | Notable |
+|---|---|---|---|
+| Extension telephone | Anyone | $30, +$1/month | Needs the cable drum |
+| Answering machine | Families, businesses, the careful, the curious | $55 | "Record their greeting. Again. Once more." |
+| Loud outdoor bell | Gardeners and the hard of hearing | $25 | Needs the ladder |
+| Second line | Families, businesses, gamers, students | $45, +$8/month | They ring the Board for longer |
+| Fax machine | Businesses | $150, +$6/month | Biggest ticket in Act 0 |
+| 2400 fast modem | Gamers, students, the curious, businesses | $80, +$4/month | **Needs its Almanac page recalled.** Halves their time on the Board, so it eases the evening rush |
+
+**Why it matters to the loop.** It gives Sell a second half (selling *more* to the people you have), so a fully connected town keeps producing work and money. And it ties the Almanac to the shop: every page you recall can put something new on the shelf.
+
+**Where it goes next** (not built):
+
+- **More products per act**, each tied to an Almanac page where it makes sense: pager rental, payphone (the pub at the Quay), a business switchboard for Sol's, long-distance by the minute, a library terminal, the "offline mail reader" once the Board has mail.
+- **Plans, not just products:** evening-only (cheaper, off the rush), business hours, a lifeline tariff for the Promise Ledger.
+- **Choosing at the door:** when someone signs up, they pick from two or three things on a leaflet instead of always "a line", and what they pick changes the install.
+- **Stock:** hardware you buy ahead and carry, so a popular product can sell out.
+- **The technician takes orders** once you have hired a second one; until then orders are the player's job.
+- **Fashion:** what the neighbours have, people want. An answering machine next door raises the odds here.
 
 ## 5. The planet: places worth reaching
 
@@ -232,7 +260,7 @@ Art is its own track (`docs/ASSET_LIST.md`) and doesn't block any phase: every n
 
 Rivals as full companies, crime and evidence, the office designer, contracts with hidden clauses, mobile, datacentres, satellites. All are in the canon and all slot into this loop later. None is needed for the loop to feed itself.
 
-## 10. Decisions for the owner
+## 10. Decisions (all agreed by the owner, 2026-11-12)
 
 | # | Question | Recommendation | Why |
 |---|---|---|---|

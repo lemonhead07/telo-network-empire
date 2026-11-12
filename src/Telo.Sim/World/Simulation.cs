@@ -6,6 +6,7 @@ using Telo.Sim.Minigames.Frame;
 using Telo.Sim.Build;
 using Telo.Sim.Minigames.Install;
 using Telo.Sim.Minigames.OddJob;
+using Telo.Sim.Net;
 using Telo.Sim.Planet;
 using Telo.Sim.Town;
 using Telo.Sim.Work;
@@ -24,8 +25,8 @@ public sealed class Simulation
     public const long RentPerMonth = 120;
     /// <summary>A part-time junior on 1983 small-town wages. (Economy is not balanced yet.)</summary>
     public const long WagePerStaffPerMonth = 90;
-    /// <summary>A new line pays a one-off connection fee, this many months' worth, the day it goes live.</summary>
-    public const int ConnectionFeeMonths = 2;
+    /// <summary>A new line pays for its modem (sold at cost) and its first month, the day it goes live.</summary>
+    public static long ConnectionFee(Customer c) => TownRules.ModemPrice + c.MonthlyFee;
 
     public Simulation(ContentDb content, GameState state)
     {
@@ -52,7 +53,9 @@ public sealed class Simulation
         s.Day++;
         AlmanacRules.Tick(s, Content);
         LedgerRules.Tick(s, Content);
+        BoardRules.ApplyEvening(s, Content, s.Day - 1);   // last night at the Board
         TownRules.Tick(s, Content, _rng);
+        OrderRules.Tick(s, Content);
         TechnicianDay();
         SurfaceDefects();
         DriftSatisfaction();
@@ -68,11 +71,13 @@ public sealed class Simulation
     {
         var s = State;
         long revenue = s.Customers.Where(c => c.Live && c.Installed).Sum(c => c.MonthlyFee);
-        long costs = RentPerMonth + s.Staff * WagePerStaffPerMonth + WorkRules.MonthlyUpkeep(s, Content);
+        long costs = RentPerMonth + s.Staff * WagePerStaffPerMonth + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s);
         s.RevenueLastMonth = revenue;
         s.RevenueThisMonth = 0;
         s.Cash += revenue - costs;
         s.Emit(EventKind.Money, $"Month closed: billed ${revenue}, paid ${costs}. Cash ${s.Cash}.");
+        if (s.EngagedThisMonth > 0) s.Emit(EventKind.Defect, $"The tally sheet for the month: {s.EngagedThisMonth} engaged tones on {BoardRules.Home(s).LinesIn} lines.");
+        s.EngagedThisMonth = 0;
         if (s.Cash < 0) s.Emit(EventKind.Money, "The bank has written. In red ink, which feels personal.");
     }
 
@@ -115,6 +120,7 @@ public sealed class Simulation
                 return;
             }
             s.Modems--; cust.SocketFitted = true;
+            s.Installs.Remove(cust.Id);
         }
         GoLive(cust);
         s.TechInstalls++;
@@ -128,7 +134,7 @@ public sealed class Simulation
     {
         var s = State;
         c.Installed = true;
-        long fee = c.MonthlyFee * ConnectionFeeMonths;
+        long fee = ConnectionFee(c);
         s.Cash += fee;
         if (s.LiveSubscribers == 1) s.Emit(EventKind.Milestone, $"First customer: {c.Name}. A dial tone, a modem shriek, a thank-you, and ${fee} for the connection.", c.Id);
         else s.Emit(EventKind.Money, $"{c.Name}'s line is live. ${fee} connection fee, then ${c.MonthlyFee} a month.", c.Id);
@@ -141,6 +147,21 @@ public sealed class Simulation
         do { AdvanceDay(); n++; }
         while (n < maxDays && Guidance.IsQuiet(State, Content) && !State.Date.IsFirstOfMonth);
         return n;
+    }
+
+    /// <summary>A subscriber rings to order something from the catalogue (used by the phone, and by checks).</summary>
+    public Order? OfferOrder()
+    {
+        var order = OrderRules.Offer(State, Content, _rng);
+        State.RngState = _rng.State;
+        return order;
+    }
+
+    public bool CompleteOrder(string orderId, bool bodged)
+    {
+        bool ok = OrderRules.Complete(State, Content, _rng, orderId, bodged);
+        State.RngState = _rng.State;
+        return ok;
     }
 
     public OddJobTask? NewOddJobTask(string jobId) =>
@@ -255,7 +276,10 @@ public sealed class Simulation
         if (State.MessagesWaiting > 0) State.MessagesWaiting--;
         Customer? c = null;
         var prospects = TownRules.Prospects(State, Content).ToList();
-        if (prospects.Count > 0) c = TownRules.SignUp(State, prospects[_rng.Next(prospects.Count)]);
+        // once the round is learned, some calls are existing subscribers wanting something from the catalogue
+        bool free = Onboarding.Reached(State, Content, OnboardingStep.Free);
+        if (free && (prospects.Count == 0 || _rng.ChancePermille(400)) && OrderRules.Offer(State, Content, _rng) is not null) { }
+        else if (prospects.Count > 0) c = TownRules.SignUp(State, prospects[_rng.Next(prospects.Count)]);
         else if (Content.Lots.Count == 0)
         {
             var (arch, fee) = Archetypes[_rng.Next(Archetypes.Length)];
@@ -288,7 +312,14 @@ public sealed class Simulation
     {
         var cust = State.Customers.FirstOrDefault(c => c.Id == customerId && c.Live);
         if (cust is null || cust.SocketFitted || State.Modems <= 0) return null;
-        return InstallJob.Generate(DetRng.Derive(State.Seed, $"install:{cust.Id}"), cust.Id, cust.Name);
+        var job = InstallJob.Generate(DetRng.Derive(State.Seed, $"install:{cust.Id}"), cust.Id, cust.Name);
+        return State.Installs.TryGetValue(cust.Id, out var saved) ? job.Restore(saved) : job;
+    }
+
+    /// <summary>Remember how far a house install has got, so a save in the middle of it comes back to the same step.</summary>
+    public void RecordInstall(InstallJob job)
+    {
+        if (State.Customers.Any(c => c.Id == job.CustomerId && c.Live && !c.SocketFitted)) State.Installs[job.CustomerId] = job.Snapshot();
     }
 
     /// <summary>Send the technician if the 'install' work kind has been delegated; otherwise the player does it by hand.</summary>

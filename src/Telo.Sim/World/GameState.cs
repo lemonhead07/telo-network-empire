@@ -23,6 +23,10 @@ public sealed class Customer
     public string? LotId { get; set; }
     /// <summary>The wall socket and modem are in at their house. Needed before the frame work means anything.</summary>
     public bool SocketFitted { get; set; } = true;
+    /// <summary>Which exchange their line runs to (v4).</summary>
+    public string ExchangeId { get; set; } = "ex-town";
+    /// <summary>Catalogue products fitted here (v4).</summary>
+    public List<string> Products { get; set; } = new();
 }
 
 public enum HouseholdStatus { Unknown, Declined, Signed }
@@ -72,6 +76,51 @@ public sealed class LineProgress
     public int Strung { get; set; }
 }
 
+/// <summary>A place lines run to: your frame and the Board behind it. Later, cabinets and other towns.</summary>
+public sealed class Exchange
+{
+    public required string Id { get; set; }
+    public string Name { get; set; } = "";
+    /// <summary>How many callers the Board can answer at once.</summary>
+    public int LinesIn { get; set; } = 2;
+}
+
+/// <summary>How one evening went at an exchange.</summary>
+public sealed class EveningReport
+{
+    public int Day { get; set; }
+    public int LinesIn { get; set; }
+    public int Attempts { get; set; }
+    /// <summary>Engaged tones heard.</summary>
+    public int Engaged { get; set; }
+    /// <summary>Customers who never got through.</summary>
+    public List<string> GaveUp { get; set; } = new();
+    public int Peak { get; set; }
+    public int BusiestSlot { get; set; }
+    /// <summary>Lines in use in each half-hour from 18:00.</summary>
+    public int[] InUse { get; set; } = Array.Empty<int>();
+}
+
+/// <summary>A house install part-way through, so a save in the middle of a job comes back where it was.</summary>
+public sealed class InstallProgress
+{
+    public int[] Progress { get; set; } = Array.Empty<int>();
+    public bool[] Rushed { get; set; } = Array.Empty<bool>();
+    public int ElapsedMinutes { get; set; }
+    public bool Tested { get; set; }
+    public bool FaultFixed { get; set; }
+    public int KnownFault { get; set; } = -1;
+}
+
+/// <summary>Something a subscriber has rung up to order and is waiting for.</summary>
+public sealed class Order
+{
+    public required string Id { get; set; }
+    public required string CustomerId { get; set; }
+    public required string ProductId { get; set; }
+    public int PlacedDay { get; set; }
+}
+
 public sealed class PromiseRecord
 {
     public PromiseStatus Status { get; set; }
@@ -84,7 +133,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -127,6 +176,20 @@ public sealed class GameState
     public int FaultsFixed { get; set; }
     /// <summary>Pole lines under construction, by premise id (v3).</summary>
     public Dictionary<string, LineProgress> Lines { get; set; } = new();
+
+    // v4: the network carries something
+    public List<Exchange> Exchanges { get; set; } = new() { new Exchange { Id = "ex-town", Name = "Main Street" } };
+    /// <summary>Line cards bought but not yet fitted.</summary>
+    public int LineCards { get; set; }
+    public EveningReport? LastEvening { get; set; }
+    public int EngagedThisMonth { get; set; }
+    /// <summary>House installs under way, by customer id.</summary>
+    public Dictionary<string, InstallProgress> Installs { get; set; } = new();
+    /// <summary>Days ahead of the rest of the world each act was begun, by act id. Rivals start from the public date.</summary>
+    public Dictionary<string, int> HeadStartDays { get; set; } = new();
+    /// <summary>Catalogue orders waiting to be fitted.</summary>
+    public List<Order> Orders { get; set; } = new();
+    public int OrdersDone { get; set; }
     public List<GameEvent> Log { get; set; } = new();
     public int NextId { get; set; } = 1;
 

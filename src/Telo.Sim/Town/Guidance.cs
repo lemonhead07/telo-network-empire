@@ -1,4 +1,5 @@
 using Telo.Sim.Content;
+using Telo.Sim.Net;
 using Telo.Sim.Work;
 using Telo.Sim.World;
 
@@ -36,6 +37,22 @@ public static class Guidance
         if (s.Faults.FirstOrDefault() is { } fault && s.Customers.FirstOrDefault(x => x.Id == fault.CustomerId) is { } faulty)
             return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
 
+        // someone is waiting for something they ordered
+        if (s.Orders.FirstOrDefault() is { } order && s.Customers.FirstOrDefault(x => x.Id == order.CustomerId) is { } buyer && c.Products.TryGetValue(order.ProductId, out var wanted))
+            return ($"Order: fit {wanted.Name.ToLowerInvariant()} at {buyer.Name}'s (${wanted.Price}).", buyer.LotId);
+
+        // the Board is full of an evening: more lines in
+        if (s.LineCards > 0) return ("Fit the line card beside the frame in your room.", null);
+        if (s.LastEvening is { GaveUp.Count: >= 2 } eve)
+        {
+            if (BoardRules.CanAddLine(s))
+                return s.Cash >= BoardRules.CardPrice
+                    ? ($"The Board was engaged last night ({eve.GaveUp.Count} gave up). Buy a line card at Sol's (${BoardRules.CardPrice}).", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id)
+                    : ($"The Board was engaged last night. A line card is ${BoardRules.CardPrice}; you have ${s.Cash}.", BestJob(s, c)?.LotId);
+            if (s.Entries.GetValueOrDefault(BoardRules.HuntGroupEntry) == EntryStatus.Readable)
+                return ("The Board can't take a fifth line. PIP's Almanac has a page on hunt groups.", null);
+        }
+
         bool tech = c.Work.ContainsKey("install") && WorkRules.Current(s, c, "install").Mode != WorkMode.Manual;
         if (!tech && c.Work.ContainsKey("install") && WorkRules.CanUpgrade(s, c, "install") == UpgradeResult.Ok)
             return ($"You can afford a technician (${WorkRules.Next(s, c, "install")!.Cost}). Hire them in the company notebook in your room.", null);
@@ -65,6 +82,9 @@ public static class Guidance
                 ? $"Pole line to {far.Name}: string the next span (cable drum and ladder)."
                 : $"Pole line to {far.Name}: plant pole {line.Planted + 1} along the farm road (poles are on the van, ${far.PoleLine!.PoleCost} each).", null);
         }
+        // this chapter's work is done and the world hasn't caught up: remember the next one early
+        if (ActRules.EarlyStartEntry(s, c) is { } page && s.Archive >= page.ArchiveCost)
+            return ($"Get ahead: recall \"{page.Title}\" in PIP's Almanac ({page.ArchiveCost} Archive).", null);
         var prospect = TownRules.Prospects(s, c).FirstOrDefault(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay);
         if (prospect is not null) return ($"Knock on doors to find customers. Try {prospect.Resident}'s.", prospect.Id);
         if (BestJob(s, c) is { } any) return ($"Odd job: {any.Title.ToLowerInvariant()} at {Who(c, any)}'s (${any.Pay}).", any.LotId);

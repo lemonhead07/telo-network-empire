@@ -101,6 +101,7 @@ public partial class Hud : Control
         string counters = $"Cash ${s.Cash}"
             + (step >= OnboardingStep.OddJob ? $"   Subscribers {s.LiveSubscribers}" : "")
             + (step >= OnboardingStep.Install ? $"   Awaiting install {s.PendingInstalls}   Modems {s.Modems}" : "")
+            + (step >= OnboardingStep.Free && s.LastEvening is { } eve ? $"   Board {eve.Peak}/{eve.LinesIn} lines{(eve.Engaged > 0 ? $", {eve.Engaged} engaged" : "")}" : "")
             + (s.Faults.Count > 0 ? $"   Faults {s.Faults.Count}" : "");
         _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\n{counters}";
         _right.Text = (step >= OnboardingStep.Free ? $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n" : "") + $"{where}\n[F1] God keys  [F5] Save";

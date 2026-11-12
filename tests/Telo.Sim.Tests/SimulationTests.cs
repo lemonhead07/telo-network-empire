@@ -28,7 +28,7 @@ public class SimulationTests
         sim.AddCustomer("Ada", "family", 30);
         long before = sim.State.Cash;
         while (!sim.State.Date.IsFirstOfMonth) sim.AdvanceDay();
-        Assert.Equal(before + 30 - Simulation.RentPerMonth, sim.State.Cash);
+        Assert.Equal(before + 30 - Simulation.RentPerMonth - Net.BoardRules.MonthlyRental(sim.State), sim.State.Cash);
     }
 
     [Fact]
