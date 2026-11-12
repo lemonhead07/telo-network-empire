@@ -55,6 +55,7 @@ public static class TownRules
     {
         if (!c.Lots.TryGetValue(lotId, out var lot)) return KnockResult.NoSuchLot;
         if (lot.Premise is not null) return KnockResult.LastMile;
+        if (!Onboarding.CanKnock(s, c)) return KnockResult.TooSoon;
         var h = HouseholdOf(s, lotId);
         if (h.Status == HouseholdStatus.Signed) return KnockResult.AlreadySigned;
         if (s.Day < h.RetryDay) return KnockResult.TooSoon;
@@ -162,6 +163,6 @@ public static class TownRules
             s.Jobs.Remove(j);
             if (c.Lots.TryGetValue(j.LotId, out var lot)) s.Emit(EventKind.Info, $"{lot.Resident} got someone else in for \"{j.Title}\".", j.LotId);
         }
-        if (c.Lots.Count > 0 && s.Jobs.Count < 3 && rng.ChancePermille(600)) OfferJob(s, c, rng);
+        if (c.Lots.Count > 0 && s.Jobs.Count < Onboarding.JobLimit(s, c) && rng.ChancePermille(600)) OfferJob(s, c, rng);
     }
 }

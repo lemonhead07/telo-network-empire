@@ -286,6 +286,8 @@ public partial class GameRoot : Node3D
         if (lot.Premise is not null)
             return ($"{lot.Resident}: \"A line out here? I've asked twice.\" (Promise Ledger, in your notebook)", null);
 
+        // a new player isn't asked to sell door to door until they have seen one customer through
+        if (!Onboarding.CanKnock(s, _content)) return (lot.Kind == LotKind.House ? $"{lot.Resident}'s house" : lot.Resident, null);
         var h = TownRules.HouseholdOf(s, lot.Id);
         if (s.Day < h.RetryDay)
             return (h.Status == HouseholdStatus.Declined ? $"{lot.Resident} said no. Try again in {h.RetryDay - s.Day} days" : $"Nobody home at {lot.Resident}'s. Try tomorrow", null);
@@ -482,13 +484,15 @@ public partial class GameRoot : Node3D
         // --- town: every door offers something; an odd job pays ---
         bool doors = _town.Lots.All(l => !string.IsNullOrWhiteSpace(l.Door.Prompt()));
         long cash = Sim.State.Cash;
+        bool quietStart = Sim.State.Jobs.Count == 0 && Sim.State.MessagesWaiting == 1 && Sim.State.Log.Count == 1 && _town.Lots.All(l => !l.Door.CanUse());
+        Sim.OfferJob();
         var jobLot = _town.Lots.First(l => TownRules.JobAt(Sim.State, l.Lot.Id) is not null);
         jobLot.Door.OnUse!();
-        bool paid = Sim.State.Cash > cash;
+        bool paid = quietStart && Sim.State.Cash > cash;
 
         // --- house install: sign someone up, get let in, walk through the door, do every step by hand ---
         Customer? first = null;
-        for (int i = 0; i < 6 && first is null; i++) { Sim.State.MessagesWaiting = 1; first = Sim.TakeEnquiry(); }
+        for (int i = 0; i < 10 && (first is null || _town.Lots.First(l => l.Lot.Id == first.LotId).Install is null); i++) { Sim.State.MessagesWaiting = 1; first = Sim.TakeEnquiry(); } // until it is someone in a house
         var home = _town.Lots.First(l => l.Lot.Id == first!.LotId);
         bool house = false;
         if (home.Install is { } site)
@@ -610,7 +614,7 @@ public partial class GameRoot : Node3D
         }
         // a house part-way through an install: outside wall, then indoors
         Customer? shown = null;
-        for (int i = 0; i < 6 && shown is null; i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }
+        for (int i = 0; i < 10 && (shown is null || _town.Lots.First(l => l.Lot.Id == shown.LotId).Install is null); i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }
         if (shown is not null && _town.Lots.First(l => l.Lot.Id == shown.LotId) is { Install: { } site } home)
         {
             await Shot("-van", _van.ToGlobal(new Vector3(2.6f, 2.0f, 5.2f)), _van.ToGlobal(new Vector3(0, 1.2f, 1.6f)));

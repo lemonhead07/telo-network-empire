@@ -27,17 +27,16 @@ public sealed class Simulation
         Content = content;
         State = state;
         _rng = new DetRng(state.RngState);
-        AlmanacRules.RefreshStatuses(State, Content); // derived state is recomputed, never trusted from disk
+        AlmanacRules.RefreshStatuses(State, Content, quiet: State.Entries.Count == 0); // derived state is recomputed, never trusted from disk
     }
 
     public static Simulation NewGame(ContentDb content, ulong seed)
     {
-        var s = new GameState { Seed = seed, RngState = seed, Day = StartDate.Day, Cash = StartingCash, MessagesWaiting = 3 };
+        var s = new GameState { Seed = seed, RngState = seed, Day = StartDate.Day, Cash = StartingCash, MessagesWaiting = 1 };
         foreach (var w in content.Work.Keys) s.WorkStage[w] = 0;
         s.Emit(EventKind.Info, "PIP: \"…signal. Low battery. Year reads 1983. That can't be right.\"");
         var sim = new Simulation(content, s);
-        if (content.Lots.Count > 0) { TownRules.OfferJob(s, content, sim._rng); TownRules.OfferJob(s, content, sim._rng); s.RngState = sim._rng.State; }
-        return sim;
+        return sim; // no odd jobs yet: a new player meets one thing at a time (see Town/Onboarding)
     }
 
     public void AdvanceDays(int days) { for (int i = 0; i < days; i++) AdvanceDay(); }
@@ -54,7 +53,7 @@ public sealed class Simulation
         DriftSatisfaction();
         // Word of mouth: happy subscribers bring enquiries.
         int happy = s.Customers.Count(c => c.Live && c.Installed && c.Satisfaction >= 60);
-        if (s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, 250 + 40 * happy))) s.MessagesWaiting++;
+        if (Onboarding.PhoneRings(s, Content) && s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, 250 + 40 * happy))) s.MessagesWaiting++;
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
         s.RngState = _rng.State;
@@ -174,6 +173,14 @@ public sealed class Simulation
         return c;
     }
 
+    /// <summary>Someone rings with an odd job (used when the phone has nothing better, and by checks).</summary>
+    public OddJob? OfferJob()
+    {
+        var job = TownRules.OfferJob(State, Content, _rng);
+        State.RngState = _rng.State;
+        return job;
+    }
+
     public KnockResult Knock(string lotId)
     {
         var r = TownRules.Knock(State, Content, _rng, lotId);
@@ -254,6 +261,8 @@ public sealed class Simulation
             if (s.LiveSubscribers == 1) s.Emit(EventKind.Milestone, $"First customer: {c.Name}. A dial tone, a modem shriek, a thank-you.", c.Id);
         }
         foreach (var c in s.Customers) c.Satisfaction = Math.Clamp(c.Satisfaction, 0, 100);
+        // the first line is live: now, and only now, the neighbours start asking for odd jobs
+        if (Onboarding.Current(s, Content) == OnboardingStep.OddJob && s.Jobs.Count == 0) TownRules.OfferJob(s, Content, _rng);
         s.RngState = _rng.State;
     }
 }

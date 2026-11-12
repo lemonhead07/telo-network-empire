@@ -47,7 +47,8 @@ public static class AlmanacRules
 
     public static int EchoCost(GameState s, ContentDb c, AlmanacEntryDef e) => YearsEarly(s, c, e) * e.EchoPerYearEarly;
 
-    public static void RefreshStatuses(GameState s, ContentDb c)
+    /// <param name="quiet">Don't announce pages that become readable (the opening state of a new game is not news).</param>
+    public static void RefreshStatuses(GameState s, ContentDb c, bool quiet = false)
     {
         foreach (var e in c.Almanac.Values)
         {
@@ -60,7 +61,7 @@ public static class AlmanacRules
             if (next != cur)
             {
                 s.Entries[e.Id] = next;
-                if (next == EntryStatus.Readable)
+                if (next == EntryStatus.Readable && !quiet)
                     s.Emit(EventKind.Info, $"PIP: a page un-corrupts — \"{e.Title}\".", e.Id);
             }
         }

@@ -134,7 +134,8 @@ public class TownTests
     public void OddJobsPayAndBuildGoodwill()
     {
         var sim = TestContent.NewGame(11);
-        Assert.NotEmpty(sim.State.Jobs);
+        Assert.Empty(sim.State.Jobs);            // a new player isn't offered odd jobs until the first line is live
+        Assert.NotNull(sim.OfferJob());
         var job = sim.State.Jobs[0];
         long before = sim.State.Cash;
         Assert.NotNull(Town.TownRules.CompleteJob(sim.State, sim.Content, job.Id));
@@ -146,6 +147,7 @@ public class TownTests
     public void KnockingEventuallySignsNeighbours_AndGuidanceAlwaysHasAnAnswer()
     {
         var sim = TestContent.NewGame(5);
+        sim.AddCustomer("Early", "x", 5); sim.AddCustomer("Adopter", "x", 5); // past the first-hour steps, where doors are for knocking
         for (int day = 0; day < 60; day++)
         {
             foreach (var lot in sim.Content.Lots.Values) sim.Knock(lot.Id);

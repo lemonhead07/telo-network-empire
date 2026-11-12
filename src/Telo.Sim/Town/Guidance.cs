@@ -12,6 +12,23 @@ public static class Guidance
 {
     public static (string Text, string? LotId) Next(GameState s, ContentDb c)
     {
+        // The first hour: one new thing at a time, each explained once in the line the player is already reading.
+        switch (Onboarding.Current(s, c))
+        {
+            case OnboardingStep.Enquiry when s.MessagesWaiting > 0:
+                return ("The answering machine in your room is blinking. Play it: someone wants a line.", null);
+            case OnboardingStep.Install when s.Modems > 0 && s.Customers.FirstOrDefault(x => x.Live && !x.SocketFitted) is { } firstCust:
+                return ($"Your first customer. Drive to {firstCust.Name}'s, carry the kit from the van, knock, and follow the yellow markers.", firstCust.LotId);
+            case OnboardingStep.Frame:
+                return ("The house is wired. Back in your room, work the frame on the wall to switch the line on.", null);
+            case OnboardingStep.OddJob:
+                return BestJob(s, c) is { } firstJob
+                    ? ($"One subscriber won't pay the rent. A neighbour has an odd job: {firstJob.Title.ToLowerInvariant()} at {Who(c, firstJob)}'s (${firstJob.Pay}). Look for the $.", firstJob.LotId)
+                    : ("One subscriber won't pay the rent. Sleep until morning: someone will ring with an odd job.", null);
+            case OnboardingStep.Knock when TownRules.Prospects(s, c).FirstOrDefault(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay) is { } firstDoor:
+                return ($"Customers don't all ring you. Knock on a door and ask: try {firstDoor.Resident}'s.", firstDoor.Id);
+        }
+
         if (s.Faults.FirstOrDefault() is { } fault && s.Customers.FirstOrDefault(x => x.Id == fault.CustomerId) is { } faulty)
             return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
 

@@ -1,5 +1,6 @@
 using Godot;
 using Telo.Sim.Almanac;
+using Telo.Sim.Town;
 using Telo.Sim.World;
 
 namespace Telo.Game.UI;
@@ -48,11 +49,17 @@ public partial class Hud : Control
     {
         var s = sim.State;
         var act = sim.Content.ActAt(s.ActIndex);
-        _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\nCash ${s.Cash}   Subscribers {s.LiveSubscribers}   Awaiting install {s.PendingInstalls}   Modems {s.Modems}{(s.Faults.Count > 0 ? $"   Faults {s.Faults.Count}" : "")}";
-        _right.Text = $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n{where}\n[F] Survey flight  [F5] Save";
+        // Numbers appear when the player first has a use for them (see Town/Onboarding), not all at once.
+        var step = Onboarding.Current(s, sim.Content);
+        string counters = $"Cash ${s.Cash}"
+            + (step >= OnboardingStep.OddJob ? $"   Subscribers {s.LiveSubscribers}" : "")
+            + (step >= OnboardingStep.Install ? $"   Awaiting install {s.PendingInstalls}   Modems {s.Modems}" : "")
+            + (s.Faults.Count > 0 ? $"   Faults {s.Faults.Count}" : "");
+        _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\n{counters}";
+        _right.Text = (step >= OnboardingStep.Free ? $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n" : "") + $"{where}\n[F] Survey flight  [F5] Save";
         _prompt.Text = prompt ?? "";
         _next.Text = next;
-        _feed.Text = string.Join("\n", s.Log.TakeLast(5).Select(e => $"{new Telo.Sim.Core.GameDate(e.Day)} — {e.Text}"));
+        _feed.Text = string.Join("\n", s.Log.TakeLast(step >= OnboardingStep.Free ? 5 : 3).Select(e => $"{new Telo.Sim.Core.GameDate(e.Day)} — {e.Text}"));
     }
 
     public void SetCrosshair(bool visible) => _crosshair.Visible = visible;

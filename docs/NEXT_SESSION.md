@@ -12,6 +12,8 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 
 5. **New infrastructure:** with installs running themselves, the "what next" line sends the player to build the pole line to Hollow Farm: 14 poles beside the farm road. Take a pole off the van roof, plant it at the yellow marker ($15, 30 min), then string each span from the blue marker (cable drum and ladder, 15 min). The last span reaches the farmhouse and connects Ruth Adeyemi. The old "Connect them ($350)" button is gone for her: this line can only be built.
 
+**The first hour is staged.** A new game starts with one phone message and nothing else: no odd jobs, no door-knocking, no Almanac notices, a short HUD. Each thing appears only after the one before has been done once: answering machine → install → frame → first odd job → door-knocking → everything. Later systems were already gated (the hire needs 4 subscribers, faults come weeks later, pole-line markers appear after the hire).
+
 ## Plan for next time (in order)
 1. **Repairs hands-on:** the fault names a stage; fix it at that point on the house (reuse `InstallSite` click points) instead of one press at the door.
 2. **The technician as a person:** a named placeholder figure in your room and at the house they are working on, with one line of dialogue.
