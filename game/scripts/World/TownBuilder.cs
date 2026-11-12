@@ -12,6 +12,11 @@ public sealed class LotView
     public required Label3D Marker { get; init; }
     public Interactable? Counter { get; init; }
     public Vector3 Position { get; init; }
+    public required Node3D Body { get; init; }
+    /// <summary>Houses you can walk into have a door that opens and places to do an install. Null for other buildings.</summary>
+    public InstallSite? Install { get; init; }
+    public Action<bool>? SetDoor { get; init; }
+    public bool DoorOpen { get; set; }
 }
 
 /// <summary>What the rest of the game needs to know about the settlements.</summary>
@@ -74,14 +79,18 @@ public static class TownBuilder
         {
             if (gen.SiteById(lot.Site) is not { } site) continue;
             var xf = Place(gen, site, (float)lot.East, (float)lot.South, (float)lot.Yaw);
+            float wallH = 3f + (i % 2) * 0.5f;
+            var solids = new List<(Vector3 Pos, Vector3 Size)>();
             Mesh mesh = lot.Kind switch
             {
                 LotKind.Shop => ShopMesh(),
                 LotKind.Farm => FarmMesh(),
-                _ => HouseMesh(palette[i % palette.Length], roofs[i % roofs.Length], 3f + (i % 2) * 0.5f),
+                _ => HouseMesh(palette[i % palette.Length], roofs[i % roofs.Length], wallH, solids),
             };
             i++;
-            town.Lots.Add(Building(root, lot, xf, mesh));
+            // how far the street's pole line is from this front door (the drop wire comes from there)
+            float poleDist = Mathf.Abs((float)lot.South - PoleLineSouth);
+            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist));
         }
 
         // --- Main Street ---------------------------------------------------------------------
@@ -97,19 +106,51 @@ public static class TownBuilder
             .Box(new Vector3(0, 6.75f, -0.7f), new Vector3(0.08f, 0.18f, 0.08f), new Color(0.75f, 0.8f, 0.78f))
             .Box(new Vector3(0, 6.75f, 0.7f), new Vector3(0.08f, 0.18f, 0.08f), new Color(0.75f, 0.8f, 0.78f)).Build();
         for (float x = -90; x <= 90; x += 30)
-            root.AddChild(new MeshInstance3D { Mesh = pole, Transform = Place(gen, x, 11.5f) });
+            root.AddChild(new MeshInstance3D { Mesh = pole, Transform = Place(gen, x, PoleLineSouth) });
 
         return town;
     }
 
-    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh)
+    public const float PoleLineSouth = 11.5f;
+    /// <summary>Height of a house's floor above its lot origin (keeps the lawn from poking through the carpet).</summary>
+    public const float HouseFloor = 0.15f;
+
+    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist)
     {
-        bool shop = lot.Kind == LotKind.Shop;
+        bool shop = lot.Kind == LotKind.Shop, house = lot.Kind == LotKind.House;
         float w = shop ? 10 : 8, d = shop ? 8 : 7, front = d / 2;
         var body = new StaticBody3D { Name = lot.Id, Transform = xf };
         body.AddChild(new MeshInstance3D { Mesh = mesh });
-        body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(w, 4, d) }, Position = new Vector3(0, 1.5f, 0) });
+        if (!house) body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(w, 4, d) }, Position = new Vector3(0, 1.5f, 0) });
+        foreach (var (pos, size) in solids) body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = size }, Position = pos });
         root.AddChild(body);
+
+        InstallSite? install = null;
+        Action<bool>? setDoor = null;
+        if (house)
+        {
+            // a ramp over the doorstep, a door that can stand open, a ceiling light, and the install points
+            var ramp = new StaticBody3D { Position = new Vector3(0, HouseFloor - 0.115f, front + 0.75f), RotationDegrees = new Vector3(6.5f, 0, 0) };
+            ramp.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(1.5f, 0.1f, 1.6f) } });
+            ramp.AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(1.5f, 0.1f, 1.6f), new Color(0.6f, 0.58f, 0.55f)).Instance());
+            body.AddChild(ramp);
+
+            var brown = new Color(0.34f, 0.22f, 0.15f);
+            var closed = new StaticBody3D { Position = new Vector3(0, HouseFloor + 1.02f, front - 0.1f) };
+            var shape = new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(1.1f, 2.05f, 0.2f) } };
+            closed.AddChild(shape);
+            closed.AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(1.08f, 2.04f, 0.1f), brown)
+                .Box(new Vector3(0.38f, 0, 0.07f), new Vector3(0.06f, 0.06f, 0.06f), new Color(0.8f, 0.7f, 0.3f)).Instance());
+            body.AddChild(closed);
+            var open = new LowPoly().Box(new Vector3(-0.52f, HouseFloor + 1.02f, front - 0.7f), new Vector3(0.08f, 2.04f, 1.04f), brown).Instance();
+            open.Visible = false;
+            body.AddChild(open);
+            setDoor = isOpen => { closed.Visible = !isOpen; open.Visible = isOpen; shape.SetDeferred(CollisionShape3D.PropertyName.Disabled, isOpen); };
+
+            body.AddChild(new OmniLight3D { Position = new Vector3(0, wallH - 0.6f, 0), LightColor = new Color(1f, 0.86f, 0.68f), LightEnergy = 1.0f, OmniRange = 7 });
+            install = new InstallSite(wallH, HouseFloor, poleDist);
+            body.AddChild(install);
+        }
 
         Interactable Hotspot(Vector3 pos, Vector3 size)
         {
@@ -119,6 +160,7 @@ public static class TownBuilder
             return it;
         }
         var door = Hotspot(new Vector3(0, 1.05f, front + 0.15f), new Vector3(1.3f, 2.1f, 0.4f));
+        if (house) { door.CollisionLayer = 2; door.CollisionMask = 0; } // you can look at it and knock, and walk through when the door is open
         var counter = shop ? Hotspot(new Vector3(3f, 1.4f, front + 0.15f), new Vector3(2.6f, 1.6f, 0.4f)) : null;
 
         var name = new Label3D
@@ -136,7 +178,7 @@ public static class TownBuilder
             Visible = false,
         };
         body.AddChild(marker);
-        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin };
+        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor };
     }
 
     /// <summary>The road surface, laid onto the real terrain by ray-casting down. Call once physics has the terrain.</summary>
@@ -184,21 +226,48 @@ public static class TownBuilder
         }
     }
 
-    private static Mesh HouseMesh(Color wall, Color roof, float wallH)
+    /// <summary>A hollow house you can walk into: thin walls around a doorway, a floor, a ceiling and a few sticks of furniture.</summary>
+    private static Mesh HouseMesh(Color wall, Color roof, float wallH, List<(Vector3 Pos, Vector3 Size)> solids)
     {
+        const float F = HouseFloor, T = 0.2f;
         var glass = new Color(0.30f, 0.42f, 0.52f); var trim = new Color(0.93f, 0.9f, 0.84f);
-        var lp = new LowPoly()
-            .Box(new Vector3(0, wallH / 2 - 0.3f, 0), new Vector3(8, wallH + 0.6f, 7), wall)
-            .GableRoof(new Vector3(0, wallH, 0), 8.8f, 7.8f, 2.3f, roof)
-            .Box(new Vector3(0, 1.0f, 3.52f), new Vector3(1.0f, 2.0f, 0.08f), new Color(0.34f, 0.22f, 0.15f))
-            .Box(new Vector3(0, 0.05f, 4.0f), new Vector3(1.6f, 0.12f, 0.9f), new Color(0.6f, 0.58f, 0.55f))
-            .Box(new Vector3(2.6f, wallH + 1.6f, -1.2f), new Vector3(0.7f, 1.8f, 0.7f), new Color(0.55f, 0.36f, 0.3f));
+        var wood = new Color(0.42f, 0.28f, 0.16f); var fabric = new Color(0.36f, 0.42f, 0.5f);
+        var lp = new LowPoly();
+        void Solid(Vector3 c, Vector3 s, Color col) { lp.Box(c, s, col); solids.Add((c, s)); }
+
+        Solid(new Vector3(0, -0.3f, 0), new Vector3(8, 0.6f, 7), wall);                                  // foundation
+        Solid(new Vector3(0, F / 2, 0), new Vector3(8 - 2 * T, F, 7 - 2 * T), new Color(0.5f, 0.36f, 0.24f)); // floorboards
+        Solid(new Vector3(0, F / 2, 3.5f - T / 2), new Vector3(1.1f, F, T), new Color(0.6f, 0.58f, 0.55f));    // threshold
+        Solid(new Vector3(0, wallH / 2, -3.5f + T / 2), new Vector3(8, wallH, T), wall);
+        Solid(new Vector3(-4 + T / 2, wallH / 2, 0), new Vector3(T, wallH, 7 - 2 * T), wall);
+        Solid(new Vector3(4 - T / 2, wallH / 2, 0), new Vector3(T, wallH, 7 - 2 * T), wall);
+        foreach (int side in new[] { -1, 1 })                                                            // front wall, either side of the door
+            Solid(new Vector3(side * 2.275f, wallH / 2, 3.5f - T / 2), new Vector3(3.45f, wallH, T), wall);
+        float lintel = F + 2.05f;
+        Solid(new Vector3(0, (lintel + wallH) / 2, 3.5f - T / 2), new Vector3(1.1f, wallH - lintel, T), wall);
+        Solid(new Vector3(0, wallH - 0.05f, 0), new Vector3(8 - 2 * T, 0.1f, 7 - 2 * T), new Color(0.9f, 0.87f, 0.8f)); // ceiling
+
+        lp.GableRoof(new Vector3(0, wallH, 0), 8.8f, 7.8f, 2.3f, roof)
+          .Box(new Vector3(2.6f, wallH + 1.6f, -1.2f), new Vector3(0.7f, 1.8f, 0.7f), new Color(0.55f, 0.36f, 0.3f));
         foreach (float x in new[] { -2.5f, 2.5f })
         {
             lp.Box(new Vector3(x, 1.7f, 3.52f), new Vector3(1.5f, 1.2f, 0.06f), trim);
             lp.Box(new Vector3(x, 1.7f, 3.55f), new Vector3(1.3f, 1.0f, 0.06f), glass);
             lp.Box(new Vector3(x, 1.7f, -3.55f), new Vector3(1.3f, 1.0f, 0.06f), glass);
+            lp.Box(new Vector3(x, 1.7f, 3.28f), new Vector3(1.5f, 1.2f, 0.04f), trim);       // the same windows seen from indoors
+            lp.Box(new Vector3(x, 1.7f, 3.26f), new Vector3(1.3f, 1.0f, 0.04f), new Color(0.62f, 0.78f, 0.9f));
+            lp.Box(new Vector3(x, 1.7f, -3.28f), new Vector3(1.5f, 1.2f, 0.04f), trim);
+            lp.Box(new Vector3(x, 1.7f, -3.26f), new Vector3(1.3f, 1.0f, 0.04f), new Color(0.62f, 0.78f, 0.9f));
         }
+
+        // placeholder furniture: hall table (the telephone lives here), sofa, rug, television
+        Solid(new Vector3(-3.35f, F + 0.35f, -0.5f), new Vector3(0.7f, 0.7f, 0.9f), wood);
+        Solid(new Vector3(1.6f, F + 0.25f, -2.7f), new Vector3(2.2f, 0.5f, 0.9f), fabric);
+        lp.Box(new Vector3(1.6f, F + 0.6f, -3.05f), new Vector3(2.2f, 0.7f, 0.2f), fabric)
+          .Box(new Vector3(1.5f, F + 0.01f, -0.9f), new Vector3(2.6f, 0.02f, 1.8f), new Color(0.55f, 0.25f, 0.22f));
+        Solid(new Vector3(3.4f, F + 0.3f, 0.8f), new Vector3(0.6f, 0.6f, 1.0f), wood);
+        lp.Box(new Vector3(3.35f, F + 0.85f, 0.8f), new Vector3(0.5f, 0.5f, 0.6f), new Color(0.15f, 0.15f, 0.16f))
+          .Box(new Vector3(3.09f, F + 0.87f, 0.8f), new Vector3(0.02f, 0.36f, 0.46f), new Color(0.3f, 0.4f, 0.42f));
         return lp.Build();
     }
 

@@ -3,6 +3,7 @@ using Telo.Sim.Content;
 using Telo.Sim.Core;
 using Telo.Sim.Ledger;
 using Telo.Sim.Minigames.Frame;
+using Telo.Sim.Minigames.Install;
 using Telo.Sim.Town;
 using Telo.Sim.Work;
 
@@ -134,6 +135,36 @@ public sealed class Simulation
         var r = TownRules.Knock(State, Content, _rng, lotId);
         State.RngState = _rng.State;
         return r;
+    }
+
+    // ---- the install at the customer's house ---------------------------------------------------
+    /// <summary>Start (or restart) the house install for a signed customer. Needs a modem in stock. Same customer, same house, same hidden fault.</summary>
+    public InstallJob? NewInstallJob(string customerId)
+    {
+        var cust = State.Customers.FirstOrDefault(c => c.Id == customerId && c.Live);
+        if (cust is null || cust.SocketFitted || State.Modems <= 0) return null;
+        return InstallJob.Generate(DetRng.Derive(State.Seed, $"install:{cust.Id}"), cust.Id, cust.Name);
+    }
+
+    /// <summary>Send the technician if the 'install' work kind has been delegated; otherwise the player does it by hand.</summary>
+    public InstallOutcome? TryDelegateInstall(InstallJob job)
+    {
+        var stage = WorkRules.Current(State, Content, "install");
+        if (stage.Mode == WorkMode.Manual) return null;
+        return job.Delegate(_rng.NextU64(), stage.AccuracyPermille);
+    }
+
+    /// <summary>Sign off a house install: the modem leaves stock, the socket is in, and any bodges go into the wall as latent defects.</summary>
+    public bool ApplyInstallOutcome(InstallOutcome o)
+    {
+        var s = State;
+        if (!o.Complete || !TownRules.FitSocket(s, o.CustomerId)) return false;
+        foreach (var text in o.Defects)
+            s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + _rng.Range(10, 45), Source = "install", CustomerId = o.CustomerId, Text = text });
+        if (o.OvertimeMinutes > 0 && s.Customers.FirstOrDefault(c => c.Id == o.CustomerId) is { } cust)
+            cust.Satisfaction = Math.Clamp(cust.Satisfaction - Math.Min(5, 1 + o.OvertimeMinutes / 30), 0, 100);
+        s.RngState = _rng.State;
+        return true;
     }
 
     /// <summary>Lines for the next frame visit: new customers whose sockets are in, then existing subscribers to re-terminate.</summary>

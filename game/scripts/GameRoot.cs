@@ -3,6 +3,7 @@ using Telo.Game.Player;
 using Telo.Game.UI;
 using Telo.Game.World;
 using Telo.Sim.Content;
+using Telo.Sim.Minigames.Install;
 using Telo.Sim.Planet;
 using Telo.Sim.Save;
 using Telo.Sim.Town;
@@ -37,6 +38,8 @@ public partial class GameRoot : Node3D
     private Van _van = null!;
     private Transform3D _cameraHome;
     private Tween? _lean;
+    /// <summary>House installs under way, by lot. Not saved: a half-done job is simply started again.</summary>
+    private readonly Dictionary<string, InstallJob> _installs = new();
 
     private float Hour => (6f + _dayClock / DayLengthSeconds * 24f) % 24f;
     private bool AnyScreenOpen => _frame.IsOpen || _almanac.IsOpen || _notebook.IsOpen;
@@ -197,6 +200,16 @@ public partial class GameRoot : Node3D
             return ($"{job.Title} for {lot.Resident} (+${job.Pay}, {job.Hours} h)", () => { TownRules.CompleteJob(s, _content, job.Id); SpendHours(job.Hours); });
 
         var cust = TownRules.CustomerAt(s, lot.Id);
+        if (cust is { SocketFitted: false } && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } view)
+        {
+            if (_installs.TryGetValue(lot.Id, out var running))
+                return ($"{cust.Name}'s install: {(running.NextStep is { } n ? InstallJob.Def(n).Verb.ToLowerInvariant() + (InstallJob.Def(n).Outside ? " (outside wall, left of the window)" : " (indoors)") : "test the line, then sign the job sheet indoors")}", null);
+            return s.Modems > 0
+                ? (WorkRules.Current(s, _content, "install").Mode != WorkMode.Manual
+                    ? $"Send your technician in to do {cust.Name}'s install (uses a modem)"
+                    : $"Start {cust.Name}'s install: they let you in (about an hour, uses a modem)", () => StartInstall(view, cust))
+                : ($"{cust.Name} is waiting for their line. You have no modems (Sol's Electronics sells them)", null);
+        }
         if (cust is { SocketFitted: false })
             return s.Modems > 0
                 ? ($"Fit the wall socket for {cust.Name} ({TownRules.SocketHours} h, uses a modem)", () => { TownRules.FitSocket(s, cust.Id); SpendHours(TownRules.SocketHours); })
@@ -211,6 +224,49 @@ public partial class GameRoot : Node3D
         if (s.Day < h.RetryDay)
             return (h.Status == HouseholdStatus.Declined ? $"{lot.Resident} said no. Try again in {h.RetryDay - s.Day} days" : $"Nobody home at {lot.Resident}'s. Try tomorrow", null);
         return ($"Knock on {lot.Resident}'s door", () => { Sim.Knock(lot.Id); SpendHours(TownRules.KnockMinutes / 60f); });
+    }
+
+    // ---- the install at a customer's house: the sim owns the job, the house shows it -------------
+    private void StartInstall(LotView view, Customer cust)
+    {
+        if (Sim.NewInstallJob(cust.Id) is not { } job) return;
+        if (Sim.TryDelegateInstall(job) is { } done) { Sim.ApplyInstallOutcome(done); view.Install!.ShowFitted(); return; }
+        _installs[view.Lot.Id] = job;
+        OpenDoor(view, true);
+        view.Install!.Begin(job,
+            (step, rush) =>
+            {
+                int before = job.ElapsedMinutes;
+                if (step == InstallStep.Test) view.Install.NoteTest(job.Test());
+                else if (rush) job.Rush(step);
+                else job.Do(step);
+                SpendHours((job.ElapsedMinutes - before) / 60f);
+                view.Install.Sync();
+            },
+            () =>
+            {
+                if (!Sim.ApplyInstallOutcome(job.Evaluate())) return;
+                _installs.Remove(view.Lot.Id);
+                view.Install.ShowFitted();
+            });
+    }
+
+    private static void OpenDoor(LotView view, bool open)
+    {
+        if (view.DoorOpen == open) return;
+        view.DoorOpen = open;
+        view.SetDoor?.Invoke(open);
+    }
+
+    /// <summary>Houses catch up with the sim: finished installs are visible, and doors close behind you once you've left.</summary>
+    private void SyncHouses(Vector3 playerPos)
+    {
+        foreach (var v in _town.Lots)
+        {
+            if (v.Install is null) continue;
+            if (!v.Install.Fitted && !v.Install.Active && TownRules.CustomerAt(Sim.State, v.Lot.Id) is { SocketFitted: true }) v.Install.ShowFitted();
+            if (v.DoorOpen && !_installs.ContainsKey(v.Lot.Id) && (v.Position - playerPos).Length() > 6.5f) OpenDoor(v, false);
+        }
     }
 
     private void WireLot(LotView view)
@@ -276,6 +332,7 @@ public partial class GameRoot : Node3D
                 lot.Marker.Modulate = target ? new Color(1f, 0.85f, 0.2f) : new Color(0.6f, 0.95f, 0.6f);
             }
             if (!AnyScreenOpen) RefreshIdleScreens();
+            SyncHouses(_player.GlobalPosition);
         }
 
         if (targetLot is not null && _town.Lots.FirstOrDefault(l => l.Lot.Id == targetLot) is { } t)
@@ -285,7 +342,7 @@ public partial class GameRoot : Node3D
         string where = $"{biome}  alt {who.Altitude:0} m" + (_van.Driven ? $"  {Mathf.Abs(_van.Speed) * 3.6f:0} km/h{(_van.OnRoad ? "" : " (off-road)")}" : _player.Flying ? "  SURVEY FLIGHT" : "");
         string? prompt = AnyScreenOpen ? null
             : _van.Driven ? "[E] Get out   [W/S] drive   [A/D] steer"
-            : _player.Focus is { } f ? (f.CanUse() ? "[E] " : "") + f.Prompt() : null;
+            : _player.Focus is { } f ? (f.CanUse() ? "[E] " : "") + f.Prompt() + (f.AltPrompt() is { } alt ? $"   [R] {alt}" : "") : null;
         _hud.Refresh(Sim, prompt, Hour, where, AnyScreenOpen ? "" : "▶ " + next);
     }
 
@@ -348,6 +405,29 @@ public partial class GameRoot : Node3D
         jobLot.Door.OnUse!();
         bool paid = Sim.State.Cash > cash;
 
+        // --- house install: sign someone up, get let in, walk through the door, do every step by hand ---
+        Customer? first = null;
+        for (int i = 0; i < 6 && first is null; i++) { Sim.State.MessagesWaiting = 1; first = Sim.TakeEnquiry(); }
+        var home = _town.Lots.First(l => l.Lot.Id == first!.LotId);
+        bool house = false;
+        if (home.Install is { } site)
+        {
+            home.Door.OnUse!();
+            _player.PlaceAt(home.Body.ToGlobal(new Vector3(0, 0.4f, 5.6f)), -home.Body.GlobalBasis.Z);
+            await Physics(20);
+            Input.ActionPress("move_forward");
+            await Physics(110);
+            Input.ActionRelease("move_forward");
+            var inside = home.Body.ToLocal(_player.GlobalPosition);
+            bool walkedIn = inside.Z < 3.0f && Mathf.Abs(inside.X) < 3.5f && _player.IsOnFloor();
+            foreach (var spot in site.WorkOrder.ToList()) spot.OnUse!();
+            if (_installs.ContainsKey(home.Lot.Id)) foreach (var spot in site.WorkOrder.ToList()) spot.OnUse!(); // the test found a fault: redo and sign off
+            house = walkedIn && first!.SocketFitted && site.Fitted && Sim.State.Defects.All(d => d.Source != "install");
+            GD.Print($"HOUSE {(house ? "OK" : "FAIL")}: walkedIn={walkedIn} at {inside} fitted={first.SocketFitted}");
+            _player.GlobalTransform = _town.PlayerSpawn;
+            await Physics(30);
+        }
+
         // --- install: sockets, then the frame on its in-world screen ---
         QuickCustomers(3);
         UseFrame();
@@ -378,7 +458,7 @@ public partial class GameRoot : Node3D
         _notebook.Open(InterfaceTier.Paper); _notebook.Close();
         Sim.AdvanceDays(700);
         var reloaded = new Simulation(_content, SaveCodec.FromJson(SaveCodec.ToJson(Sim.State)));
-        bool ok = world && doors && paid && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
+        bool ok = world && doors && paid && house && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
         GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: doors={doors} paid={paid} perfect={outcome.Perfect} {Sim.State.Date} act={Sim.State.ActIndex} subs={Sim.State.LiveSubscribers} cash={Sim.State.Cash}");
         GetTree().Quit(ok ? 0 : 1);
     }
@@ -406,6 +486,20 @@ public partial class GameRoot : Node3D
             var f = TownBuilder.Place(_planet, farm, 0, 0).Origin;
             await Shot("-farm", TownBuilder.Place(_planet, farm, -25, 45, 0, 9).Origin, f + f.Normalized() * 2);
             await Shot("-road", ((hq + f) / 2).Normalized() * (hq.Length() + 260), (hq + f) / 2, (f - hq).Normalized());
+        }
+        // a house part-way through an install: outside wall, then indoors
+        Customer? shown = null;
+        for (int i = 0; i < 6 && shown is null; i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }
+        if (shown is not null && _town.Lots.First(l => l.Lot.Id == shown.LotId) is { Install: { } site } home)
+        {
+            home.Door.OnUse!();
+            var order = site.WorkOrder.ToList();
+            Vector3 L(float x, float y, float z) => home.Body.ToGlobal(new Vector3(x, y, z));
+            order[0].OnUse!(); order[1].OnUse!();
+            await Shot("-install", L(-1.2f, 1.7f, 7.5f), L(-2.6f, 1.6f, 3.5f));
+            for (int i = 2; i < 8; i++) order[i].OnUse!();
+            await Shot("-house", L(2.6f, 1.7f, 2.6f), L(-3.2f, 0.7f, 0.6f));
+            await Shot("-house2", L(-2.8f, 1.7f, 2.4f), L(2.5f, 0.9f, -2.2f));
         }
         await Shot("-orbit", (up + _town.Hq.GlobalBasis.X * 0.5f + _town.Hq.GlobalBasis.Z * 0.35f).Normalized() * (float)_planet.RadiusM * 3.3f, Vector3.Zero, Vector3.Up);
 

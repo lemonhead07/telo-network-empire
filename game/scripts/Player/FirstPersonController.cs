@@ -60,6 +60,11 @@ public partial class FirstPersonController : SphereBody
             use();
             GetViewport().SetInputAsHandled();
         }
+        else if (e.IsActionPressed("alt_use") && Focus is { OnAlt: { } alt } && Focus.AltPrompt() is not null)
+        {
+            alt();
+            GetViewport().SetInputAsHandled();
+        }
         else if (e.IsActionPressed("fly")) { Flying = !Flying; VerticalSpeed = 0; }
     }
 

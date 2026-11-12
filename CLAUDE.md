@@ -27,7 +27,8 @@ dotnet test Telo.slnx                                   # sim unit tests (must s
 dotnet build game/Telo.Game.csproj                      # compile the game scripts
 godot --headless --path game --import                   # first run / after adding assets
 godot --headless --path game -- --smoke                 # walk + drive + install + 700 days + save; prints "WORLD OK" and "SMOKE OK", exit 0
-godot --path game -- --shot=/abs/path/x.png             # saves x-town, x-street, x-aerial, x-orbit, x-dusk, x-room .png, then quits
+godot --path game -- --shot=/abs/path/x.png             # saves x-town, x-install, x-house, x-aerial, x-orbit, x-room ... .png, then quits
+xvfb-run -a godot --path game -- --shot=/abs/path/x.png # the same in a cloud session (no screen or graphics card there)
 godot --path game                                       # play
 godot --editor --path game                              # open editor
 ```
@@ -79,14 +80,17 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 
 - `game/content/lots.json`: every building someone lives or works in (site, east/south offsets, resident, archetype, fee). `TownBuilder` builds them; `GameRoot.LotAction` decides what each door offers from sim state.
 - `Telo.Sim/Town/TownRules.cs`: door-knocking, odd jobs (cash + goodwill), modem stock, fitting sockets. `Guidance.Next` gives the "what next" line and target lot (shown as ▼ above the building; `$` marks an odd job).
-- Install flow: sign up (knock or answering machine) → fit socket at their house (uses a modem from Sol's Electronics) → wire at the frame → billed monthly.
+- Install flow: sign up (knock or answering machine) → hands-on install at their house (uses a modem from Sol's Electronics) → wire at the frame → billed monthly.
+- The house install is `Telo.Sim/Minigames/Install/InstallJob.cs` (drop wire → junction box → socket → skirting cable → modem → optional dial-tone test). `[E]` does a step properly, `[R]` bodges it (latent defect). `game/scripts/World/InstallSite.cs` only shows the job as click points on and in the house. A half-done job is not saved; it restarts.
+- Houses (`LotKind.House`) are hollow and enterable: the door opens when the resident lets you in for an install. The shop and farm are still solid boxes.
 - Work costs in-game time via `GameRoot.SpendHours`.
 - `PlanetGen.Roads`: graded routes that cut/fill terrain; `IsPaved` makes the van full speed on roads and in settlements, half speed off-road. Road surfaces are ray-cast onto the terrain (`TownBuilder.BuildRoads`).
 
 ## Assets: everything is made in code
 
 - **Models:** `LowPoly` builder (boxes, cylinders/cones, gems, gable roofs), flat-shaded and vertex-coloured, sharing one material. Style: low-poly with small details (window trim, chimneys, stripes, per-facet colour jitter). Colours are sRGB.
-- **No imported textures or model files.** Sound should be synthesised in code too (tones, clicks, noise) when audio work starts.
+- **No imported textures or model files yet.** Sound should be synthesised in code too (tones, clicks, noise) when audio work starts.
+- **Blender is planned for later models.** The owner wants to build models in Blender in future; the cloud environment has Blender installed (`blender -b --python script.py`, export `.glb` into `game/`). Until that work starts, keep building props in code.
 - Room interiors still use `RoomBuilder.Box` primitives; migrate them to `LowPoly` when touched.
 
 ## Sim architecture cheatsheet

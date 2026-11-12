@@ -14,7 +14,7 @@ public static class Guidance
         var needSocket = s.Customers.FirstOrDefault(x => x.Live && !x.Installed && !x.SocketFitted);
         if (needSocket is not null)
             return s.Modems > 0
-                ? ($"Fit the wall socket at {needSocket.Name}'s house.", needSocket.LotId)
+                ? ($"Install the line at {needSocket.Name}'s house (knock, then work outside and in).", needSocket.LotId)
                 : s.Cash >= TownRules.ModemPrice
                     ? ($"Buy a modem at the electronics shop (${TownRules.ModemPrice}).", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id)
                     : BestJob(s, c) is { } pj ? ($"You can't afford a modem. Earn cash: {pj.Title.ToLowerInvariant()} at {Who(c, pj)}'s (${pj.Pay}).", pj.LotId)

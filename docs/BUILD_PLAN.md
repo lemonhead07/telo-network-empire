@@ -12,11 +12,12 @@ A 2.5 km low-poly planet (oceans, mountains, forests, deserts, snow) generated b
 Odd jobs at neighbours' doors for cash; door-knocking to win customers; modems bought at Sol's Electronics; sockets fitted at the customer's house before the frame work; Hollow Farm out of town on a graded road (van is half speed off-road); a "what next" line with markers over buildings; the frame, PIP and notebook as in-world screens instead of menus.
 
 ### Gameplay backlog (next)
+- [x] The install as a hands-on, multi-step job outside and inside the house, with a bodge option and hidden faults (2026-11-12).
 - [ ] Odd jobs as hands-on tasks (currently press E and time passes).
 - [ ] Carry the modem from the van to the house; the van holds stock.
 - [ ] Replace the HUD strip with in-world objects (wall calendar, cash tin, pager, fax roll).
 - [ ] The frame as real terminal blocks and wires rather than a printed work sheet.
-- [ ] Go inside the shop and houses.
+- [x] Go inside houses (2026-11-12). [ ] Go inside the shop and the farmhouse.
 - [ ] Connect Hollow Farm for real: poles along the road, then Ruth's line.
 
 ### Planet backlog (build features on top of the world)

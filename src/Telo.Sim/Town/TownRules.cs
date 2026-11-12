@@ -86,7 +86,7 @@ public static class TownRules
             Installed = false, SocketFitted = false, LotId = lot.Id,
         };
         s.Customers.Add(cust);
-        s.Emit(EventKind.Info, $"{lot.Resident} signs up for a line at ${lot.Fee}/month. Next: fit the socket at their house.", lot.Id);
+        s.Emit(EventKind.Info, $"{lot.Resident} signs up for a line at ${lot.Fee}/month. Next: do the install at their house.", lot.Id);
         return cust;
     }
 

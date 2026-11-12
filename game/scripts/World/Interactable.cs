@@ -9,4 +9,7 @@ public partial class Interactable : StaticBody3D
     public Action? OnUse { get; set; }
     /// <summary>False when the prompt is only information (nothing happens on E).</summary>
     public Func<bool> CanUse { get; set; } = () => true;
+    /// <summary>A second, usually worse, way of doing it (R). The prompt is null when there isn't one right now.</summary>
+    public Func<string?> AltPrompt { get; set; } = () => null;
+    public Action? OnAlt { get; set; }
 }
