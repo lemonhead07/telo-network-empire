@@ -1,8 +1,8 @@
 [
   { "id": "install", "name": "Installations", "stages": [
     { "mode": "manual", "interface": "paper", "description": "You, a tone probe, a clipboard and the frame." },
-    { "mode": "delegated", "interface": "paper", "accuracyPermille": 850, "cost": 300, "requiresAct": 1,
-      "description": "A junior technician does the frame work from your handwritten job sheets.",
+    { "mode": "delegated", "interface": "paper", "accuracyPermille": 850, "cost": 300, "requiresSubscribers": 4,
+      "description": "A junior technician does the house installs and the frame work from your handwritten job sheets, one customer a day.",
       "newProblem": "Their mistakes look fine today and surface weeks later." },
     { "mode": "delegated", "interface": "database", "accuracyPermille": 920, "cost": 1500, "monthlyUpkeep": 60, "requiresAct": 2, "requiresEntry": "alm-monitoring",
       "description": "Job tickets live in a database; the tech can see which pairs are already faulty.",

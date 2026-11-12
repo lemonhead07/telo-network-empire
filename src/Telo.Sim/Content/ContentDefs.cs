@@ -62,6 +62,8 @@ public sealed record WorkStageDef
     public long MonthlyUpkeep { get; init; }
     public string? RequiresEntry { get; init; }
     public int RequiresAct { get; init; }
+    /// <summary>Live, paying subscribers needed before this stage makes sense (you can't hire on nothing).</summary>
+    public int RequiresSubscribers { get; init; }
     public string Description { get; init; } = "";
     /// <summary>Every improvement creates a new problem. Shown to the player before they commit.</summary>
     public string NewProblem { get; init; } = "";

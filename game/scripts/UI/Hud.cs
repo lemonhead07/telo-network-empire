@@ -48,7 +48,7 @@ public partial class Hud : Control
     {
         var s = sim.State;
         var act = sim.Content.ActAt(s.ActIndex);
-        _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\nCash ${s.Cash}   Subscribers {s.LiveSubscribers}   Awaiting install {s.PendingInstalls}   Modems {s.Modems}";
+        _left.Text = $"{s.Date}  {(int)hour:00}:{(int)(hour * 60) % 60 / 10 * 10:00}\nAct {act.Index} — {act.Name}\nCash ${s.Cash}   Subscribers {s.LiveSubscribers}   Awaiting install {s.PendingInstalls}   Modems {s.Modems}{(s.Faults.Count > 0 ? $"   Faults {s.Faults.Count}" : "")}";
         _right.Text = $"Archive {s.Archive}\nEcho {s.Echo} ({AlmanacRules.Band(s.Echo).ToString().ToLowerInvariant()})\n{where}\n[F] Survey flight  [F5] Save";
         _prompt.Text = prompt ?? "";
         _next.Text = next;

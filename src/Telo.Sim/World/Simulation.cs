@@ -19,7 +19,8 @@ public sealed class Simulation
     public static readonly GameDate StartDate = GameDate.From(1983, 1, 3);
     public const long StartingCash = 400;
     public const long RentPerMonth = 120;
-    public const long WagePerStaffPerMonth = 900;
+    /// <summary>A part-time junior on 1983 small-town wages. (Economy is not balanced yet.)</summary>
+    public const long WagePerStaffPerMonth = 90;
 
     public Simulation(ContentDb content, GameState state)
     {
@@ -48,6 +49,7 @@ public sealed class Simulation
         AlmanacRules.Tick(s, Content);
         LedgerRules.Tick(s, Content);
         TownRules.Tick(s, Content, _rng);
+        TechnicianDay();
         SurfaceDefects();
         DriftSatisfaction();
         // Word of mouth: happy subscribers bring enquiries.
@@ -77,13 +79,55 @@ public sealed class Simulation
         {
             s.Defects.Remove(d);
             var cust = s.Customers.FirstOrDefault(c => c.Id == d.CustomerId);
+            if (cust is { Live: true, LotId: not null })
+            {
+                // A fault at a real address stays broken until someone drives out and fixes it.
+                cust.Satisfaction = Math.Max(0, cust.Satisfaction - 10);
+                s.Faults.Add(new Fault { Id = s.NewId("fault"), CustomerId = cust.Id, Text = d.Text, Source = d.Source, OpenedDay = s.Day });
+                s.Emit(EventKind.Defect, $"Fault on {cust.Name}'s line — {d.Text}. It stays broken until you go and fix it.", d.Id);
+                continue;
+            }
             if (cust is not null) cust.Satisfaction = Math.Max(0, cust.Satisfaction - 25);
             s.Emit(EventKind.Defect, cust is null ? $"Fault: {d.Text}" : $"Fault on {cust.Name}'s line — {d.Text}", d.Id);
         }
     }
 
+    /// <summary>
+    /// Once installs are delegated, the technician connects one waiting customer a day without you: house and frame.
+    /// They need modems in stock, and they are right most of the time. The rest goes into the wall as latent defects.
+    /// </summary>
+    private void TechnicianDay()
+    {
+        var s = State;
+        var stage = WorkRules.Current(s, Content, "install");
+        if (stage.Mode == WorkMode.Manual) return;
+        var cust = s.Customers.FirstOrDefault(c => c.Live && !c.Installed);
+        if (cust is null) return;
+        if (!cust.SocketFitted)
+        {
+            if (s.Modems <= 0)
+            {
+                if (s.Day % 7 == 0) s.Emit(EventKind.Defect, $"Your technician has no modems. {s.PendingInstalls} customer(s) are waiting. Sol's Electronics sells them.");
+                return;
+            }
+            s.Modems--; cust.SocketFitted = true;
+        }
+        cust.Installed = true;
+        s.TechInstalls++;
+        if (!_rng.ChancePermille(stage.AccuracyPermille))
+            s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + _rng.Range(7, 41), Source = "technician", CustomerId = cust.Id, Text = "an install the technician swore was tested" });
+        if (s.TechInstalls == 1) s.Emit(EventKind.Milestone, $"Your technician connected {cust.Name} while you were doing something else. Nobody needed you. It is a strange feeling.", cust.Id);
+        if (s.LiveSubscribers == 1) s.Emit(EventKind.Milestone, $"First customer: {cust.Name}.", cust.Id);
+    }
+
     private void DriftSatisfaction()
     {
+        foreach (var f in State.Faults.ToList())
+        {
+            var c = State.Customers.FirstOrDefault(x => x.Id == f.CustomerId);
+            if (c is null || !c.Live) { State.Faults.Remove(f); continue; }
+            c.Satisfaction = Math.Max(0, c.Satisfaction - 2); // every day on a bad line is remembered
+        }
         foreach (var c in State.Customers.Where(c => c.Live))
         {
             if (c.Satisfaction < 70 && _rng.ChancePermille(200)) c.Satisfaction++;

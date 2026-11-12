@@ -16,6 +16,8 @@ public partial class FirstPersonController : SphereBody
     public Func<bool> IsFrozen { get; set; } = () => false;
     public bool Flying { get; private set; }
     public bool Active { get; private set; } = true;
+    /// <summary>Walking speed multiplier (carrying something heavy slows you down).</summary>
+    public float Pace { get; set; } = 1f;
 
     /// <summary>What the player is looking at right now (null if nothing interactable).</summary>
     public Interactable? Focus { get; private set; }
@@ -93,7 +95,7 @@ public partial class FirstPersonController : SphereBody
             if (Input.IsActionJustPressed("jump") && (IsOnFloor() || InWater)) VerticalSpeed = JumpVelocity;
             var dir = (GlobalBasis * new Vector3(input.X, 0, input.Y)).Normalized();
             float speed = InWater ? SwimSpeed : Input.IsActionPressed("sprint") ? SprintSpeed : WalkSpeed;
-            MoveOnPlanet(dir * speed, delta);
+            MoveOnPlanet(dir * speed * Pace, delta);
         }
         Focus = _ray.IsColliding() ? _ray.GetCollider() as Interactable : null;
     }

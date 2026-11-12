@@ -14,7 +14,8 @@ Odd jobs at neighbours' doors for cash; door-knocking to win customers; modems b
 ### Gameplay backlog (next)
 - [x] The install as a hands-on, multi-step job outside and inside the house, with a bodge option and hidden faults (2026-11-12).
 - [ ] Odd jobs as hands-on tasks (currently press E and time passes).
-- [ ] Carry the modem from the van to the house; the van holds stock.
+- [x] Carry kit from the van to the house: drum, ladder, toolbox, boxed modem (2026-11-12).
+- [x] First automation stage playable end to end: hire the technician, they install on their own, their mistakes become repair visits (2026-11-12).
 - [ ] Replace the HUD strip with in-world objects (wall calendar, cash tin, pager, fax roll).
 - [ ] The frame as real terminal blocks and wires rather than a printed work sheet.
 - [x] Go inside houses (2026-11-12). [ ] Go inside the shop and the farmhouse.

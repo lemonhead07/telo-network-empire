@@ -55,6 +55,16 @@ public sealed class LatentDefect
     public string Text { get; set; } = "";
 }
 
+/// <summary>A defect that has surfaced: the customer has a bad line until someone goes and fixes it.</summary>
+public sealed class Fault
+{
+    public required string Id { get; set; }
+    public required string CustomerId { get; set; }
+    public string Text { get; set; } = "";
+    public string Source { get; set; } = "";
+    public int OpenedDay { get; set; }
+}
+
 public sealed class PromiseRecord
 {
     public PromiseStatus Status { get; set; }
@@ -67,7 +77,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -103,6 +113,11 @@ public sealed class GameState
     public List<Customer> Customers { get; set; } = new();
     public Dictionary<string, PromiseRecord> Ledger { get; set; } = new();
     public List<LatentDefect> Defects { get; set; } = new();
+    /// <summary>Surfaced faults waiting for a repair visit (v2).</summary>
+    public List<Fault> Faults { get; set; } = new();
+    /// <summary>Customers connected by staff without you (v2).</summary>
+    public int TechInstalls { get; set; }
+    public int FaultsFixed { get; set; }
     public List<GameEvent> Log { get; set; } = new();
     public int NextId { get; set; } = 1;
 

@@ -36,6 +36,9 @@ public partial class GameRoot : Node3D
     private PlanetSky _sky = null!;
     private Town _town = null!;
     private Van _van = null!;
+    private Cargo _cargo = null!;
+    /// <summary>Automated checks pretend all the kit is to hand.</summary>
+    private bool _kitEverywhere;
     private Transform3D _cameraHome;
     private Tween? _lean;
     /// <summary>House installs under way, by lot. Not saved: a half-done job is simply started again.</summary>
@@ -80,8 +83,9 @@ public partial class GameRoot : Node3D
         _van = new Van { SeaRadius = radius, IsPaved = p => _planet.IsPaved(PlanetBuilder.ToSim(p)) };
         AddChild(_van);
         _van.GlobalTransform = _town.VanSpawn;
-        _van.Door.Prompt = () => "Drive the van";
-        _van.Door.OnUse = EnterVan;
+        _cargo = new Cargo(_van, _player, this, () => Sim.State.Modems - _installs.Values.Count(j => j.IsDone(InstallStep.Modem)));
+        _van.Door.Prompt = () => _cargo.Held is { } h ? $"Put the {h.Label} back on the van" : "Drive the van";
+        _van.Door.OnUse = () => { if (_cargo.Held is not null) _cargo.StowHeld(); else EnterVan(); };
 
         // The only overlay left: a small status strip. (Target: wall calendar, cash tin, pager.)
         var ui = new CanvasLayer();
@@ -173,7 +177,7 @@ public partial class GameRoot : Node3D
         if (Sim.State.ReadyForFrame == 0)
             return Sim.State.PendingInstalls > 0 ? "The frame (fit the sockets at their houses first)" : "The frame (no installs waiting)";
         return WorkRules.Current(Sim.State, Sim.Content, "install").Mode != WorkMode.Manual
-            ? "Hand today's job sheet to your technician"
+            ? $"Wire {Sim.State.ReadyForFrame} line(s) yourself (otherwise your technician does one customer a day)"
             : $"Work the frame ({Sim.State.ReadyForFrame} to wire)";
     }
 
@@ -181,7 +185,6 @@ public partial class GameRoot : Node3D
     {
         if (Sim.State.ReadyForFrame == 0) return;
         var job = Sim.NewFrameJob(Sim.FrameWorkOrder());
-        if (Sim.TryDelegateFrame(job) is { } done) { Sim.ApplyFrameOutcome(done); RefreshIdleScreens(); return; }
         _frame.Start(job);
         _frame.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "install"));
     }
@@ -196,6 +199,14 @@ public partial class GameRoot : Node3D
     private (string Prompt, Action? Use) LotAction(LotDef lot)
     {
         var s = Sim.State;
+        // a broken line comes before anything else at this door
+        if (TownRules.FaultAt(s, lot.Id) is { } fault && TownRules.CustomerAt(s, lot.Id) is { } broken)
+        {
+            var missing = TownRules.RepairNeeds & ~KitOnSite();
+            return missing == Tools.None
+                ? ($"Fix {broken.Name}'s line: {fault.Text} ({TownRules.RepairMinutes} min)", () => { if (TownRules.Repair(s, fault.Id, KitOnSite())) SpendHours(TownRules.RepairMinutes / 60f); })
+                : ($"{broken.Name} has a fault: {fault.Text}. You need {Cargo.Names(missing)} from the van", null);
+        }
         if (TownRules.JobAt(s, lot.Id) is { } job)
             return ($"{job.Title} for {lot.Resident} (+${job.Pay}, {job.Hours} h)", () => { TownRules.CompleteJob(s, _content, job.Id); SpendHours(job.Hours); });
 
@@ -206,8 +217,8 @@ public partial class GameRoot : Node3D
                 return ($"{cust.Name}'s install: {(running.NextStep is { } n ? InstallJob.Def(n).Verb.ToLowerInvariant() + (InstallJob.Def(n).Outside ? " (outside wall, left of the window)" : " (indoors)") : "test the line, then sign the job sheet indoors")}", null);
             return s.Modems > 0
                 ? (WorkRules.Current(s, _content, "install").Mode != WorkMode.Manual
-                    ? $"Send your technician in to do {cust.Name}'s install (uses a modem)"
-                    : $"Start {cust.Name}'s install: they let you in (about an hour, uses a modem)", () => StartInstall(view, cust))
+                    ? $"{cust.Name} is booked in with your technician. Or do the install yourself now"
+                    : $"Start {cust.Name}'s install: they let you in (about an hour; bring the kit from the van)", () => StartInstall(view, cust))
                 : ($"{cust.Name} is waiting for their line. You have no modems (Sol's Electronics sells them)", null);
         }
         if (cust is { SocketFitted: false })
@@ -230,7 +241,6 @@ public partial class GameRoot : Node3D
     private void StartInstall(LotView view, Customer cust)
     {
         if (Sim.NewInstallJob(cust.Id) is not { } job) return;
-        if (Sim.TryDelegateInstall(job) is { } done) { Sim.ApplyInstallOutcome(done); view.Install!.ShowFitted(); return; }
         _installs[view.Lot.Id] = job;
         OpenDoor(view, true);
         view.Install!.Begin(job,
@@ -238,9 +248,12 @@ public partial class GameRoot : Node3D
             {
                 int before = job.ElapsedMinutes;
                 if (step == InstallStep.Test) view.Install.NoteTest(job.Test());
-                else if (rush) job.Rush(step);
-                else job.Do(step);
+                else if (rush) job.Rush(step, KitOnSite());
+                else job.Do(step, KitOnSite());
                 SpendHours((job.ElapsedMinutes - before) / 60f);
+                // the modem is out of its box and on their table: the empty box goes back on the van
+                if (job.IsDone(InstallStep.Modem) && _cargo.Items.FirstOrDefault(i => i.Tool == Tools.ModemBox && i.Where != Carryable.Place.Van) is { } boxed) _cargo.Stow(boxed);
+                _cargo.Refresh();
                 view.Install.Sync();
             },
             () =>
@@ -248,8 +261,13 @@ public partial class GameRoot : Node3D
                 if (!Sim.ApplyInstallOutcome(job.Evaluate())) return;
                 _installs.Remove(view.Lot.Id);
                 view.Install.ShowFitted();
-            });
+                _cargo.Refresh();
+            },
+            KitOnSite, Cargo.Names);
     }
+
+    /// <summary>Kit in the player's hands or put down within a few metres of them.</summary>
+    private Tools KitOnSite() => _kitEverywhere ? Tools.All : _cargo.OnSite(_player.GlobalPosition);
 
     private static void OpenDoor(LotView view, bool open)
     {
@@ -264,7 +282,11 @@ public partial class GameRoot : Node3D
         foreach (var v in _town.Lots)
         {
             if (v.Install is null) continue;
-            if (!v.Install.Fitted && !v.Install.Active && TownRules.CustomerAt(Sim.State, v.Lot.Id) is { SocketFitted: true }) v.Install.ShowFitted();
+            if (!v.Install.Fitted && TownRules.CustomerAt(Sim.State, v.Lot.Id) is { SocketFitted: true })
+            {
+                _installs.Remove(v.Lot.Id); // the technician got there first
+                v.Install.ShowFitted();
+            }
             if (v.DoorOpen && !_installs.ContainsKey(v.Lot.Id) && (v.Position - playerPos).Length() > 6.5f) OpenDoor(v, false);
         }
     }
@@ -325,14 +347,15 @@ public partial class GameRoot : Node3D
             _slowTick = 0.5f;
             foreach (var lot in _town.Lots)
             {
-                bool job = TownRules.JobAt(Sim.State, lot.Lot.Id) is not null;
+                bool job = TownRules.JobAt(Sim.State, lot.Lot.Id) is not null || TownRules.FaultAt(Sim.State, lot.Lot.Id) is not null;
                 bool target = lot.Lot.Id == targetLot;
                 lot.Marker.Visible = job || target;
-                lot.Marker.Text = target ? "▼" : "$";
+                lot.Marker.Text = target ? "▼" : TownRules.FaultAt(Sim.State, lot.Lot.Id) is not null ? "!" : "$";
                 lot.Marker.Modulate = target ? new Color(1f, 0.85f, 0.2f) : new Color(0.6f, 0.95f, 0.6f);
             }
             if (!AnyScreenOpen) RefreshIdleScreens();
             SyncHouses(_player.GlobalPosition);
+            _cargo.Refresh();
         }
 
         if (targetLot is not null && _town.Lots.FirstOrDefault(l => l.Lot.Id == targetLot) is { } t)
@@ -342,7 +365,8 @@ public partial class GameRoot : Node3D
         string where = $"{biome}  alt {who.Altitude:0} m" + (_van.Driven ? $"  {Mathf.Abs(_van.Speed) * 3.6f:0} km/h{(_van.OnRoad ? "" : " (off-road)")}" : _player.Flying ? "  SURVEY FLIGHT" : "");
         string? prompt = AnyScreenOpen ? null
             : _van.Driven ? "[E] Get out   [W/S] drive   [A/D] steer"
-            : _player.Focus is { } f ? (f.CanUse() ? "[E] " : "") + f.Prompt() + (f.AltPrompt() is { } alt ? $"   [R] {alt}" : "") : null;
+            : _player.Focus is { } f ? (f.CanUse() ? "[E] " : "") + f.Prompt() + (f.AltPrompt() is { } alt ? $"   [R] {alt}" : "")
+            : _cargo.Held is { } held ? $"Carrying the {held.Label}   [G] put it down" : null;
         _hud.Refresh(Sim, prompt, Hour, where, AnyScreenOpen ? "" : "▶ " + next);
     }
 
@@ -350,6 +374,7 @@ public partial class GameRoot : Node3D
     {
         if (AnyScreenOpen) return;
         if (_van.Driven && e.IsActionPressed("interact")) { ExitVan(); GetViewport().SetInputAsHandled(); }
+        else if (e.IsActionPressed("drop") && !_van.Driven) _cargo.Drop();
         else if (e.IsActionPressed("save")) Save();
         else if (e.IsActionPressed("load")) Load();
         else if (e.IsActionPressed("cancel")) Input.MouseMode = Input.MouseModeEnum.Visible;
@@ -420,9 +445,19 @@ public partial class GameRoot : Node3D
             Input.ActionRelease("move_forward");
             var inside = home.Body.ToLocal(_player.GlobalPosition);
             bool walkedIn = inside.Z < 3.0f && Mathf.Abs(inside.X) < 3.5f && _player.IsOnFloor();
+            // carry the kit: pick each thing off the van, put it down in the house; nothing works until it is there
+            site.WorkOrder.First().OnUse!();
+            bool blocked = _installs[home.Lot.Id].Progress(InstallStep.DropWire) == 0;
+            var ladder = _cargo.Items.First(i => i.Tool == Tools.Ladder);
+            ladder.OnUse!();
+            bool slowed = _cargo.Held == ladder && _player.Pace < 1f;
+            foreach (var item in _cargo.Items) { if (_cargo.Held is null) item.OnUse!(); _cargo.Drop(); }
+            bool carried = blocked && slowed && _cargo.Held is null && KitOnSite() == Tools.All;
+            GD.Print($"CARRY {(carried ? "OK" : "FAIL")}: blocked={blocked} slowed={slowed} onSite={KitOnSite()}");
             foreach (var spot in site.WorkOrder.ToList()) spot.OnUse!();
             if (_installs.ContainsKey(home.Lot.Id)) foreach (var spot in site.WorkOrder.ToList()) spot.OnUse!(); // the test found a fault: redo and sign off
-            house = walkedIn && first!.SocketFitted && site.Fitted && Sim.State.Defects.All(d => d.Source != "install");
+            foreach (var item in _cargo.Items) _cargo.Stow(item);
+            house = carried && walkedIn && first!.SocketFitted && site.Fitted && Sim.State.Defects.All(d => d.Source != "install");
             GD.Print($"HOUSE {(house ? "OK" : "FAIL")}: walkedIn={walkedIn} at {inside} fitted={first.SocketFitted}");
             _player.GlobalTransform = _town.PlayerSpawn;
             await Physics(30);
@@ -456,9 +491,25 @@ public partial class GameRoot : Node3D
         _frame.Close();
         _almanac.Open(InterfaceTier.Terminal); _almanac.Close();
         _notebook.Open(InterfaceTier.Paper); _notebook.Close();
+        // --- the first automation stage: hire the technician, they connect someone without you, a fault needs a repair visit ---
+        Sim.State.Cash += 1000; Sim.State.Modems += 3;
+        bool hired = WorkRules.Upgrade(Sim.State, _content, "install") == UpgradeResult.Ok;
+        Customer? next = null;
+        for (int i = 0; i < 6 && next is null; i++) { Sim.State.MessagesWaiting = 1; next = Sim.TakeEnquiry(); }
+        Sim.AdvanceDays(2);
+        bool techDid = next is { Installed: true } && Sim.State.TechInstalls > 0;
+        Sim.State.Defects.Add(new LatentDefect { Id = "defect-smoke", SurfaceDay = Sim.State.Day + 1, Source = "technician", CustomerId = next!.Id, Text = "a loose terminal" });
+        Sim.AdvanceDay();
+        var faultLot = _town.Lots.First(l => l.Lot.Id == next.LotId);
+        bool needsKit = TownRules.FaultAt(Sim.State, faultLot.Lot.Id) is not null && !faultLot.Door.CanUse();
+        _kitEverywhere = true;
+        faultLot.Door.OnUse!();
+        _kitEverywhere = false;
+        bool auto = hired && techDid && needsKit && Sim.State.Faults.Count == 0;
+        GD.Print($"AUTOMATION {(auto ? "OK" : "FAIL")}: hired={hired} techDid={techDid} faultNeedsKit={needsKit} faultsLeft={Sim.State.Faults.Count}");
         Sim.AdvanceDays(700);
         var reloaded = new Simulation(_content, SaveCodec.FromJson(SaveCodec.ToJson(Sim.State)));
-        bool ok = world && doors && paid && house && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
+        bool ok = world && doors && paid && house && auto && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
         GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: doors={doors} paid={paid} perfect={outcome.Perfect} {Sim.State.Date} act={Sim.State.ActIndex} subs={Sim.State.LiveSubscribers} cash={Sim.State.Cash}");
         GetTree().Quit(ok ? 0 : 1);
     }
@@ -492,9 +543,18 @@ public partial class GameRoot : Node3D
         for (int i = 0; i < 6 && shown is null; i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }
         if (shown is not null && _town.Lots.First(l => l.Lot.Id == shown.LotId) is { Install: { } site } home)
         {
+            await Shot("-van", _van.ToGlobal(new Vector3(2.6f, 2.0f, 5.2f)), _van.ToGlobal(new Vector3(0, 1.2f, 1.6f)));
             home.Door.OnUse!();
             var order = site.WorkOrder.ToList();
             Vector3 L(float x, float y, float z) => home.Body.ToGlobal(new Vector3(x, y, z));
+            // the kit, carried over and put down by the wall
+            _player.PlaceAt(L(-2.2f, 0.3f, 5.2f), -home.Body.GlobalBasis.Z);
+            foreach (var item in _cargo.Items.Where(i => i.Tool != Tools.ModemBox))
+            {
+                _player.PlaceAt(L(-3.4f + 0.7f * _cargo.Items.IndexOf(item), 0.05f, 4.9f), -home.Body.GlobalBasis.Z);
+                item.OnUse!(); _cargo.Drop();
+            }
+            _kitEverywhere = true;
             order[0].OnUse!(); order[1].OnUse!();
             await Shot("-install", L(-1.2f, 1.7f, 7.5f), L(-2.6f, 1.6f, 3.5f));
             for (int i = 2; i < 8; i++) order[i].OnUse!();

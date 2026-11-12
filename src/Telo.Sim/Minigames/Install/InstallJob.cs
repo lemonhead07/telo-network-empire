@@ -1,4 +1,5 @@
 using Telo.Sim.Core;
+using Telo.Sim.Town;
 
 namespace Telo.Sim.Minigames.Install;
 
@@ -6,7 +7,7 @@ public enum InstallStep { DropWire, JunctionBox, Socket, Cable, Modem, Test }
 
 /// <summary>One stage of a house install. A stage is several small actions ("clicks"), each costing minutes.</summary>
 public sealed record InstallStepDef(
-    InstallStep Step, string Title, string Verb, int Clicks, int MinutesPerClick, bool Outside, bool CanRush,
+    InstallStep Step, string Title, string Verb, int Clicks, int MinutesPerClick, bool Outside, bool CanRush, Tools Needs,
     string RushDefect, string FaultDefect);
 
 public sealed record InstallTestResult(bool DialTone, InstallStep? FaultAt);
@@ -32,16 +33,16 @@ public sealed class InstallJob
 
     public static readonly IReadOnlyList<InstallStepDef> Steps = new[]
     {
-        new InstallStepDef(InstallStep.DropWire, "Drop wire", "Clip the drop wire", 3, 8, true, true,
+        new InstallStepDef(InstallStep.DropWire, "Drop wire", "Clip the drop wire", 3, 8, true, true, Tools.CableDrum,
             "a drop wire held up by one clip and optimism", "a wall clip that never bit into the brick"),
-        new InstallStepDef(InstallStep.JunctionBox, "Junction box", "Fit the junction box", 2, 6, true, true,
+        new InstallStepDef(InstallStep.JunctionBox, "Junction box", "Fit the junction box", 2, 6, true, true, Tools.Toolbox,
             "a junction box with no lid, in the rain", "a damp terminal in the junction box"),
-        new InstallStepDef(InstallStep.Socket, "Wall socket", "Screw on the wall socket", 2, 5, false, true,
+        new InstallStepDef(InstallStep.Socket, "Wall socket", "Screw on the wall socket", 2, 5, false, true, Tools.Toolbox,
             "a wall socket hanging by one screw", ""),
-        new InstallStepDef(InstallStep.Cable, "Skirting cable", "Staple the cable to the skirting", 3, 5, false, true,
+        new InstallStepDef(InstallStep.Cable, "Skirting cable", "Staple the cable to the skirting", 3, 5, false, true, Tools.CableDrum | Tools.Toolbox,
             "a cable left loose across the carpet, found by the vacuum cleaner", "a staple driven straight through the cable"),
-        new InstallStepDef(InstallStep.Modem, "Modem", "Plug in the modem", 1, 3, false, false, "", ""),
-        new InstallStepDef(InstallStep.Test, "Dial tone", "Listen for dial tone", 1, TestMinutes, false, false, "", ""),
+        new InstallStepDef(InstallStep.Modem, "Modem", "Plug in the modem", 1, 3, false, false, Tools.ModemBox, "", ""),
+        new InstallStepDef(InstallStep.Test, "Dial tone", "Listen for dial tone", 1, TestMinutes, false, false, Tools.None, "", ""),
     };
 
     private static readonly InstallStep[] FaultCandidates = { InstallStep.DropWire, InstallStep.JunctionBox, InstallStep.Cable };
@@ -85,11 +86,17 @@ public sealed class InstallJob
     public bool CanDo(InstallStep step) => step == InstallStep.Test ? CanFinish : NextStep == step;
 
     // ---- verbs --------------------------------------------------------------------------------
-    /// <summary>One careful action on a stage. Returns false if it isn't this stage's turn.</summary>
-    public bool Do(InstallStep step)
+    /// <summary>What has to be on site for the next action on this stage. The top clip of the drop wire is up a ladder; a bodge skips the ladder.</summary>
+    public Tools Needs(InstallStep step, bool rush = false) =>
+        Def(step).Needs | (step == InstallStep.DropWire && Progress(step) == 0 && !rush ? Tools.Ladder : Tools.None);
+
+    public Tools Missing(InstallStep step, Tools onSite, bool rush = false) => Needs(step, rush) & ~onSite;
+
+    /// <summary>One careful action on a stage. Returns false if it isn't this stage's turn or the kit isn't there.</summary>
+    public bool Do(InstallStep step, Tools onSite = Tools.All)
     {
         if (step == InstallStep.Test) return CanFinish && Test().DialTone;
-        if (!CanDo(step)) return false;
+        if (!CanDo(step) || Missing(step, onSite) != Tools.None) return false;
         ElapsedMinutes += Def(step).MinutesPerClick;
         _progress[(int)step]++;
         Tested = false;
@@ -98,9 +105,9 @@ public sealed class InstallJob
     }
 
     /// <summary>Chaos option: call the stage finished. Fast now; persists in the world.</summary>
-    public bool Rush(InstallStep step)
+    public bool Rush(InstallStep step, Tools onSite = Tools.All)
     {
-        if (!CanDo(step) || !Def(step).CanRush) return false;
+        if (!CanDo(step) || !Def(step).CanRush || Missing(step, onSite, rush: true) != Tools.None) return false;
         ElapsedMinutes += RushMinutes;
         _progress[(int)step] = Def(step).Clicks;
         _rushed[(int)step] = true;

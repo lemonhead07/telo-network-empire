@@ -31,6 +31,7 @@ public partial class NotebookView : ModalView
                 string why = can switch
                 {
                     UpgradeResult.NeedsAct => $" (needs Act {next.RequiresAct})",
+                    UpgradeResult.NeedsSubscribers => $" (needs {next.RequiresSubscribers} paying subscribers; you have {s.LiveSubscribers})",
                     UpgradeResult.NeedsEntry => $" (needs Almanac: {c.Almanac[next.RequiresEntry!].Title})",
                     UpgradeResult.NotEnoughCash => " (not enough cash)",
                     _ => "",

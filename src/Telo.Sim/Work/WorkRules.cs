@@ -4,7 +4,7 @@ using Telo.Sim.World;
 
 namespace Telo.Sim.Work;
 
-public enum UpgradeResult { Ok, AtFinalStage, NeedsAct, NeedsEntry, NotEnoughCash, UnknownWork }
+public enum UpgradeResult { Ok, AtFinalStage, NeedsAct, NeedsSubscribers, NeedsEntry, NotEnoughCash, UnknownWork }
 
 /// <summary>
 /// Earned automation — the engine of "the gameplay slowly changes as you play".
@@ -29,6 +29,7 @@ public static class WorkRules
         var next = Next(s, c, workId);
         if (next is null) return UpgradeResult.AtFinalStage;
         if (s.ActIndex < next.RequiresAct) return UpgradeResult.NeedsAct;
+        if (s.LiveSubscribers < next.RequiresSubscribers) return UpgradeResult.NeedsSubscribers;
         if (next.RequiresEntry is { } e && s.Entries.GetValueOrDefault(e) is not (EntryStatus.Recalled or EntryStatus.Drifting))
             return UpgradeResult.NeedsEntry;
         if (s.Cash < next.Cost) return UpgradeResult.NotEnoughCash;

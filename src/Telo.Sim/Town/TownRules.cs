@@ -13,7 +13,8 @@ public enum KnockResult { NobodyHome, NotInterested, SignedUp, AlreadySigned, To
 public static class TownRules
 {
     public const long ModemPrice = 35;
-    public const int SocketHours = 1, KnockMinutes = 10;
+    public const int SocketHours = 1, KnockMinutes = 10, RepairMinutes = 45;
+    public const Tools RepairNeeds = Tools.Toolbox;
 
     private static readonly Dictionary<string, int> Interest = new()
     {
@@ -109,6 +110,21 @@ public static class TownRules
         if (cust is null || cust.SocketFitted || s.Modems <= 0) return false;
         s.Modems--; cust.SocketFitted = true;
         s.Emit(EventKind.Work, $"Socket and modem fitted at {cust.Name}'s. Now wire their pair at the frame.", cust.Id);
+        return true;
+    }
+
+    // ---- fault repair (manual: drive out and fix it with your hands) ----------------------------
+    public static Fault? FaultAt(GameState s, string lotId) =>
+        CustomerAt(s, lotId) is { } c ? s.Faults.FirstOrDefault(f => f.CustomerId == c.Id) : null;
+
+    /// <summary>Fix a surfaced fault at the customer's house. Needs the toolbox with you.</summary>
+    public static bool Repair(GameState s, string faultId, Tools onSite)
+    {
+        var fault = s.Faults.FirstOrDefault(f => f.Id == faultId);
+        if (fault is null || (onSite & RepairNeeds) != RepairNeeds) return false;
+        s.Faults.Remove(fault);
+        s.FaultsFixed++;
+        if (s.Customers.FirstOrDefault(c => c.Id == fault.CustomerId) is { } cust) cust.Satisfaction = Math.Min(100, cust.Satisfaction + 10);
         return true;
     }
 

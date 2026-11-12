@@ -1,4 +1,5 @@
 using Telo.Sim.Content;
+using Telo.Sim.Work;
 using Telo.Sim.World;
 
 namespace Telo.Sim.Town;
@@ -11,7 +12,18 @@ public static class Guidance
 {
     public static (string Text, string? LotId) Next(GameState s, ContentDb c)
     {
-        var needSocket = s.Customers.FirstOrDefault(x => x.Live && !x.Installed && !x.SocketFitted);
+        if (s.Faults.FirstOrDefault() is { } fault && s.Customers.FirstOrDefault(x => x.Id == fault.CustomerId) is { } faulty)
+            return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
+
+        bool tech = c.Work.ContainsKey("install") && WorkRules.Current(s, c, "install").Mode != WorkMode.Manual;
+        if (!tech && c.Work.ContainsKey("install") && WorkRules.CanUpgrade(s, c, "install") == UpgradeResult.Ok)
+            return ($"You can afford a technician (${WorkRules.Next(s, c, "install")!.Cost}). Hire them in the company notebook in your room.", null);
+        if (tech && s.PendingInstalls > 0 && s.Modems == 0)
+            return s.Cash >= TownRules.ModemPrice
+                ? ("Your technician is out of modems. Buy some at the electronics shop.", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id)
+                : ("Your technician is out of modems and you can't afford one. Earn some cash.", BestJob(s, c)?.LotId);
+
+        var needSocket = tech ? null : s.Customers.FirstOrDefault(x => x.Live && !x.Installed && !x.SocketFitted);
         if (needSocket is not null)
             return s.Modems > 0
                 ? ($"Install the line at {needSocket.Name}'s house (knock, then work outside and in).", needSocket.LotId)
@@ -20,7 +32,7 @@ public static class Guidance
                     : BestJob(s, c) is { } pj ? ($"You can't afford a modem. Earn cash: {pj.Title.ToLowerInvariant()} at {Who(c, pj)}'s (${pj.Pay}).", pj.LotId)
                     : ("You can't afford a modem. Sleep and check for odd jobs tomorrow.", null);
 
-        if (s.ReadyForFrame > 0) return ($"Wire {s.ReadyForFrame} new line(s) at the frame in your room.", null);
+        if (!tech && s.ReadyForFrame > 0) return ($"Wire {s.ReadyForFrame} new line(s) at the frame in your room.", null);
         if (s.MessagesWaiting > 0) return ($"Play the answering machine in your room ({s.MessagesWaiting} waiting).", null);
         if (BestJob(s, c) is { } job && (s.Cash < 150 || !TownRules.Prospects(s, c).Any(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay)))
             return ($"Odd job: {job.Title.ToLowerInvariant()} at {Who(c, job)}'s (${job.Pay}).", job.LotId);

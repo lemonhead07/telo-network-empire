@@ -48,8 +48,9 @@ public class SimulationTests
     {
         var sim = TestContent.NewGame();
         Assert.Equal(WorkMode.Manual, WorkRules.Current(sim.State, sim.Content, "install").Mode);
-        Assert.Equal(UpgradeResult.NeedsAct, WorkRules.CanUpgrade(sim.State, sim.Content, "install"));
-        sim.State.ActIndex = 1; sim.State.Cash = 5000;
+        Assert.Equal(UpgradeResult.NeedsSubscribers, WorkRules.CanUpgrade(sim.State, sim.Content, "install"));
+        for (int i = 0; i < 4; i++) sim.AddCustomer($"S{i}", "x", 5);
+        sim.State.Cash = 5000;
         Assert.Equal(UpgradeResult.Ok, WorkRules.Upgrade(sim.State, sim.Content, "install"));
         Assert.Equal(1, sim.State.Staff);
         var job = sim.NewFrameJob(new[] { sim.AddCustomer("A", "x", 1), sim.AddCustomer("B", "x", 1), sim.AddCustomer("C", "x", 1) });

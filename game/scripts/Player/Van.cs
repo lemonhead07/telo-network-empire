@@ -36,7 +36,8 @@ public partial class Van : SphereBody
             .Box(new Vector3(0, 0.42f, -2.42f), new Vector3(1.9f, 0.18f, 0.12f), dark)                  // bumper
             .Box(new Vector3(-0.6f, 0.82f, -2.41f), new Vector3(0.3f, 0.18f, 0.06f), new Color(1f, 0.95f, 0.7f))
             .Box(new Vector3(0.6f, 0.82f, -2.41f), new Vector3(0.3f, 0.18f, 0.06f), new Color(1f, 0.95f, 0.7f))
-            .Box(new Vector3(0, 2.0f, 0.3f), new Vector3(1.2f, 0.08f, 2.4f), new Color(0.5f, 0.5f, 0.52f)); // roof rack (ladder goes here)
+            .Box(new Vector3(0, 2.0f, 0.3f), new Vector3(1.2f, 0.08f, 2.4f), new Color(0.5f, 0.5f, 0.52f))  // roof rack (the ladder rides here)
+            .Box(new Vector3(0, 0.5f, 2.42f), new Vector3(1.8f, 0.08f, 0.66f), new Color(0.3f, 0.3f, 0.32f)); // tailboard (drum, toolbox, modem)
         foreach (var (x, z) in new[] { (-0.95f, -1.5f), (0.95f, -1.5f), (-0.95f, 1.4f), (0.95f, 1.4f) })
             lp.Box(new Vector3(x, 0.38f, z), new Vector3(0.3f, 0.76f, 0.76f), dark);
         _visual = lp.Instance("Body");
@@ -47,7 +48,7 @@ public partial class Van : SphereBody
 
         // Interaction shell on layer 2 so it never blocks movement, only the player's look ray.
         Door = new Interactable { CollisionLayer = 2, CollisionMask = 0 };
-        Door.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(2.2f, 2f, 4.8f) }, Position = new Vector3(0, 1.1f, 0) });
+        Door.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(2.2f, 1.9f, 4.2f) }, Position = new Vector3(0, 1.0f, -0.25f) }); // stops short of the tailboard and roof rack
         AddChild(Door);
     }
 

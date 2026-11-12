@@ -1,5 +1,6 @@
 using Godot;
 using Telo.Sim.Minigames.Install;
+using Telo.Sim.Town;
 
 namespace Telo.Game.World;
 
@@ -23,6 +24,8 @@ public partial class InstallSite : Node3D
     private InstallJob? _job;
     private Action<InstallStep, bool>? _act;
     private Action? _signOff;
+    private Func<Tools> _onSite = () => Tools.All;
+    private Func<Tools, string> _kitNames = t => t.ToString();
     private string _testNote = "";
 
     /// <summary>The install here is finished: wire, socket and modem are part of the house now.</summary>
@@ -86,9 +89,10 @@ public partial class InstallSite : Node3D
     }
 
     // ---- driven by GameRoot ------------------------------------------------------------------
-    public void Begin(InstallJob job, Action<InstallStep, bool> act, Action signOff)
+    /// <param name="onSite">Kit the player has with them right now.</param>
+    public void Begin(InstallJob job, Action<InstallStep, bool> act, Action signOff, Func<Tools> onSite, Func<Tools, string> kitNames)
     {
-        _job = job; _act = act; _signOff = signOff; _testNote = "";
+        _job = job; _act = act; _signOff = signOff; _onSite = onSite; _kitNames = kitNames; _testNote = "";
         Sync();
     }
 
@@ -121,13 +125,17 @@ public partial class InstallSite : Node3D
         var d = InstallJob.Def(s.Step);
         int done = j.Progress(s.Step);
         if (done > s.Last) return $"{d.Title}: done{(j.IsRushed(s.Step) ? " (bodged)" : "")}";
+        if (j.CanDo(s.Step) && done >= s.First && j.Missing(s.Step, _onSite()) is var missing && missing != Tools.None)
+            return $"{d.Verb}: you need {_kitNames(missing)} here (from the van)";
         if (j.CanDo(s.Step) && done >= s.First)
             return $"{(j.KnownFault == s.Step ? "Redo: " : "")}{d.Verb} ({done + 1}/{d.Clicks}, {d.MinutesPerClick} min)";
         var first = j.NextStep is { } n ? InstallJob.Def(n) : d;
         return first.Step == s.Step ? $"{d.Title}: do the one before this first" : $"First: {first.Verb.ToLowerInvariant()} ({(first.Outside ? "outside" : "inside")})";
     }
 
-    private bool SpotReady(Spot s) => _job is { } j && j.CanDo(s.Step) && j.Progress(s.Step) >= s.First && j.Progress(s.Step) <= s.Last;
+    private bool SpotTurn(Spot s) => _job is { } j && j.CanDo(s.Step) && j.Progress(s.Step) >= s.First && j.Progress(s.Step) <= s.Last;
+    private bool SpotReady(Spot s) => SpotTurn(s) && _job!.Missing(s.Step, _onSite()) == Tools.None;
+    private bool SpotRushable(Spot s) => SpotTurn(s) && InstallJob.Def(s.Step).CanRush && _job!.Missing(s.Step, _onSite(), rush: true) == Tools.None;
 
     private string PhonePrompt()
     {
@@ -166,8 +174,8 @@ public partial class InstallSite : Node3D
         hot.Prompt = () => SpotPrompt(spot);
         hot.CanUse = () => SpotReady(spot);
         hot.OnUse = () => { if (SpotReady(spot)) _act?.Invoke(step, false); };
-        hot.AltPrompt = () => SpotReady(spot) && InstallJob.Def(step).CanRush ? "Bodge it (1 min)" : null;
-        hot.OnAlt = () => { if (SpotReady(spot)) _act?.Invoke(step, true); };
+        hot.AltPrompt = () => SpotRushable(spot) ? "Bodge it (1 min)" : null;
+        hot.OnAlt = () => { if (SpotRushable(spot)) _act?.Invoke(step, true); };
         _spots.Add(spot);
     }
 
