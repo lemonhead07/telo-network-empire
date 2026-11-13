@@ -41,6 +41,14 @@ public static class Guidance
         if (s.Orders.FirstOrDefault() is { } order && s.Customers.FirstOrDefault(x => x.Id == order.CustomerId) is { } buyer && c.Products.TryGetValue(order.ProductId, out var wanted))
             return ($"Order: fit {wanted.Name.ToLowerInvariant()} at {buyer.Name}'s (${wanted.Price}).", buyer.LotId);
 
+        // the sysop's terminal: callers to let in, uploads to look through, tonight's mail
+        if (BoardService.TerminalOpen(s) && !BoardService.Delegated(s, c))
+        {
+            if (BoardService.Waiting(s) is { Count: > 0 } waiting) return ($"Let {waiting.Count} new caller(s) in at the Board's terminal.", null);
+            if (BoardService.MailOpen(s) && !BoardService.MailRunToday(s)) return ("Run tonight's mail call at the Board's terminal.", null);
+            if (BoardService.NewFiles(s).Count >= 3) return ($"The Board has {BoardService.NewFiles(s).Count} new uploads to look through.", null);
+        }
+
         // the Board is full of an evening: more lines in
         if (s.LineCards > 0) return ("Fit the line card beside the frame in your room.", null);
         if (s.LastEvening is { GaveUp.Count: >= 2 } eve)

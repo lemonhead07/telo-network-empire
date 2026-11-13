@@ -28,6 +28,7 @@ public static class Attention
         if (s.MessagesWaiting > 0) needs.Add(new Need("messages", $"{s.MessagesWaiting} message(s) on the answering machine.", null));
         bool tech = c.Work.ContainsKey("install") && WorkRules.Current(s, c, "install").Mode != WorkMode.Manual;
         if (tech && s.PendingInstalls > 0 && s.Modems == 0) needs.Add(new Need("modems", "Your technician is out of modems.", null));
+        if (BoardService.Waiting(s) is { Count: > 0 } waiting) needs.Add(new Need("callers", $"{waiting.Count} new caller(s) waiting to be let in to the Board.", null));
         if (s.LineCards > 0) needs.Add(new Need("card", "A line card is waiting to be fitted.", null));
         if (s.LastEvening is { GaveUp.Count: >= 2 } eve)
             needs.Add(new Need($"engaged:{eve.Day}", $"The Board was engaged last night. {eve.GaveUp.Count} people gave up.", null));

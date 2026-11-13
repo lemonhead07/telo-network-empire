@@ -23,6 +23,7 @@ public static class SaveCodec
             foreach (var cust in s.Customers) cust.Products ??= new();
             if (s.Exchanges is null || s.Exchanges.Count == 0) s.Exchanges = new() { new Exchange { Id = "ex-town", Name = "Main Street" } };
         }
+        if (s.Version < 5) s.BoardFiles ??= new(); // v5: Board accounts (default: everyone already let in), file area, night mail
         s.Version = GameState.CurrentVersion;
         return s;
     }

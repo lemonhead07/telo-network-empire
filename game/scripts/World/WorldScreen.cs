@@ -52,6 +52,7 @@ public partial class WorldScreen : Node3D
     {
         if (!View.IsOpen) return;
         if (e.IsActionPressed("cancel")) { View.Close(); GetViewport().SetInputAsHandled(); return; }
+        if (e is InputEventKey { Pressed: true, Echo: false } key && View.OnKey(key)) { GetViewport().SetInputAsHandled(); return; }
         if (e is not InputEventMouse m) return;
         var cam = GetViewport().GetCamera3D();
         if (cam is null) return;

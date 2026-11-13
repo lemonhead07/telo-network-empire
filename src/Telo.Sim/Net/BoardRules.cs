@@ -44,9 +44,11 @@ public static class BoardRules
         var report = new EveningReport { Day = day, LinesIn = ex.LinesIn, InUse = new int[Slots] };
         var arriving = new List<(string Id, int Len, bool Redial)>[Slots];
         for (int t = 0; t < Slots; t++) arriving[t] = new();
-        foreach (var cust in s.Customers.Where(x => x.Live && x.Installed && x.ExchangeId == ex.Id).OrderBy(x => x.Id, StringComparer.Ordinal))
+        int appeal = BoardService.Appeal(s);   // a good shelf brings people in more often
+        foreach (var cust in s.Customers.Where(x => x.Live && x.Installed && x.HasAccount && x.ExchangeId == ex.Id).OrderBy(x => x.Id, StringComparer.Ordinal))
         {
             var (calls, min, max, slot) = Habits.GetValueOrDefault(cust.Archetype, Typical);
+            calls = Math.Min(1000, calls * (100 + appeal) / 100);
             if (!rng.ChancePermille(calls)) continue;
             int start = Math.Clamp(slot + rng.Range(-2, 3), 0, Slots - 1);
             int len = rng.Range(min, max + 1);

@@ -31,6 +31,10 @@ public partial class GameRoot : Node3D
     private FrameView _frame = null!;
     private AlmanacView _almanac = null!;
     private NotebookView _notebook = null!;
+    private BoardView _board = null!;
+    private WorldScreen _boardScreen = null!;
+    private Node3D _terminal = null!;
+    private Interactable _terminalUse = null!;
     private WorldScreen _frameScreen = null!, _pipScreen = null!, _notebookScreen = null!;
     private float _dayClock = DayLengthSeconds * 0.1f;
     private float _slowTick;
@@ -57,7 +61,7 @@ public partial class GameRoot : Node3D
     private readonly Dictionary<string, InstallJob> _installs = new();
 
     private float Hour => (6f + _dayClock / DayLengthSeconds * 24f) % 24f;
-    private bool AnyScreenOpen => _frame.IsOpen || _almanac.IsOpen || _notebook.IsOpen;
+    private bool AnyScreenOpen => _frame.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen;
 
     public override void _Ready()
     {
@@ -81,8 +85,9 @@ public partial class GameRoot : Node3D
         _frame = new FrameView { Sim = Sim };
         _almanac = new AlmanacView { Sim = Sim };
         _notebook = new NotebookView { Sim = Sim };
+        _board = new BoardView { Sim = Sim, SpendMinutes = m => SpendHours(m / 60f) };
         BuildRoom(_town.Hq);
-        foreach (var v in new ModalView[] { _frame, _almanac, _notebook })
+        foreach (var v in new ModalView[] { _frame, _almanac, _notebook, _board })
         {
             v.Opened += () => LeanInto(ScreenOf(v));
             v.Closed += LeanBack;
@@ -259,6 +264,20 @@ public partial class GameRoot : Node3D
             () => { if (Onboarding.DeskOpen(Sim.State, _content)) _notebook.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing")); });
         _notebookScreen = Screen(room, _notebook, 0.48f, new Vector3(1.85f, 0.758f, back + 0.5f), new Vector3(-90, 0, 0), glows: false);
 
+        // The Board's terminal, on a side table. It turns up with your first hire. Worked with the number keys.
+        _terminal = new Node3D { Position = new Vector3(2.62f, 0, back + 0.42f), Visible = false };
+        room.AddChild(_terminal);
+        _terminal.AddChild(new LowPoly().Box(new Vector3(0, 0.34f, 0), new Vector3(0.7f, 0.68f, 0.62f), RoomBuilder.Wood * 0.9f)
+            .Box(new Vector3(0, 0.9f, -0.08f), new Vector3(0.52f, 0.44f, 0.42f), new Color(0.72f, 0.7f, 0.62f))          // the tube
+            .Box(new Vector3(0, 0.7f, 0.2f), new Vector3(0.46f, 0.04f, 0.17f), new Color(0.66f, 0.64f, 0.57f))           // keyboard
+            .Box(new Vector3(0, 0.725f, 0.2f), new Vector3(0.4f, 0.012f, 0.12f), new Color(0.2f, 0.2f, 0.2f)).Instance());
+        _boardScreen = Screen(_terminal, _board, 0.42f, new Vector3(0, 0.9f, 0.135f), Vector3.Zero, glows: true);
+        _terminalUse = new Interactable { Position = new Vector3(0, 0.85f, 0.1f), CollisionLayer = 0, CollisionMask = 0 };
+        _terminalUse.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(0.6f, 0.6f, 0.7f) } });
+        _terminalUse.Prompt = () => "Sit down at the Board's terminal";
+        _terminalUse.OnUse = () => { _board.Open(InterfaceTier.Terminal); if (BoardService.NewFiles(Sim.State).Count > 0) _pip.Once("files"); };
+        _terminal.AddChild(_terminalUse);
+
         // Camp bed. Sleeping is how days pass quickly.
         RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
             () => Guidance.IsQuiet(Sim.State, _content) ? "Sleep until something needs you (days may pass)" : "Sleep until morning",
@@ -280,7 +299,7 @@ public partial class GameRoot : Node3D
         return s;
     }
 
-    private WorldScreen ScreenOf(ModalView v) => v == _frame ? _frameScreen : v == _almanac ? _pipScreen : _notebookScreen;
+    private WorldScreen ScreenOf(ModalView v) => v == _frame ? _frameScreen : v == _almanac ? _pipScreen : v == _board ? _boardScreen : _notebookScreen;
 
     private void LeanInto(WorldScreen screen)
     {
@@ -306,6 +325,7 @@ public partial class GameRoot : Node3D
         _frame.Show(WorkRules.InterfaceFor(Sim.State, Sim.Content, "install"));
         _almanac.Show(InterfaceTier.Terminal);
         _notebook.Show(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing"));
+        _board.Show(InterfaceTier.Terminal);
     }
 
     // ---- interactions ------------------------------------------------------------------------
@@ -555,6 +575,15 @@ public partial class GameRoot : Node3D
         }
         if (ActRules.EarlyStartEntry(s, _content) is { } page && s.Archive >= page.ArchiveCost) _pip.Once("almanac");
         if (s.HeadStartDays.Count > 0) _pip.Once("headstart");
+
+        // the Board's terminal turns up with the first hire
+        bool terminal = BoardService.TerminalOpen(s);
+        _terminal.Visible = terminal;
+        _terminalUse.CollisionLayer = terminal ? 1u : 0u;
+        if (terminal) _pip.Once("terminal");
+        if (BoardService.MailOpen(s) && !BoardService.Delegated(s, _content)) { _pip.Once("mail"); if (s.MailMissed >= 1) _pip.Once("nomail"); }
+        if (s.BoardWarned) _pip.Once("solicitor");
+        if (terminal && !BoardService.Delegated(s, _content) && WorkRules.CanUpgrade(s, _content, BoardService.WorkId) == UpgradeResult.Ok) _pip.Once("tobi");
 
         // the pager: beeps once for each new thing that needs you
         if (Attention.HasPager(s))
@@ -867,11 +896,106 @@ public partial class GameRoot : Node3D
         _kitEverywhere = true; _rack.Slot.OnUse!(); _kitEverywhere = false;
         bool board = engagedBefore > 0 && offered && needsCard && BoardRules.Home(Sim.State).LinesIn == 3 && Sim.State.LineCards == 0;
         GD.Print($"BOARD {(board ? "OK" : "FAIL")}: engagedOnTwoLines={engagedBefore} cardOffered={offered} needsCarrying={needsCard} linesNow={BoardRules.Home(Sim.State).LinesIn}");
+        // --- the Board's terminal: let a new caller in with the number keys; in act one, run the night mail ---
+        bool terminalShown = _terminal.Visible;
+        foreach (var w in BoardService.Waiting(Sim.State)) w.HasAccount = true;
+        Sim.State.Customers.First(c => c.Live && c.Installed).HasAccount = false;
+        _board.Open(InterfaceTier.Terminal);
+        _board.Press(1); _board.Press(1);
+        bool letIn = BoardService.Waiting(Sim.State).Count == 0;
+        Sim.GodNextAct();
+        _board.Rebuild();
+        _board.Press(3);
+        bool mailed = BoardService.MailRunToday(Sim.State) && Sim.State.MailBillCents > 0;
+        _board.Press(0);
+        bool sysop = terminalShown && letIn && mailed && !_board.IsOpen;
+        GD.Print($"TERMINAL {(sysop ? "OK" : "FAIL")}: shown={terminalShown} letIn={letIn} mailed={mailed} closed={!_board.IsOpen}");
         Sim.AdvanceDays(700);
         var reloaded = new Simulation(_content, SaveCodec.FromJson(SaveCodec.ToJson(Sim.State)));
-        bool ok = world && doors && paid && house && auto && lineBuilt && catalogue && board && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
+        bool ok = world && doors && paid && house && auto && lineBuilt && catalogue && board && sysop && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
         GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: doors={doors} paid={paid} perfect={outcome.Perfect} {Sim.State.Date} act={Sim.State.ActIndex} subs={Sim.State.LiveSubscribers} cash={Sim.State.Cash}");
         GetTree().Quit(ok ? 0 : 1);
+    }
+
+    /// <summary>
+    /// A MOCK-UP for the owner, not part of the game: what the frame could look like as a real switchboard with wires and lamps
+    /// (docs/DESK_AND_DAY_DESIGN.md). Built only for this screenshot, then thrown away.
+    /// </summary>
+    private async Task ConceptSwitchboard(Camera3D cam, string path)
+    {
+        _board.Close();
+        await ToSignal(GetTree().CreateTimer(0.6), SceneTreeTimer.SignalName.Timeout);
+        var mock = new Node3D { Position = new Vector3(-1.0f, 1.35f, -RoomBuilder.D / 2 + 0.55f) };
+        _town.Hq.AddChild(mock);
+        var lp = new LowPoly();
+        var ply = new Color(0.72f, 0.58f, 0.4f); var brass = new Color(0.8f, 0.66f, 0.3f); var paper = new Color(0.95f, 0.93f, 0.85f);
+        lp.Box(Vector3.Zero, new Vector3(1.9f, 1.3f, 0.04f), ply).Box(new Vector3(0, -0.56f, 0.09f), new Vector3(1.9f, 0.04f, 0.2f), ply * 0.85f);   // board and shelf
+        void Text3(string t, Vector3 at, float size, Color col) => mock.AddChild(new Label3D { Text = t, Position = at, FontSize = 48, PixelSize = size / 48f, Modulate = col, OutlineSize = 0 });
+        Text3("SUBSCRIBERS", new Vector3(-0.62f, 0.53f, 0.03f), 0.05f, new Color(0.15f, 0.1f, 0.05f));
+        Text3("BOARD PORTS", new Vector3(0.5f, 0.53f, 0.03f), 0.05f, new Color(0.15f, 0.1f, 0.05f));
+        Text3("LINES IN", new Vector3(0.0f, 0.6f, 0.03f), 0.04f, new Color(0.15f, 0.1f, 0.05f));
+        string[] names = { "D. Brennan", "C. Achebe", "Lindqvist", "T. Okafor", "H. Moss", "▒▒▒▒▒▒", "P. Duarte", "▒▒▒▒" };
+        var wireCols = new[] { new Color(0.8f, 0.15f, 0.12f), new Color(0.15f, 0.3f, 0.8f), new Color(0.9f, 0.8f, 0.2f), new Color(0.15f, 0.6f, 0.25f), new Color(0.9f, 0.9f, 0.88f) };
+        int[] goesTo = { 2, 0, 4, 1, -1, -1, 6, -1 };   // which port each subscriber is jumpered to (-1: not yet)
+        var lit = new HashSet<int> { 0, 2, 6 };
+        for (int i = 0; i < 8; i++)
+        {
+            float y = 0.42f - i * 0.115f;
+            lp.Box(new Vector3(-0.92f + 0.17f, y, 0.025f), new Vector3(0.34f, 0.075f, 0.01f), paper);                // name tag
+            Text3(names[i], new Vector3(-0.75f, y, 0.035f), 0.042f, new Color(0.12f, 0.1f, 0.3f));
+            lp.Box(new Vector3(-0.5f, y, 0.035f), new Vector3(0.05f, 0.05f, 0.03f), brass);                          // subscriber terminal
+            lp.Box(new Vector3(0.4f, y, 0.035f), new Vector3(0.05f, 0.05f, 0.03f), brass);                           // port jack
+            Text3($"{i + 1}", new Vector3(0.5f, y, 0.03f), 0.045f, new Color(0.15f, 0.1f, 0.05f));
+            mock.AddChild(new MeshInstance3D
+            {
+                Position = new Vector3(0.62f, y, 0.04f), Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.05f, 0.03f) },
+                MaterialOverride = lit.Contains(i) ? new StandardMaterial3D { AlbedoColor = new Color(1f, 0.75f, 0.2f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.15f), EmissionEnergyMultiplier = 2 }
+                    : new StandardMaterial3D { AlbedoColor = i == 3 ? new Color(0.5f, 0.08f, 0.06f) : new Color(0.1f, 0.25f, 0.12f) },
+            });
+        }
+        // jumper wires: each hangs in a shallow curve between its two terminals
+        void Jumper(Vector3 from, Vector3 to, Color col)
+        {
+            var prev = from;
+            for (int k = 1; k <= 8; k++)
+            {
+                float t = k / 8f, sag = Mathf.Sin(t * Mathf.Pi);
+                var p = from.Lerp(to, t) + new Vector3(0, -0.07f * sag, 0.08f * sag);
+                var d = p - prev; var z = d.Normalized(); var x = Vector3.Up.Cross(z).Normalized();
+                var seg = new LowPoly().Box(Vector3.Zero, new Vector3(0.012f, 0.012f, d.Length() + 0.004f), col).Instance();
+                seg.Transform = new Transform3D(new Basis(x, z.Cross(x), z), (p + prev) / 2);
+                mock.AddChild(seg);
+                prev = p;
+            }
+        }
+        for (int i = 0; i < 8; i++)
+            if (goesTo[i] >= 0) Jumper(new Vector3(-0.5f, 0.42f - i * 0.115f, 0.05f), new Vector3(0.4f, 0.42f - goesTo[i] * 0.115f, 0.05f), i == 6 ? new Color(0.35f, 0.33f, 0.3f) : wireCols[i % wireCols.Length]);
+        lp.Box(new Vector3(-0.05f, 0.42f - 0.115f * 0.5f, 0.11f), new Vector3(0.2f, 0.06f, 0.005f), new Color(0.85f, 0.15f, 0.1f));
+        Text3("PARTY LINE: LEAVE", new Vector3(-0.05f, 0.42f - 0.115f * 0.5f, 0.115f), 0.028f, Colors.White);
+        for (int i = 0; i < 4; i++)                                                                                   // lines in: two fitted and busy, two empty sockets
+            mock.AddChild(new MeshInstance3D
+            {
+                Position = new Vector3(-0.15f + i * 0.1f, 0.53f, 0.04f), Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.05f, 0.03f) },
+                MaterialOverride = i < 2 ? new StandardMaterial3D { AlbedoColor = new Color(1f, 0.75f, 0.2f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.15f), EmissionEnergyMultiplier = 2 } : new StandardMaterial3D { AlbedoColor = new Color(0.06f, 0.06f, 0.06f) },
+            });
+        // the shelf: tone probe, test handset, spare jumpers on a hook, the test switch
+        lp.Box(new Vector3(-0.7f, -0.5f, 0.1f), new Vector3(0.26f, 0.05f, 0.05f), new Color(0.95f, 0.8f, 0.15f)).Box(new Vector3(-0.55f, -0.5f, 0.1f), new Vector3(0.05f, 0.02f, 0.02f), new Color(0.7f, 0.7f, 0.72f));
+        lp.Box(new Vector3(-0.3f, -0.49f, 0.1f), new Vector3(0.24f, 0.07f, 0.07f), new Color(0.1f, 0.1f, 0.11f));
+        for (int i = 0; i < 5; i++) lp.Box(new Vector3(0.1f + i * 0.035f, -0.36f, 0.04f), new Vector3(0.012f, 0.3f, 0.012f), wireCols[i]);
+        lp.Box(new Vector3(0.17f, -0.2f, 0.04f), new Vector3(0.22f, 0.02f, 0.03f), brass);
+        lp.Box(new Vector3(0.7f, -0.42f, 0.05f), new Vector3(0.16f, 0.2f, 0.03f), new Color(0.15f, 0.15f, 0.16f)).Box(new Vector3(0.7f, -0.36f, 0.12f), new Vector3(0.03f, 0.16f, 0.1f), brass);
+        Text3("probe", new Vector3(-0.68f, -0.43f, 0.1f), 0.03f, paper); Text3("test set", new Vector3(-0.3f, -0.42f, 0.1f), 0.03f, paper);
+        Text3("jumpers", new Vector3(0.17f, -0.15f, 0.06f), 0.03f, new Color(0.15f, 0.1f, 0.05f)); Text3("TEST", new Vector3(0.7f, -0.28f, 0.07f), 0.035f, paper);
+        mock.AddChild(lp.Instance());
+        mock.AddChild(new OmniLight3D { Position = new Vector3(0, 0.3f, 1.2f), LightEnergy = 0.8f, OmniRange = 4 });
+
+        _player.Camera.Current = false; cam.Current = true;
+        cam.GlobalTransform = mock.GlobalTransform * new Transform3D(new Basis(Vector3.Up, 0.18f), new Vector3(0.38f, -0.02f, 1.75f));
+        _hud.Visible = false;
+        await Frames(14);
+        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-concept-switchboard.png"));
+        _hud.Visible = true;
+        mock.QueueFree();
     }
 
     private async Task TakeScreenshot(string path)
@@ -963,6 +1087,13 @@ public partial class GameRoot : Node3D
         cam.GlobalTransform = _rack.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0.1f, 0.05f, 1.15f));
         await Frames(12);
         GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-board.png"));
+        // the sysop's terminal, with a caller waiting and uploads to look through
+        cam.Current = false; _player.Camera.Current = true;
+        Sim.GodNextAct(); Sim.AdvanceDays(8);
+        Sim.State.Customers.First(c => c.Live && c.Installed).HasAccount = false;
+        await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+        _board.Open(InterfaceTier.Terminal); await Inside("-terminal"); _board.Press(2); await Inside("-terminal-files"); _board.Close();
+        await ConceptSwitchboard(cam, path);
         GD.Print($"SHOTS OK fps={Engine.GetFramesPerSecond()}");
         GetTree().Quit();
     }

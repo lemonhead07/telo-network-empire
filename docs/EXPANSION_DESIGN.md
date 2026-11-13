@@ -2,7 +2,7 @@
 
 Written 2026-11-12 after the owner's second playtest (39 minutes, whole town connected, farm line built, nothing left to do). This is the plan for what the game *is* after the first hour and how we build it. It fits the canon in `TELO_GAMEPLAY_HANDOFF.md`; where it changes a locked decision it says so in section 10.
 
-> **Status, 2026-11-12.** The owner agreed to all of section 10 (now D17–D21 in `DECISIONS.md`) and added D22, the catalogue. **Built so far:** phase A (early act start, pager, saved installs, money pass), phase B (evening calls, engaged tones, line lamps and tally, line cards), and a first version of the catalogue (section 4a). **Next:** phase C, the Board's terminal.
+> **Status, 2026-11-13.** The owner agreed to all of section 10 (D17–D21 in `DECISIONS.md`) and added D22, the catalogue. **Built:** phase A (early act start, pager, saved installs, money pass), phase B (evening calls, engaged tones, line lamps and tally, line cards), a first catalogue (section 4a), and **phase C** (the Board's terminal: callers, file area, night mail, Tobi as co-sysop). **Next:** the owner's answers to `DESK_AND_DAY_DESIGN.md`, which changes *how* phase D onward is built (as objects, not panels) and replaces foundation 5 with a job board.
 
 ## 1. What the playtest told us
 

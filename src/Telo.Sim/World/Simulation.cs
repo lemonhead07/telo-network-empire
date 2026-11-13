@@ -54,6 +54,9 @@ public sealed class Simulation
         AlmanacRules.Tick(s, Content);
         LedgerRules.Tick(s, Content);
         BoardRules.ApplyEvening(s, Content, s.Day - 1);   // last night at the Board
+        BoardService.EndOfDay(s, s.Day - 1);
+        BoardService.CoSysopDay(s, Content);
+        if (s.Day % 7 == 0) BoardService.Week(s, Content, _rng);
         TownRules.Tick(s, Content, _rng);
         OrderRules.Tick(s, Content);
         TechnicianDay();
@@ -61,7 +64,7 @@ public sealed class Simulation
         DriftSatisfaction();
         // Word of mouth: happy subscribers bring enquiries.
         int happy = s.Customers.Count(c => c.Live && c.Installed && c.Satisfaction >= 60);
-        if (Onboarding.PhoneRings(s, Content) && s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, 250 + 40 * happy))) s.MessagesWaiting++;
+        if (Onboarding.PhoneRings(s, Content) && s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, 250 + 40 * happy + 8 * BoardService.Appeal(s)))) s.MessagesWaiting++;
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
         s.RngState = _rng.State;
@@ -71,7 +74,7 @@ public sealed class Simulation
     {
         var s = State;
         long revenue = s.Customers.Where(c => c.Live && c.Installed).Sum(c => c.MonthlyFee);
-        long costs = RentPerMonth + s.Staff * WagePerStaffPerMonth + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s);
+        long costs = RentPerMonth + s.Staff * WagePerStaffPerMonth + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s) + BoardService.TakeMonthlyBill(s);
         s.RevenueLastMonth = revenue;
         s.RevenueThisMonth = 0;
         s.Cash += revenue - costs;
@@ -134,6 +137,8 @@ public sealed class Simulation
     {
         var s = State;
         c.Installed = true;
+        // once there is a sysop's terminal, a new caller has to be let in (by you, or by your co-sysop)
+        c.HasAccount = !BoardService.TerminalOpen(s) || BoardService.Delegated(s, Content);
         long fee = ConnectionFee(c);
         s.Cash += fee;
         if (s.LiveSubscribers == 1) s.Emit(EventKind.Milestone, $"First customer: {c.Name}. A dial tone, a modem shriek, a thank-you, and ${fee} for the connection.", c.Id);
@@ -175,7 +180,7 @@ public sealed class Simulation
     {
         var s = State; var c = Content;
         Customer? SignNext() => TownRules.Prospects(s, c).FirstOrDefault() is { } lot ? TownRules.SignUp(s, lot) : null;
-        void Connect(Customer cust) { if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); } if (!cust.Installed) GoLive(cust); }
+        void Connect(Customer cust) { if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); } if (!cust.Installed) GoLive(cust); cust.HasAccount = true; }
         string done;
         switch (Onboarding.Current(s, c))
         {
@@ -214,7 +219,13 @@ public sealed class Simulation
                     while (SignNext() is { } rest) Connect(rest);
                     done = "The whole town is connected.";
                 }
+                else if (c.Work.ContainsKey(BoardService.WorkId) && !BoardService.Delegated(s, c) && WorkRules.Next(s, c, BoardService.WorkId) is { } coSysop)
+                {
+                    s.Cash = Math.Max(s.Cash, coSysop.Cost);
+                    done = WorkRules.Upgrade(s, c, BoardService.WorkId) == UpgradeResult.Ok ? "Tobi is co-sysop." : GodNextAct();
+                }
                 else done = GodNextAct();
+                foreach (var cust in BoardService.Waiting(s)) cust.HasAccount = true;
                 break;
         }
         s.RngState = _rng.State;

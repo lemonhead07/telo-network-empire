@@ -1,35 +1,177 @@
 [
-  { "id": "install", "name": "Installations", "stages": [
-    { "mode": "manual", "interface": "paper", "description": "You, a tone probe, a clipboard and the frame." },
-    { "mode": "delegated", "interface": "paper", "accuracyPermille": 850, "cost": 300, "requiresSubscribers": 4,
-      "description": "A junior technician does the house installs and the frame work from your handwritten job sheets, one customer a day.",
-      "newProblem": "Their mistakes look fine today and surface weeks later." },
-    { "mode": "delegated", "interface": "database", "accuracyPermille": 920, "cost": 1500, "monthlyUpkeep": 60, "requiresAct": 2, "requiresEntry": "alm-monitoring",
-      "description": "Job tickets live in a database; the tech can see which pairs are already faulty.",
-      "newProblem": "When the database is wrong, everyone is wrong together." },
-    { "mode": "automated", "interface": "dashboard", "accuracyPermille": 990, "cost": 20000, "monthlyUpkeep": 800, "requiresAct": 4, "requiresEntry": "alm-adsl",
-      "description": "Remote provisioning. Customers are switched on from a screen.",
-      "newProblem": "When provisioning breaks, it breaks for every new customer at once." } ] },
-  { "id": "billing", "name": "Billing", "stages": [
-    { "mode": "manual", "interface": "paper", "description": "Carbon-copy invoices at the kitchen table." },
-    { "mode": "delegated", "interface": "paper", "accuracyPermille": 900, "cost": 200, "requiresAct": 1,
-      "description": "A part-time bookkeeper and a shoebox of receipts.", "newProblem": "The bookkeeper notices things. All of the things." },
-    { "mode": "automated", "interface": "terminal", "accuracyPermille": 970, "cost": 800, "monthlyUpkeep": 40, "requiresAct": 1, "requiresEntry": "alm-billing",
-      "description": "Billing software on a green-screen terminal.", "newProblem": "One bug bills everyone twice." },
-    { "mode": "automated", "interface": "dashboard", "accuracyPermille": 995, "cost": 6000, "monthlyUpkeep": 300, "requiresAct": 3,
-      "description": "A billing platform with revenue graphs.", "newProblem": "Vendor lock-in. The vendor knows it." } ] },
-  { "id": "support", "name": "Customer support", "stages": [
-    { "mode": "manual", "interface": "paper", "description": "An answering machine and your own voice, hoarse by Friday." },
-    { "mode": "delegated", "interface": "paper", "accuracyPermille": 850, "cost": 250, "requiresAct": 1,
-      "description": "A receptionist with a notebook of common faults.", "newProblem": "Calls you used to hear now arrive as summaries." },
-    { "mode": "delegated", "interface": "database", "accuracyPermille": 920, "cost": 2500, "monthlyUpkeep": 100, "requiresAct": 2,
-      "description": "A ticket system. Every complaint has a number.", "newProblem": "Tickets can be closed without being solved." },
-    { "mode": "automated", "interface": "dashboard", "accuracyPermille": 960, "cost": 40000, "monthlyUpkeep": 2000, "requiresAct": 5,
-      "description": "Self-service portal and phone tree.", "newProblem": "People who need a human can no longer find one." } ] },
-  { "id": "repair", "name": "Fault repair", "stages": [
-    { "mode": "manual", "interface": "paper", "description": "Drive out, listen to the line, find the fault with your hands." },
-    { "mode": "delegated", "interface": "terminal", "accuracyPermille": 880, "cost": 2000, "monthlyUpkeep": 80, "requiresAct": 2, "requiresEntry": "alm-monitoring",
-      "description": "A field tech dispatched from a terminal showing alarm lights.", "newProblem": "The terminal shows symptoms, not causes." },
-    { "mode": "automated", "interface": "dashboard", "accuracyPermille": 970, "cost": 60000, "monthlyUpkeep": 3000, "requiresAct": 6,
-      "description": "Alarm correlation in a network operations centre.", "newProblem": "The first automated failure is small, embarrassing, and a warning." } ] }
+  {
+    "id": "install",
+    "name": "Installations",
+    "stages": [
+      {
+        "mode": "manual",
+        "interface": "paper",
+        "description": "You, a tone probe, a clipboard and the frame."
+      },
+      {
+        "mode": "delegated",
+        "interface": "paper",
+        "accuracyPermille": 850,
+        "cost": 300,
+        "requiresSubscribers": 4,
+        "description": "A junior technician does the house installs and the frame work from your handwritten job sheets, one customer a day.",
+        "newProblem": "Their mistakes look fine today and surface weeks later."
+      },
+      {
+        "mode": "delegated",
+        "interface": "database",
+        "accuracyPermille": 920,
+        "cost": 1500,
+        "monthlyUpkeep": 60,
+        "requiresAct": 2,
+        "requiresEntry": "alm-monitoring",
+        "description": "Job tickets live in a database; the tech can see which pairs are already faulty.",
+        "newProblem": "When the database is wrong, everyone is wrong together."
+      },
+      {
+        "mode": "automated",
+        "interface": "dashboard",
+        "accuracyPermille": 990,
+        "cost": 20000,
+        "monthlyUpkeep": 800,
+        "requiresAct": 4,
+        "requiresEntry": "alm-adsl",
+        "description": "Remote provisioning. Customers are switched on from a screen.",
+        "newProblem": "When provisioning breaks, it breaks for every new customer at once."
+      }
+    ]
+  },
+  {
+    "id": "billing",
+    "name": "Billing",
+    "stages": [
+      {
+        "mode": "manual",
+        "interface": "paper",
+        "description": "Carbon-copy invoices at the kitchen table."
+      },
+      {
+        "mode": "delegated",
+        "interface": "paper",
+        "accuracyPermille": 900,
+        "cost": 200,
+        "requiresAct": 1,
+        "description": "A part-time bookkeeper and a shoebox of receipts.",
+        "newProblem": "The bookkeeper notices things. All of the things."
+      },
+      {
+        "mode": "automated",
+        "interface": "terminal",
+        "accuracyPermille": 970,
+        "cost": 800,
+        "monthlyUpkeep": 40,
+        "requiresAct": 1,
+        "requiresEntry": "alm-billing",
+        "description": "Billing software on a green-screen terminal.",
+        "newProblem": "One bug bills everyone twice."
+      },
+      {
+        "mode": "automated",
+        "interface": "dashboard",
+        "accuracyPermille": 995,
+        "cost": 6000,
+        "monthlyUpkeep": 300,
+        "requiresAct": 3,
+        "description": "A billing platform with revenue graphs.",
+        "newProblem": "Vendor lock-in. The vendor knows it."
+      }
+    ]
+  },
+  {
+    "id": "support",
+    "name": "Customer support",
+    "stages": [
+      {
+        "mode": "manual",
+        "interface": "paper",
+        "description": "An answering machine and your own voice, hoarse by Friday."
+      },
+      {
+        "mode": "delegated",
+        "interface": "paper",
+        "accuracyPermille": 850,
+        "cost": 250,
+        "requiresAct": 1,
+        "description": "A receptionist with a notebook of common faults.",
+        "newProblem": "Calls you used to hear now arrive as summaries."
+      },
+      {
+        "mode": "delegated",
+        "interface": "database",
+        "accuracyPermille": 920,
+        "cost": 2500,
+        "monthlyUpkeep": 100,
+        "requiresAct": 2,
+        "description": "A ticket system. Every complaint has a number.",
+        "newProblem": "Tickets can be closed without being solved."
+      },
+      {
+        "mode": "automated",
+        "interface": "dashboard",
+        "accuracyPermille": 960,
+        "cost": 40000,
+        "monthlyUpkeep": 2000,
+        "requiresAct": 5,
+        "description": "Self-service portal and phone tree.",
+        "newProblem": "People who need a human can no longer find one."
+      }
+    ]
+  },
+  {
+    "id": "repair",
+    "name": "Fault repair",
+    "stages": [
+      {
+        "mode": "manual",
+        "interface": "paper",
+        "description": "Drive out, listen to the line, find the fault with your hands."
+      },
+      {
+        "mode": "delegated",
+        "interface": "terminal",
+        "accuracyPermille": 880,
+        "cost": 2000,
+        "monthlyUpkeep": 80,
+        "requiresAct": 2,
+        "requiresEntry": "alm-monitoring",
+        "description": "A field tech dispatched from a terminal showing alarm lights.",
+        "newProblem": "The terminal shows symptoms, not causes."
+      },
+      {
+        "mode": "automated",
+        "interface": "dashboard",
+        "accuracyPermille": 970,
+        "cost": 60000,
+        "monthlyUpkeep": 3000,
+        "requiresAct": 6,
+        "description": "Alarm correlation in a network operations centre.",
+        "newProblem": "The first automated failure is small, embarrassing, and a warning."
+      }
+    ]
+  },
+  {
+    "id": "board",
+    "name": "Running the Board",
+    "stages": [
+      {
+        "mode": "manual",
+        "interface": "terminal",
+        "description": "You at the sysop's terminal: letting callers in, tending the file area, running the night mail call."
+      },
+      {
+        "mode": "delegated",
+        "interface": "terminal",
+        "accuracyPermille": 850,
+        "cost": 40,
+        "requiresSubscribers": 6,
+        "description": "Tobi Okafor as co-sysop: lets callers in, runs the mail every night, and looks after the file area.",
+        "newProblem": "Tobi keeps everything anyone uploads. Everything."
+      }
+    ]
+  }
 ]

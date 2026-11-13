@@ -44,6 +44,12 @@ public sealed class PipTips
         ["pager"] = "Your technician left you a pager. It beeps when something needs you, wherever you are.",
         ["order"] = "This one isn't a repair, it's a sale. Fit it step by step, then show them how it works. Some of these add to their bill every month.",
         ["catalogue"] = "People who already have a line start wanting things to go with it. Extensions. Answering machines. It all goes through you.",
+        ["terminal"] = "That's the Board's own terminal, on the table by your desk. Sol found it in a skip. Number keys, like a proper sysop. New callers wait there until you let them in.",
+        ["files"] = "People upload things to the Board. You decide what goes on the shelf, what stays under the counter, and what goes in the bin. A good shelf brings more callers.",
+        ["mail"] = "Act one. Boards have started swapping mail overnight over long-distance lines. Run the call every night at the terminal. It costs by the minute.",
+        ["nomail"] = "No mail tonight means no mail tomorrow morning. People notice by the second day.",
+        ["tobi"] = "Tobi Okafor keeps asking to help run the Board. There's a page for it in your notebook.",
+        ["solicitor"] = "A solicitor's letter about the file area. The Board has never been more popular. Those two facts are related.",
         ["closed"] = "Road closed. The council is resurfacing it. Nobody has seen the council.",
     };
 

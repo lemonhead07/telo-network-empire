@@ -27,6 +27,8 @@ public sealed class Customer
     public string ExchangeId { get; set; } = "ex-town";
     /// <summary>Catalogue products fitted here (v4).</summary>
     public List<string> Products { get; set; } = new();
+    /// <summary>They have been let in to the Board (v5). Without an account they can't ring in.</summary>
+    public bool HasAccount { get; set; } = true;
 }
 
 public enum HouseholdStatus { Unknown, Declined, Signed }
@@ -121,6 +123,19 @@ public sealed class Order
     public int PlacedDay { get; set; }
 }
 
+public enum FileKind { Useful, Fun, Dubious }
+public enum FileStatus { New, Kept, Hidden, Binned }
+
+/// <summary>Something a caller has uploaded to the Board's file area.</summary>
+public sealed class BoardFile
+{
+    public required string Id { get; set; }
+    public required string Title { get; set; }
+    public FileKind Kind { get; set; }
+    public FileStatus Status { get; set; }
+    public int Day { get; set; }
+}
+
 public sealed class PromiseRecord
 {
     public PromiseStatus Status { get; set; }
@@ -133,7 +148,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -190,6 +205,15 @@ public sealed class GameState
     /// <summary>Catalogue orders waiting to be fitted.</summary>
     public List<Order> Orders { get; set; } = new();
     public int OrdersDone { get; set; }
+
+    // v5: running the Board
+    public List<BoardFile> BoardFiles { get; set; } = new();
+    /// <summary>How much notice the file area has drawn from people with solicitors.</summary>
+    public int BoardHeat { get; set; }
+    public bool BoardWarned { get; set; }
+    public int MailLastRunDay { get; set; } = -1;
+    public int MailMissed { get; set; }
+    public long MailBillCents { get; set; }
     public List<GameEvent> Log { get; set; } = new();
     public int NextId { get; set; } = 1;
 

@@ -1,6 +1,6 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "the Board fills up, line cards, the catalogue". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-12, commit "the Board's terminal; desk and day proposal". Everything is pushed; the working tree is clean.*
 
 ## Where things stand (the demo loop so far)
 1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
@@ -23,17 +23,15 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 **The biggest gap now: the town runs out.** 12 houses, a shop and a farm is about 40 minutes of content. After that the only thing left is waiting for June 1984. The next age (Act 1, the bulletin board) has data but no gameplay. That, or a second settlement, is what makes "overlap and pace increase between rounds" real.
 
 ## Plan for next time
-**Follow `docs/EXPANSION_DESIGN.md`.** The owner agreed to all its decisions (D17–D22 in `DECISIONS.md`). Phases A and B and a first catalogue are built. **D15 changed: Blender models are allowed now.**
+**First, check whether the owner has answered Q1–Q5 in `docs/DESK_AND_DAY_DESIGN.md`.** That proposal (every panel becomes an object, starting with a working switchboard; the time of day deciding who is home; a job board with trained staff) was written on 2026-11-13 at the owner's request and is waiting for their reaction. If they have agreed, its section 4 is the build order and step 1 is the switchboard. If not, ask.
 
-1. **Phase C, the Board:** a green terminal on the desk (`WorldScreen`, terminal tier) with three jobs: let new callers in, tend the file area, run the night mail call (long-distance bill; the 2400 modem halves it). Tobi Okafor as co-sysop.
-2. **Phase D, count and listen:** invoices by hand and late payers; mixed phone messages (enquiries, orders, complaints, fault reports); make the bookkeeper and receptionist real; move to 1 Main Street. Completes Round 1.
-3. **Catalogue, next steps** (section 4a of the design): more products, choosing at the door, stock.
-4. **Art track:** start `tools/` Blender scripts and `game/assets/`: house exterior with nameplate, van, carried kit (`ASSET_LIST.md` step 1).
+Built so far from `docs/EXPANSION_DESIGN.md`: phases A, B and C, and a first catalogue. Phase D (invoices by hand, late payers, mixed phone messages, bookkeeper and receptionist, 1 Main Street) is next there, but should be built as objects per the proposal.
 
-Things to watch from this session:
-- The engaged-tone numbers are first guesses. A whole town on 2 lines gives a few engaged tones a night; check it feels like pressure, not noise.
-- Orders use the same box-on-the-rug as odd jobs. They want their own objects and places (a bell under the eave, a fax on a desk).
-- Buying a line card is `[R]` at Sol's counter, which is easy to miss; the shop needs a proper counter with things on it.
+Notes from this session:
+- The Board's terminal is keyboard-only (number keys). `--shot` saves `-terminal` and `-terminal-files`.
+- `--shot` also saves `-concept-switchboard`: a throwaway mock-up (`GameRoot.ConceptSwitchboard`) for the proposal. Delete that method once the real switchboard exists.
+- Running the mail by hand every night stops the bed skipping days in Act 1. That is deliberate pressure to hire Tobi; check it isn't just annoying.
+- The engaged-tone numbers are still first guesses.
 
 ## Rules to keep
 - Outcomes and defects are decided in `src/Telo.Sim`; Godot only shows and drives it.
