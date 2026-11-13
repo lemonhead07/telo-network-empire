@@ -14,8 +14,17 @@
         "accuracyPermille": 850,
         "cost": 300,
         "requiresSubscribers": 4,
-        "description": "A junior technician does the house installs and the frame work from your handwritten job sheets, one customer a day.",
-        "newProblem": "Their mistakes look fine today and surface weeks later."
+        "description": "Jory Pike, junior technician, does house installs and the frame work from the job tickets you hand over: two a day, eight till five, Monday to Friday.",
+        "newProblem": "Their mistakes look fine today and surface weeks later.",
+        "hire": {
+          "name": "Jory Pike",
+          "does": [
+            "install"
+          ],
+          "jobsPerDay": 2,
+          "pieceRate": 6,
+          "weeklyWage": 22
+        }
       },
       {
         "mode": "delegated",
@@ -170,7 +179,12 @@
         "cost": 40,
         "requiresSubscribers": 6,
         "description": "Tobi Okafor as co-sysop: lets callers in, runs the mail every night, and looks after the file area.",
-        "newProblem": "Tobi keeps everything anyone uploads. Everything."
+        "newProblem": "Tobi keeps everything anyone uploads. Everything.",
+        "hire": {
+          "name": "Tobi Okafor",
+          "does": [],
+          "weeklyWage": 8
+        }
       }
     ]
   }

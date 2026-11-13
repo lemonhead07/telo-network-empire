@@ -1,3 +1,4 @@
+using Telo.Sim.Content;
 using Telo.Sim.Minigames.Install;
 using Telo.Sim.Save;
 using Telo.Sim.Town;
@@ -19,19 +20,69 @@ public class AutomationTests
     }
 
     [Fact]
-    public void TechnicianConnectsOneCustomerADay_AndNeedsModems()
+    public void TheTechnicianWorksOnlyOnTicketsTheyAreHanded_TwoADay_PaidByTheJobOnFriday()
     {
         var sim = Hired();
-        sim.State.Modems = 1;
-        var a = sim.TakeEnquiry()!; var b = sim.TakeEnquiry()!;
+        var s = sim.State; var c = sim.Content;
+        s.Modems = 1;
+        var a = sim.TakeEnquiry()!; var b = sim.TakeEnquiry()!; var third = sim.TakeEnquiry()!;
         sim.AdvanceDay();
-        Assert.True(a.Installed && !b.Installed);
-        sim.AdvanceDays(3);
-        Assert.False(b.Installed); // no modem, no install
-        sim.State.Modems = 1;
+        Assert.False(a.Installed);                                     // no ticket, no work
+        var jory = s.StaffMembers.Single();
+        Assert.Equal("Jory Pike", jory.Name);
+        Assert.True(StaffRules.Assign(s, c, $"install:{a.Id}", jory.Id));
+        Assert.True(StaffRules.Assign(s, c, $"install:{b.Id}", jory.Id));
+        Assert.False(StaffRules.Assign(s, c, $"install:{third.Id}", jory.Id));   // a day's worth at a time
+        Assert.False(StaffRules.Assign(s, c, $"job:nothing", jory.Id));
+        sim.AdvanceDay();
+        Assert.True(a.Installed && !b.Installed);                      // one modem, one install
+        s.Modems = 1;
         sim.AdvanceDay();
         Assert.True(b.Installed);
-        Assert.Equal(2, sim.State.TechInstalls);
+        Assert.Equal(2, s.TechInstalls);
+        long cash = s.Cash;
+        for (int i = 0; i < 7 && !s.Log.Any(e => e.Text.StartsWith("Pay day")); i++) { cash = s.Cash; sim.AdvanceDay(); }
+        Assert.Contains(s.Log, e => e.Text.StartsWith("Pay day"));
+        Assert.True(s.Cash <= cash - jory.PieceRate * 2 + 400 && jory.JobsThisWeek == 0);
+    }
+
+    [Fact]
+    public void WithADepotStaffCollectTheirOwnTickets_AndTheClockDoesTheWorkDuringTheDay()
+    {
+        var sim = Hired();
+        var s = sim.State; var c = sim.Content;
+        s.Modems = 5; s.Cash = 1000;
+        Assert.True(StaffRules.LeaseDepot(s));
+        var a = sim.TakeEnquiry()!;
+        while (!Clock.IsWorkingDay(s.Day + 1)) sim.AdvanceDay();
+        sim.Sleep();                                                   // morning of a working day: the ticket is collected
+        Assert.Contains(StaffRules.Tickets(s, c), t => t.AssignedTo == "install");
+        Assert.False(a.Installed);
+        sim.AdvanceMinutes(5 * 60);                                    // seven until noon
+        Assert.True(a.Installed);
+        Assert.Equal(1, s.StaffMembers[0].JobsToday);
+    }
+
+    [Fact]
+    public void PeopleKeepHours_OnceTheFirstHourIsOver()
+    {
+        var sim = Hired();
+        var s = sim.State; var c = sim.Content;
+        var family = c.Lots.Values.First(l => l.Archetype == "family" && l.Kind == LotKind.House);
+        var retired = c.Lots.Values.First(l => l.Archetype == "tech-inexperienced");
+        var shop = c.Lots.Values.First(l => l.Kind == LotKind.Shop);
+        while (Clock.Weekday(s.Day) != DayOfWeek.Tuesday) sim.AdvanceDay();
+        s.Minute = 5 * 60;                                             // eleven in the morning
+        Assert.False(HomeRules.IsHome(s, c, family));
+        Assert.True(HomeRules.IsHome(s, c, retired) && HomeRules.IsHome(s, c, shop));
+        Assert.Equal(KnockResult.NobodyHome, sim.Knock(family.Id));
+        s.Minute = 13 * 60;                                            // seven in the evening
+        Assert.True(HomeRules.IsHome(s, c, family) && !HomeRules.IsHome(s, c, shop));
+        s.Minute = 17 * 60;                                            // eleven at night
+        Assert.False(HomeRules.IsHome(s, c, retired));
+        var fresh = TestContent.NewGame();
+        fresh.State.Minute = 17 * 60;
+        Assert.True(HomeRules.IsHome(fresh.State, fresh.Content, family));   // a new player's first hour is spared
     }
 
     [Fact]

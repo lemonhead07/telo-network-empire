@@ -1,6 +1,35 @@
 # The Desk, the Day and the Week
 
-**Status: a proposal for the owner, 2026-11-13. Nothing here is built except where marked.** The owner asked for thinking on three things: what the day/night cycle should mean for players and customers; a calendar you fill by assigning trained staff to jobs; and turning every on-screen panel into an object you handle, starting with a real switchboard. Questions for the owner are in section 5.
+**Status, 2026-11-13: agreed by the owner, with changes. Decisions D23–D27 in `DECISIONS.md` are the short version.** This document started as a proposal; the owner's answers are folded in below under "What the owner changed". Section 5's questions are answered.
+
+### What the owner changed
+
+1. **Doors by time of day: yes,** and it points somewhere bigger: named people who really walk about the planet, who have to be home to be talked to. Lit windows and a car on the drive are the first signs of that. Later, a more detailed planet with places put down by hand.
+2. **The day is timed and work is real time.** Not "each task costs so many minutes off the clock", but a day of fixed length in which a job takes as long as it takes you to do it, so only so many fit. Jobs should take *longer* for the player, with light visuals, and the objects should show mistakes, which compound.
+3. **Staff have their own place and a narrow job, and are delegated to in person.** Jobs generate tickets; you give a ticket to the person. Later you buy premises; then they turn up there, and that is when they go on a wage.
+4. **Switchboard first: yes.**
+5. **The text strip goes;** highlights on the object and PIP explain the task as it is done.
+
+### Built so far (2026-11-13)
+
+- **The clock belongs to the simulation** and only real time moves it. Every hands-on step is "hold E"; a bar fills; keep holding to carry on. No clock jumps anywhere.
+- **Mistakes show and compound:** a bodged stage hangs crooked for good, and several bodges on one line come to the surface sooner.
+- **The next step's marker pulses;** later ones wait, small.
+- **Who is home:** households out nine to five on weekdays, asleep from ten, Sol's hours, Sundays. Lit windows after dark, cars on drives. First hour exempt.
+- **Tickets and Jory:** a rail of job tickets on your wall; take one, hand it to Jory Pike at your door; two a day, eight till five, Monday to Friday; paid by the job on Friday.
+- **1 Main Street:** lease it and staff collect their own tickets and go on a weekly wage.
+- **A wall calendar** with today, pay day, rent day, Sundays and days off, and the time.
+
+### Still to build, in order
+
+1. **The switchboard** (section 1), on the same hold-to-work mechanic, with crooked jumpers you can see.
+2. **The desk objects** that replace the text strip: cash tin, job spike, card index, telex roll. PIP and highlights carry the explaining.
+3. **Training:** a person learns a new kind of ticket by coming along while you do three of them.
+4. **Each person's own place:** Jory at a bench in the depot, Tobi at the terminal, and so on, as visible people.
+5. **Appointments, night rate for the mail, tiredness (light).**
+6. Then phase D of `EXPANSION_DESIGN.md`, built as objects.
+
+---
 
 The three ideas are one idea seen from three sides: **the game should be read off the world, not off a panel.** The time is the light outside and who has their lamp on. The plan is cards pinned to a board. The network is wires you can see.
 
@@ -173,7 +202,7 @@ About 14 sessions. This slots in before the fishing village (phase F onward in `
 
 ---
 
-## 5. Questions for the owner
+## 5. Questions for the owner (answered 2026-11-13: see the top of this document)
 
 | # | Question | Recommendation |
 |---|---|---|

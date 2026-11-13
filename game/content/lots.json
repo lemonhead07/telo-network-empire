@@ -12,5 +12,6 @@
   {"id": "lot-s5", "kind": "house", "site": "town-start", "east": 22, "south": 33, "yaw": 180, "resident": "Eamon Reyes", "archetype": "price-sensitive", "fee": 10},
   {"id": "lot-s6", "kind": "house", "site": "town-start", "east": 40, "south": 33, "yaw": 180, "resident": "Rosa Vasquez", "archetype": "reliability-sensitive", "fee": 30},
   {"id": "lot-shop", "kind": "shop", "site": "town-start", "east": 72, "south": 1, "yaw": 0, "resident": "Sol's Electronics", "archetype": "small-business", "fee": 50},
-  {"id": "lot-hollow-farm", "kind": "farm", "site": "farm-hollow", "east": 0, "south": 0, "yaw": 0, "resident": "Ruth Adeyemi", "archetype": "family", "fee": 10, "premise": "prem-adeyemi-farm"}
+  {"id": "lot-hollow-farm", "kind": "farm", "site": "farm-hollow", "east": 0, "south": 0, "yaw": 0, "resident": "Ruth Adeyemi", "archetype": "family", "fee": 10, "premise": "prem-adeyemi-farm"},
+  {"id": "lot-depot", "kind": "depot", "site": "town-start", "east": 58, "south": 33, "yaw": 180, "resident": "1 Main Street", "archetype": "small-business", "fee": 0}
 ]

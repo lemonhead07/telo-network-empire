@@ -55,17 +55,13 @@ public static class TownRules
     {
         if (!c.Lots.TryGetValue(lotId, out var lot)) return KnockResult.NoSuchLot;
         if (lot.Premise is not null) return KnockResult.LastMile;
-        if (!Onboarding.CanKnock(s, c)) return KnockResult.TooSoon;
+        if (!Onboarding.CanKnock(s, c) || lot.Kind == LotKind.Depot) return KnockResult.TooSoon;
         var h = HouseholdOf(s, lotId);
         if (h.Status == HouseholdStatus.Signed) return KnockResult.AlreadySigned;
         if (s.Day < h.RetryDay) return KnockResult.TooSoon;
 
-        if (rng.ChancePermille(300))
-        {
-            h.RetryDay = s.Day + 1;
-            s.Emit(EventKind.Info, $"You knock at {lot.Resident}'s. Nobody home.", lotId);
-            return KnockResult.NobodyHome;
-        }
+        // nobody answers when nobody is in: people keep hours (see HomeRules). No dice.
+        if (!HomeRules.IsHome(s, c, lot)) return KnockResult.NobodyHome;
         int happyNeighbours = s.Customers.Count(x => x.Live && x.Installed && x.Satisfaction >= 60);
         int chance = Interest.GetValueOrDefault(lot.Archetype, 400) + h.Goodwill + Math.Min(250, happyNeighbours * 50);
         if (!rng.ChancePermille(Math.Min(950, chance)))
@@ -94,7 +90,7 @@ public static class TownRules
 
     /// <summary>Lots that could still become customers by ordinary means.</summary>
     public static IEnumerable<LotDef> Prospects(GameState s, ContentDb c) =>
-        c.Lots.Values.Where(l => l.Kind != LotKind.Farm && l.Premise is null && HouseholdOf(s, l.Id).Status != HouseholdStatus.Signed).OrderBy(l => l.Id);
+        c.Lots.Values.Where(l => l.Kind is LotKind.House or LotKind.Shop && l.Premise is null && HouseholdOf(s, l.Id).Status != HouseholdStatus.Signed).OrderBy(l => l.Id);
 
     // ---- installing ------------------------------------------------------------------------------
     public static bool BuyModem(GameState s)
@@ -133,7 +129,7 @@ public static class TownRules
     // ---- odd jobs --------------------------------------------------------------------------------
     public static OddJob? OfferJob(GameState s, ContentDb c, DetRng rng)
     {
-        var free = c.Lots.Values.Where(l => JobAt(s, l.Id) is null && (l.Kind != LotKind.Farm || Onboarding.RoadOpen(s, c))).OrderBy(l => l.Id).ToList();
+        var free = c.Lots.Values.Where(l => l.Kind != LotKind.Depot && JobAt(s, l.Id) is null && (l.Kind != LotKind.Farm || Onboarding.RoadOpen(s, c))).OrderBy(l => l.Id).ToList();
         if (free.Count == 0) return null;
         var lot = free[rng.Next(free.Count)];
         var kinds = JobKinds.Where(k => k.Only is null || k.Only == lot.Kind).ToList();

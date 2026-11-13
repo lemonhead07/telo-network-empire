@@ -11,7 +11,7 @@ namespace Telo.Game.UI;
 /// </summary>
 public partial class Hud : Control
 {
-    private Label _left = null!, _right = null!, _prompt = null!, _feed = null!, _crosshair = null!, _next = null!;
+    private Label _left = null!, _right = null!, _prompt = null!, _hold = null!, _feed = null!, _crosshair = null!, _next = null!;
 
     public override void _Ready()
     {
@@ -43,6 +43,10 @@ public partial class Hud : Control
         _prompt = Make(Vector2.Zero, HorizontalAlignment.Center, 20);
         _prompt.AnchorLeft = 0.5f; _prompt.AnchorRight = 0.5f; _prompt.AnchorTop = 0.5f; _prompt.AnchorBottom = 0.5f;
         _prompt.OffsetLeft = -400; _prompt.OffsetRight = 400; _prompt.OffsetTop = 30;
+        _hold = Make(Vector2.Zero, HorizontalAlignment.Center, 18);
+        _hold.AnchorLeft = 0.5f; _hold.AnchorRight = 0.5f; _hold.AnchorTop = 0.5f; _hold.AnchorBottom = 0.5f;
+        _hold.OffsetLeft = -400; _hold.OffsetRight = 400; _hold.OffsetTop = 62;
+        _hold.AddThemeColorOverride("font_color", new Color(1f, 0.82f, 0.25f));
         BuildBubble();
     }
 
@@ -108,6 +112,13 @@ public partial class Hud : Control
         _prompt.Text = prompt ?? "";
         _next.Text = next;
         _feed.Text = string.Join("\n", s.Log.TakeLast(step >= OnboardingStep.Free ? 5 : 3).Select(e => $"{new Telo.Sim.Core.GameDate(e.Day)} — {e.Text}"));
+    }
+
+    /// <summary>The working bar: fills while E is held on something that takes time.</summary>
+    public void SetHold(float progress)
+    {
+        int n = Mathf.RoundToInt(progress * 18);
+        _hold.Text = progress > 0.01f ? new string('█', n) + new string('░', 18 - n) : "";
     }
 
     public void SetCrosshair(bool visible) => _crosshair.Visible = visible;

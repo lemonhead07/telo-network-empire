@@ -44,8 +44,24 @@ public static class WorkRules
         s.Cash -= next.Cost;
         s.WorkStage[workId] = s.WorkStage.GetValueOrDefault(workId) + 1;
         if (next.Mode == WorkMode.Delegated && s.WorkStage[workId] == 1) s.Staff++;
+        if (next.Hire is { } hire && s.StaffMembers.All(m => m.Id != workId)) s.StaffMembers.Add(NewMember(workId, hire, next));
         s.Emit(EventKind.Work, $"{c.Work[workId].Name}: now {next.Mode.ToString().ToLowerInvariant()} on {next.Interface.ToString().ToLowerInvariant()}. New problem: {next.NewProblem}", workId);
         return UpgradeResult.Ok;
+    }
+
+    private static StaffMember NewMember(string workId, HireDef hire, WorkStageDef stage) => new()
+    {
+        Id = workId, Name = hire.Name, Does = hire.Does.ToList(), JobsPerDay = hire.JobsPerDay, AccuracyPermille = stage.AccuracyPermille,
+        PieceRate = hire.PieceRate, WeeklyWage = hire.WeeklyWage,
+    };
+
+    /// <summary>For saves from before staff were named people: recreate each person from the work stages already bought.</summary>
+    public static void RestoreHires(GameState s, ContentDb? c)
+    {
+        if (c is null) return;
+        foreach (var (workId, kind) in c.Work)
+            for (int i = 1; i <= Math.Min(s.WorkStage.GetValueOrDefault(workId), kind.Stages.Count - 1); i++)
+                if (kind.Stages[i].Hire is { } hire && s.StaffMembers.All(m => m.Id != workId)) s.StaffMembers.Add(NewMember(workId, hire, kind.Stages[i]));
     }
 
     /// <summary>The interface tier the presentation layer should draw for a work kind.</summary>

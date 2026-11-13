@@ -64,6 +64,10 @@ public static class Guidance
         bool tech = c.Work.ContainsKey("install") && WorkRules.Current(s, c, "install").Mode != WorkMode.Manual;
         if (!tech && c.Work.ContainsKey("install") && WorkRules.CanUpgrade(s, c, "install") == UpgradeResult.Ok)
             return ($"You can afford a technician (${WorkRules.Next(s, c, "install")!.Cost}). Hire them in the company notebook in your room.", null);
+        // paper and people: a technician only works on tickets they have been handed (until there is a depot)
+        if (!s.HasDepot && Clock.IsWorkingDay(s.Day) && Clock.Hour(s) < Clock.WorkEndsHour
+            && s.StaffMembers.FirstOrDefault(m => StaffRules.Tickets(s, c).Any(t => StaffRules.CanTake(s, c, m, t))) is { } idle)
+            return ($"Take a job ticket from the rail in your room and hand it to {idle.Name.Split(' ')[0]}.", null);
         if (tech && s.PendingInstalls > 0 && s.Modems == 0)
             return s.Cash >= TownRules.ModemPrice
                 ? ("Your technician is out of modems. Buy some at the electronics shop.", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id)

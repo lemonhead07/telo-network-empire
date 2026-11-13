@@ -27,6 +27,11 @@ public partial class InstallSite : Node3D
     private Func<Tools> _onSite = () => Tools.All;
     private Func<Tools, string> _kitNames = t => t.ToString();
     private string _testNote = "";
+    private readonly Dictionary<Node3D, Transform3D> _square = new();
+    private readonly HashSet<InstallStep> _crooked = new();
+    private double _t;
+    /// <summary>Real seconds of holding for a step of this many game minutes. Set by the game.</summary>
+    public static Func<int, float> HoldFor { get; set; } = minutes => minutes * 0.33f;
 
     /// <summary>The install here is finished: wire, socket and modem are part of the house now.</summary>
     public bool Fitted { get; private set; }
@@ -72,6 +77,7 @@ public partial class InstallSite : Node3D
         _phone.Prompt = PhonePrompt;
         _phone.CanUse = () => _job is { CanFinish: true };
         _phone.OnUse = () => { if (_job is { CanFinish: true }) _act?.Invoke(InstallStep.Test, false); };
+        _phone.HoldSeconds = () => _job is { CanFinish: true } ? HoldFor(InstallJob.TestMinutes) : 0f;
 
         // the job sheet hangs by the door while you work
         var sheetPos = new Vector3(1.25f, f + 1.4f, 3.27f);
@@ -99,6 +105,7 @@ public partial class InstallSite : Node3D
     /// <summary>Job signed off (or the house already had its line when the game loaded).</summary>
     public void ShowFitted()
     {
+        if (_job is { } done) foreach (var d in InstallJob.Steps.Where(d => done.IsRushed(d.Step))) _crooked.Add(d.Step);   // a bodge stays visible
         _job = null; Fitted = true;
         Sync();
     }
@@ -108,7 +115,15 @@ public partial class InstallSite : Node3D
 
     public void Sync()
     {
-        foreach (var p in _pieces) p.Node.Visible = Fitted || (_job is not null && _job.Progress(p.Step) > p.Index);
+        foreach (var p in _pieces)
+        {
+            p.Node.Visible = Fitted || (_job is not null && _job.Progress(p.Step) > p.Index);
+            // mistakes show: a bodged stage hangs crooked
+            bool crooked = _job?.IsRushed(p.Step) ?? _crooked.Contains(p.Step);
+            foreach (var child in p.Node.GetChildren().OfType<Node3D>())
+                if (_square.TryGetValue(child, out var square))
+                    child.Transform = crooked ? square * new Transform3D(new Basis(Vector3.Back, 0.2f) * new Basis(Vector3.Right, 0.12f), new Vector3(0, -0.015f, 0)) : square;
+        }
         foreach (var s in _spots)
         {
             s.Ghost.Visible = _job is not null && _job.Progress(s.Step) <= s.Last;
@@ -116,6 +131,15 @@ public partial class InstallSite : Node3D
         }
         _phone.CollisionLayer = _sheet.CollisionLayer = _job is not null ? 2u : 0u;
         _sheetMesh.Visible = _job is not null;
+    }
+
+    /// <summary>The marker for the step that is next pulses; the ones after it wait, small.</summary>
+    public override void _Process(double delta)
+    {
+        if (_job is null) return;
+        _t += delta;
+        foreach (var s in _spots)
+            s.Ghost.Scale = Vector3.One * (SpotTurn(s) ? 1.25f + 0.3f * (float)Math.Sin(_t * 6) : 0.55f);
     }
 
     // ---- prompts -----------------------------------------------------------------------------
@@ -128,7 +152,7 @@ public partial class InstallSite : Node3D
         if (j.CanDo(s.Step) && done >= s.First && j.Missing(s.Step, _onSite()) is var missing && missing != Tools.None)
             return $"{d.Verb}: you need {_kitNames(missing)} here (from the van)";
         if (j.CanDo(s.Step) && done >= s.First)
-            return $"{(j.KnownFault == s.Step ? "Redo: " : "")}{d.Verb} ({done + 1}/{d.Clicks}, {d.MinutesPerClick} min)";
+            return $"{(j.KnownFault == s.Step ? "Redo: " : "")}{d.Verb} ({done + 1} of {d.Clicks})";
         var first = j.NextStep is { } n ? InstallJob.Def(n) : d;
         return first.Step == s.Step ? $"{d.Title}: do the one before this first" : $"First: {first.Verb.ToLowerInvariant()} ({(first.Outside ? "outside" : "inside")})";
     }
@@ -141,7 +165,7 @@ public partial class InstallSite : Node3D
     {
         if (_job is not { } j) return "";
         if (!j.CanFinish) return _testNote.Length > 0 ? _testNote : "The telephone. Finish the wiring, then listen for dial tone";
-        return j.Tested ? _testNote : $"Lift the handset and listen for dial tone ({InstallJob.TestMinutes} min)";
+        return j.Tested ? _testNote : "Lift the handset and listen for dial tone";
     }
 
     private string SheetPrompt()
@@ -155,7 +179,7 @@ public partial class InstallSite : Node3D
     private void AddPiece(InstallStep step, int index, params Node3D[] parts)
     {
         var group = new Node3D();
-        foreach (var p in parts) group.AddChild(p);
+        foreach (var p in parts) { group.AddChild(p); _square[p] = p.Transform; }
         AddChild(group);
         _pieces.Add(new Piece(step, index, group));
     }
@@ -174,7 +198,8 @@ public partial class InstallSite : Node3D
         hot.Prompt = () => SpotPrompt(spot);
         hot.CanUse = () => SpotReady(spot);
         hot.OnUse = () => { if (SpotReady(spot)) _act?.Invoke(step, false); };
-        hot.AltPrompt = () => SpotRushable(spot) ? "Bodge it (1 min)" : null;
+        hot.HoldSeconds = () => SpotReady(spot) ? HoldFor(InstallJob.Def(step).MinutesPerClick) : 0f;
+        hot.AltPrompt = () => SpotRushable(spot) ? "Bodge it" : null;
         hot.OnAlt = () => { if (SpotRushable(spot)) _act?.Invoke(step, true); };
         _spots.Add(spot);
     }

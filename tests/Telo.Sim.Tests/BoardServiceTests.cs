@@ -27,7 +27,8 @@ public class BoardServiceTests
         for (int i = 0; i < 10 && cust is null; i++) cust = sim.TakeEnquiry();
         Assert.NotNull(cust);
         s.Modems = 5;
-        sim.AdvanceDays(2);                                        // the technician connects them
+        Assert.True(StaffRules.Assign(s, sim.Content, $"install:{cust!.Id}", "install"));
+        for (int i = 0; i < 4 && !cust.Installed; i++) sim.AdvanceDay();   // the technician connects them on their next working day
         Assert.True(cust!.Installed && !cust.HasAccount);
         Assert.Contains(Attention.Needs(s, sim.Content), n => n.Key == "callers");
         int before = cust.Satisfaction;

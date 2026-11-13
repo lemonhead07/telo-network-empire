@@ -23,8 +23,6 @@ public sealed class Simulation
     public static readonly GameDate StartDate = GameDate.From(1983, 1, 3);
     public const long StartingCash = 400;
     public const long RentPerMonth = 120;
-    /// <summary>A part-time junior on 1983 small-town wages. (Economy is not balanced yet.)</summary>
-    public const long WagePerStaffPerMonth = 90;
     /// <summary>A new line pays for its modem (sold at cost) and its first month, the day it goes live.</summary>
     public static long ConnectionFee(Customer c) => TownRules.ModemPrice + c.MonthlyFee;
 
@@ -59,7 +57,7 @@ public sealed class Simulation
         if (s.Day % 7 == 0) BoardService.Week(s, Content, _rng);
         TownRules.Tick(s, Content, _rng);
         OrderRules.Tick(s, Content);
-        TechnicianDay();
+        StaffRules.EndOfDay(s, Content, _rng, s.Day - 1);
         SurfaceDefects();
         DriftSatisfaction();
         // Word of mouth: happy subscribers bring enquiries.
@@ -74,7 +72,7 @@ public sealed class Simulation
     {
         var s = State;
         long revenue = s.Customers.Where(c => c.Live && c.Installed).Sum(c => c.MonthlyFee);
-        long costs = RentPerMonth + s.Staff * WagePerStaffPerMonth + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s) + BoardService.TakeMonthlyBill(s);
+        long costs = RentPerMonth + (s.HasDepot ? StaffRules.DepotRentPerMonth : 0) + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s) + BoardService.TakeMonthlyBill(s);
         s.RevenueLastMonth = revenue;
         s.RevenueThisMonth = 0;
         s.Cash += revenue - costs;
@@ -105,40 +103,32 @@ public sealed class Simulation
     }
 
     /// <summary>
-    /// Once installs are delegated, the technician connects one waiting customer a day without you: house and frame.
-    /// They need modems in stock, and they are right most of the time. The rest goes into the wall as latent defects.
+    /// Move the clock. Time passes only as the player lives it: nothing jumps it forward except sleep.
+    /// Staff finish their tickets as their working day goes by; at six in the morning a new day begins.
     /// </summary>
-    private void TechnicianDay()
+    public void AdvanceMinutes(int minutes)
     {
-        var s = State;
-        var stage = WorkRules.Current(s, Content, "install");
-        if (stage.Mode == WorkMode.Manual) return;
-        var cust = s.Customers.FirstOrDefault(c => c.Live && !c.Installed);
-        if (cust is null) return;
-        if (!cust.SocketFitted)
+        while (minutes > 0)
         {
-            if (s.Modems <= 0)
-            {
-                if (s.Day % 7 == 0) s.Emit(EventKind.Defect, $"Your technician has no modems. {s.PendingInstalls} customer(s) are waiting. Sol's Electronics sells them.");
-                return;
-            }
-            s.Modems--; cust.SocketFitted = true;
-            s.Installs.Remove(cust.Id);
+            int step = Math.Min(minutes, Clock.MinutesPerDay - State.Minute);
+            State.Minute += step; minutes -= step;
+            if (State.Minute >= Clock.MinutesPerDay) { State.Minute = 0; AdvanceDay(); }
+            else StaffRules.Clocked(State, Content, _rng);
         }
-        GoLive(cust);
-        s.TechInstalls++;
-        if (!_rng.ChancePermille(stage.AccuracyPermille))
-            s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + _rng.Range(7, 41), Source = "technician", CustomerId = cust.Id, Text = "an install the technician swore was tested" });
-        if (s.TechInstalls == 1) s.Emit(EventKind.Milestone, $"Your technician connected {cust.Name} while you were doing something else. Nobody needed you. It is a strange feeling.", cust.Id);
+        State.RngState = _rng.State;
     }
 
+    /// <summary>Go to bed: it is seven the next morning.</summary>
+    public void Sleep() { AdvanceDay(); State.Minute = 60; }
+
     /// <summary>A line goes live: the customer starts paying, beginning with a connection fee in your hand today.</summary>
-    private void GoLive(Customer c)
+    private void GoLive(Customer c) => GoLive(State, Content, c);
+
+    internal static void GoLive(GameState s, ContentDb content, Customer c)
     {
-        var s = State;
         c.Installed = true;
         // once there is a sysop's terminal, a new caller has to be let in (by you, or by your co-sysop)
-        c.HasAccount = !BoardService.TerminalOpen(s) || BoardService.Delegated(s, Content);
+        c.HasAccount = !BoardService.TerminalOpen(s) || BoardService.Delegated(s, content);
         long fee = ConnectionFee(c);
         s.Cash += fee;
         if (s.LiveSubscribers == 1) s.Emit(EventKind.Milestone, $"First customer: {c.Name}. A dial tone, a modem shriek, a thank-you, and ${fee} for the connection.", c.Id);
@@ -149,7 +139,7 @@ public sealed class Simulation
     public int RestUntilNeeded(int maxDays = 30)
     {
         int n = 0;
-        do { AdvanceDay(); n++; }
+        do { Sleep(); n++; }
         while (n < maxDays && Guidance.IsQuiet(State, Content) && !State.Date.IsFirstOfMonth);
         return n;
     }
@@ -346,8 +336,9 @@ public sealed class Simulation
     {
         var s = State;
         if (!o.Complete || !TownRules.FitSocket(s, o.CustomerId)) return false;
+        // mistakes compound: every extra bodge on the same line brings all of them to the surface sooner
         foreach (var text in o.Defects)
-            s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + _rng.Range(10, 45), Source = "install", CustomerId = o.CustomerId, Text = text });
+            s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + Math.Max(3, _rng.Range(10, 45) / o.Defects.Count), Source = "install", CustomerId = o.CustomerId, Text = text });
         if (o.OvertimeMinutes > 0 && s.Customers.FirstOrDefault(c => c.Id == o.CustomerId) is { } cust)
             cust.Satisfaction = Math.Clamp(cust.Satisfaction - Math.Min(5, 1 + o.OvertimeMinutes / 30), 0, 100);
         s.RngState = _rng.State;

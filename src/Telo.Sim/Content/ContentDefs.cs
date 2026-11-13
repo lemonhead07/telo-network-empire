@@ -52,6 +52,18 @@ public sealed record AlmanacEntryDef
     public List<string> Requires { get; init; } = new();
 }
 
+/// <summary>The person a work stage brings in, if it is a hire.</summary>
+public sealed record HireDef
+{
+    public required string Name { get; init; }
+    /// <summary>Kinds of ticket they can be handed. Empty for people whose work isn't on tickets (the co-sysop).</summary>
+    public List<Work.TicketKind> Does { get; init; } = new();
+    public int JobsPerDay { get; init; } = 2;
+    /// <summary>Paid per job until there is a depot.</summary>
+    public long PieceRate { get; init; }
+    public long WeeklyWage { get; init; }
+}
+
 public sealed record WorkStageDef
 {
     public required WorkMode Mode { get; init; }
@@ -67,6 +79,7 @@ public sealed record WorkStageDef
     public string Description { get; init; } = "";
     /// <summary>Every improvement creates a new problem. Shown to the player before they commit.</summary>
     public string NewProblem { get; init; } = "";
+    public HireDef? Hire { get; init; }
 }
 
 public sealed record WorkKindDef
@@ -128,7 +141,7 @@ public sealed record ProductDef
     public string BodgeDefect { get; init; } = "something fitted in a hurry";
 }
 
-public enum LotKind { House, Shop, Farm }
+public enum LotKind { House, Shop, Farm, Depot }
 
 /// <summary>A building someone lives or works in. Offsets are metres east/south of its site centre on the planet.</summary>
 public sealed record LotDef

@@ -9,7 +9,8 @@ public static class SaveCodec
 {
     public static string ToJson(GameState s) => JsonSerializer.Serialize(s, ContentDb.Json);
 
-    public static GameState FromJson(string json)
+    /// <param name="content">Needed to migrate saves from before staff were named people (v5 and earlier). Optional otherwise.</param>
+    public static GameState FromJson(string json, ContentDb? content = null)
     {
         var s = JsonSerializer.Deserialize<GameState>(json, ContentDb.Json) ?? throw new InvalidDataException("Empty save");
         if (s.Version > GameState.CurrentVersion)
@@ -24,6 +25,11 @@ public static class SaveCodec
             if (s.Exchanges is null || s.Exchanges.Count == 0) s.Exchanges = new() { new Exchange { Id = "ex-town", Name = "Main Street" } };
         }
         if (s.Version < 5) s.BoardFiles ??= new(); // v5: Board accounts (default: everyone already let in), file area, night mail
+        if (s.Version < 6) // v6: the clock, staff as named people, job tickets, the depot
+        {
+            s.StaffMembers ??= new(); s.Assigned ??= new();
+            Work.WorkRules.RestoreHires(s, content);
+        }
         s.Version = GameState.CurrentVersion;
         return s;
     }

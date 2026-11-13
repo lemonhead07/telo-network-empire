@@ -21,6 +21,10 @@ public partial class FirstPersonController : SphereBody
 
     /// <summary>What the player is looking at right now (null if nothing interactable).</summary>
     public Interactable? Focus { get; private set; }
+    /// <summary>How far through the current hold-to-work action (0 to 1).</summary>
+    public float HoldProgress { get; private set; }
+    private Interactable? _holding;
+    private float _held;
 
     public override void _Ready()
     {
@@ -59,7 +63,7 @@ public partial class FirstPersonController : SphereBody
             Input.MouseMode = Input.MouseModeEnum.Captured;
         else if (e.IsActionPressed("interact") && Focus?.OnUse is { } use)
         {
-            use();
+            if (Focus.HoldSeconds() <= 0) use();   // things that take time are done by holding (see _PhysicsProcess)
             GetViewport().SetInputAsHandled();
         }
         else if (e.IsActionPressed("alt_use") && Focus is { OnAlt: { } alt } && Focus.AltPrompt() is not null)
@@ -76,7 +80,7 @@ public partial class FirstPersonController : SphereBody
         if (IsFrozen())
         {
             if (!Flying) MoveOnPlanet(Vector3.Zero, delta);
-            Focus = null;
+            Focus = null; HoldProgress = 0;
             return;
         }
 
@@ -98,5 +102,15 @@ public partial class FirstPersonController : SphereBody
             MoveOnPlanet(dir * speed * Pace, delta);
         }
         Focus = _ray.IsColliding() ? _ray.GetCollider() as Interactable : null;
+
+        // hold E to work: the job is done when the hold completes; keep holding to carry straight on
+        if (Focus is { } f && Input.IsActionPressed("interact") && f.CanUse() && f.HoldSeconds() is var need and > 0)
+        {
+            if (f != _holding) { _holding = f; _held = 0; }
+            _held += (float)delta;
+            HoldProgress = Mathf.Clamp(_held / need, 0, 1);
+            if (_held >= need) { _held = 0; HoldProgress = 0; f.OnUse?.Invoke(); }
+        }
+        else { _holding = null; _held = 0; HoldProgress = 0; }
     }
 }

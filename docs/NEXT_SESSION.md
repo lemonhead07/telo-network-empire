@@ -1,6 +1,6 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "the Board's terminal; desk and day proposal". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-12, commit "the working day: lived time, home hours, tickets, Jory, the depot". Everything is pushed; the working tree is clean.*
 
 ## Where things stand (the demo loop so far)
 1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
@@ -23,15 +23,19 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 **The biggest gap now: the town runs out.** 12 houses, a shop and a farm is about 40 minutes of content. After that the only thing left is waiting for June 1984. The next age (Act 1, the bulletin board) has data but no gameplay. That, or a second settlement, is what makes "overlap and pace increase between rounds" real.
 
 ## Plan for next time
-**First, check whether the owner has answered Q1–Q5 in `docs/DESK_AND_DAY_DESIGN.md`.** That proposal (every panel becomes an object, starting with a working switchboard; the time of day deciding who is home; a job board with trained staff) was written on 2026-11-13 at the owner's request and is waiting for their reaction. If they have agreed, its section 4 is the build order and step 1 is the switchboard. If not, ask.
+**The owner has answered `docs/DESK_AND_DAY_DESIGN.md`** (decisions D23–D27). Its top section lists what is built and the order of what is next. In short:
 
-Built so far from `docs/EXPANSION_DESIGN.md`: phases A, B and C, and a first catalogue. Phase D (invoices by hand, late payers, mixed phone messages, bookkeeper and receptionist, 1 Main Street) is next there, but should be built as objects per the proposal.
+1. **Build the switchboard** (section 1 of that document): replaces `FrameView` and absorbs `LineRack`. Lean in, the mouse is your hand, wires hang between terminals, lamps, a test switch. Use hold-to-work (`Interactable.HoldSeconds`) and show bodged jumpers crooked. Delete `GameRoot.ConceptSwitchboard` (the mock-up) when the real one exists.
+2. **Desk objects that replace the text strip** (cash tin, job spike, card index, telex roll); PIP and highlights explain tasks as they are done.
+3. **Training** (a person earns a new kind of ticket by coming along for three of them) and **each person's own visible place**.
+4. Appointments, night rate for the mail, light tiredness.
+5. Then phase D of `docs/EXPANSION_DESIGN.md`, built as objects.
 
-Notes from this session:
-- The Board's terminal is keyboard-only (number keys). `--shot` saves `-terminal` and `-terminal-files`.
-- `--shot` also saves `-concept-switchboard`: a throwaway mock-up (`GameRoot.ConceptSwitchboard`) for the proposal. Delete that method once the real switchboard exists.
-- Running the mail by hand every night stops the bed skipping days in Act 1. That is deliberate pressure to hire Tobi; check it isn't just annoying.
-- The engaged-tone numbers are still first guesses.
+Things to check with the owner after they play this build:
+- Is a day of 8 real minutes the right length now that nothing jumps the clock? (`GameRoot.DayLengthSeconds`)
+- Hold times: a step is held for as long as its game minutes say, between 0.8 and 6 seconds. Too slow, too quick?
+- Handing Jory tickets every morning is deliberate friction until the depot ($150 down). Is it fun or a chore?
+- Half the town being out from nine to five on weekdays.
 
 ## Rules to keep
 - Outcomes and defects are decided in `src/Telo.Sim`; Godot only shows and drives it.

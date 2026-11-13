@@ -136,6 +136,20 @@ public sealed class BoardFile
     public int Day { get; set; }
 }
 
+/// <summary>Someone who works for you: a named person with a narrow job.</summary>
+public sealed class StaffMember
+{
+    public required string Id { get; set; }
+    public required string Name { get; set; }
+    public List<Work.TicketKind> Does { get; set; } = new();
+    public int JobsPerDay { get; set; } = 2;
+    public int AccuracyPermille { get; set; } = 850;
+    public long PieceRate { get; set; }
+    public long WeeklyWage { get; set; }
+    public int JobsToday { get; set; }
+    public int JobsThisWeek { get; set; }
+}
+
 public sealed class PromiseRecord
 {
     public PromiseStatus Status { get; set; }
@@ -148,7 +162,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 5;
+    public const int CurrentVersion = 6;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -214,6 +228,15 @@ public sealed class GameState
     public int MailLastRunDay { get; set; } = -1;
     public int MailMissed { get; set; }
     public long MailBillCents { get; set; }
+
+    // v6: the clock, people, and paper
+    /// <summary>Minutes since six this morning (the sim's day runs 06:00 to 06:00).</summary>
+    public int Minute { get; set; } = 150;
+    public List<StaffMember> StaffMembers { get; set; } = new();
+    /// <summary>Job tickets handed to staff: ticket key to staff id.</summary>
+    public Dictionary<string, string> Assigned { get; set; } = new();
+    /// <summary>1 Main Street is leased: staff collect their own tickets and are paid by the week.</summary>
+    public bool HasDepot { get; set; }
     public List<GameEvent> Log { get; set; } = new();
     public int NextId { get; set; } = 1;
 

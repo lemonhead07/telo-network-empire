@@ -36,7 +36,21 @@ public partial class GameRoot : Node3D
     private Node3D _terminal = null!;
     private Interactable _terminalUse = null!;
     private WorldScreen _frameScreen = null!, _pipScreen = null!, _notebookScreen = null!;
-    private float _dayClock = DayLengthSeconds * 0.1f;
+    private float _minuteFrac;
+    /// <summary>Seconds into the day (which starts at six), as the sky and lamps want it. The sim owns the clock; this is a view of it.</summary>
+    private float _dayClock
+    {
+        get => (Sim.State.Minute + _minuteFrac) / Clock.MinutesPerDay * DayLengthSeconds;
+        set { float m = Mathf.Clamp(value / DayLengthSeconds * Clock.MinutesPerDay, 0, Clock.MinutesPerDay - 1); Sim.State.Minute = (int)m; _minuteFrac = m - (int)m; }
+    }
+    /// <summary>Real seconds of holding E for a job step of this many game minutes: exactly as long as the clock says, within reason.</summary>
+    private static float Hold(float minutes) => Mathf.Clamp(minutes * DayLengthSeconds / Clock.MinutesPerDay, 0.8f, 6f);
+    private TicketRail _rail = null!;
+    private WallCalendar _calendar = null!;
+    private readonly HashSet<string> _clipboard = new();
+    private readonly Dictionary<string, StaffFigure> _figures = new();
+    /// <summary>Automated checks ignore who is home and whether the shop is open.</summary>
+    private bool _ignoreHours;
     private float _slowTick;
     private ContentDb _content = null!;
     private PlanetGen _planet = null!;
@@ -66,10 +80,11 @@ public partial class GameRoot : Node3D
     public override void _Ready()
     {
         InputSetup.Register();
+        InstallSite.HoldFor = minutes => Hold(minutes);
         _content = LoadContent();
         var args = OS.GetCmdlineUserArgs();
         ulong seed = args.FirstOrDefault(a => a.StartsWith("--seed=")) is { } sa ? ulong.Parse(sa["--seed=".Length..]) : DefaultSeed;
-        Sim = _pendingLoad is { } json ? new Simulation(_content, SaveCodec.FromJson(json)) : Simulation.NewGame(_content, seed);
+        Sim = _pendingLoad is { } json ? new Simulation(_content, SaveCodec.FromJson(json, _content)) : Simulation.NewGame(_content, seed);
         _pendingLoad = null;
 
         // The world: a small planet, built from the sim's pure terrain function.
@@ -85,7 +100,7 @@ public partial class GameRoot : Node3D
         _frame = new FrameView { Sim = Sim };
         _almanac = new AlmanacView { Sim = Sim };
         _notebook = new NotebookView { Sim = Sim };
-        _board = new BoardView { Sim = Sim, SpendMinutes = m => SpendHours(m / 60f) };
+        _board = new BoardView { Sim = Sim };
         BuildRoom(_town.Hq);
         foreach (var v in new ModalView[] { _frame, _almanac, _notebook, _board })
         {
@@ -190,28 +205,28 @@ public partial class GameRoot : Node3D
             if (s.Cash < p.PoleLine!.PoleCost) return $"Pole {k} of {view.Count} goes here. A pole is ${p.PoleLine.PoleCost}; you have ${s.Cash}";
             var missing = LineRules.PlantNeeds & ~KitOnSite();
             return missing != Tools.None ? $"Pole {k} of {view.Count} goes here: bring {Cargo.Names(missing)} from the van"
-                : $"Plant pole {k} of {view.Count} ({LineRules.PlantMinutes} min, ${p.PoleLine.PoleCost})";
+                : $"Plant pole {k} of {view.Count} (${p.PoleLine.PoleCost})";
         };
         view.PlantSpot.CanUse = () => LineRules.CanPlant(s, _planet, p) && (LineRules.PlantNeeds & ~KitOnSite()) == Tools.None;
         view.PlantSpot.OnUse = () =>
         {
             if (!LineRules.Plant(s, _planet, p, KitOnSite())) return;
-            SpendHours(LineRules.PlantMinutes / 60f);
             if (_cargo.Items.FirstOrDefault(i => i.Tool == Tools.Pole && i.Where != Carryable.Place.Van) is { } used) _cargo.Stow(used); // the next pole is on the rack
             Refresh();
         };
+        view.PlantSpot.HoldSeconds = () => Hold(LineRules.PlantMinutes);
+        view.StringSpot.HoldSeconds = () => Hold(LineRules.StringMinutes);
         view.StringSpot.Prompt = () =>
         {
             var missing = LineRules.StringNeeds & ~KitOnSite();
             int k = LineRules.ProgressOf(s, p.Id).Strung + 1;
             return missing != Tools.None ? $"Span {k} of {view.Count} is strung from here: you need {Cargo.Names(missing)}"
-                : k == view.Count ? $"String the last span, to {p.Name} ({LineRules.StringMinutes} min)" : $"String span {k} of {view.Count} to this pole ({LineRules.StringMinutes} min)";
+                : k == view.Count ? $"String the last span, to {p.Name}" : $"String span {k} of {view.Count} to this pole";
         };
         view.StringSpot.CanUse = () => LineRules.CanString(s, _planet, p) && (LineRules.StringNeeds & ~KitOnSite()) == Tools.None;
         view.StringSpot.OnUse = () =>
         {
             if (!LineRules.String(s, _content, _planet, p, KitOnSite())) return;
-            SpendHours(LineRules.StringMinutes / 60f);
             Refresh();
         };
         Refresh();
@@ -234,16 +249,16 @@ public partial class GameRoot : Node3D
         {
             var s = Sim.State; var ex = BoardRules.Home(s);
             if (s.LineCards > 0)
-                return (BoardRules.FitNeeds & ~KitOnSite()) != Tools.None ? "A line card is waiting on the van: carry it in here" : $"Slot in the line card ({BoardRules.FitMinutes} min)";
+                return (BoardRules.FitNeeds & ~KitOnSite()) != Tools.None ? "A line card is waiting on the van: carry it in here" : "Slot in the line card";
             return s.LastEvening is { } eve
                 ? $"The Board: {ex.LinesIn} line(s) in. Last night {eve.Attempts} calls, {eve.Engaged} engaged tones, busiest at {BoardRules.Clock(eve.BusiestSlot)}"
                 : $"The Board: {ex.LinesIn} line(s) in";
         };
         _rack.Slot.CanUse = () => Sim.State.LineCards > 0 && (BoardRules.FitNeeds & ~KitOnSite()) == Tools.None;
+        _rack.Slot.HoldSeconds = () => Hold(BoardRules.FitMinutes);
         _rack.Slot.OnUse = () =>
         {
             if (!BoardRules.FitCard(Sim.State, KitOnSite())) return;
-            SpendHours(BoardRules.FitMinutes / 60f);
             if (_cargo.Items.FirstOrDefault(i => i.Tool == Tools.LineCard && i.Where != Carryable.Place.Van) is { } used) _cargo.Stow(used);
             _cargo.Refresh();
             _pip.Once("cardfit");
@@ -278,14 +293,23 @@ public partial class GameRoot : Node3D
         _terminalUse.OnUse = () => { _board.Open(InterfaceTier.Terminal); if (BoardService.NewFiles(Sim.State).Count > 0) _pip.Once("files"); };
         _terminal.AddChild(_terminalUse);
 
+        // The left wall: today's job tickets on a rail, and the calendar with pay day on it.
+        _rail = new TicketRail { Position = new Vector3(-RoomBuilder.W / 2 + 0.08f, 1.45f, -0.95f), RotationDegrees = new Vector3(0, 90, 0) };
+        room.AddChild(_rail);
+        _rail.Prompt = TicketPrompt;
+        _rail.CanUse = t => t.AssignedTo is null && Sim.State.StaffMembers.Any(m => m.Does.Contains(t.Kind));
+        _rail.Use = t => { if (!_clipboard.Remove(t.Key)) { _clipboard.Add(t.Key); _pip.Once("ticket"); } SyncPaper(); };
+        _calendar = new WallCalendar { Position = new Vector3(-RoomBuilder.W / 2 + 0.07f, 1.5f, 0.2f), RotationDegrees = new Vector3(0, 90, 0) };
+        room.AddChild(_calendar);
+
         // Camp bed. Sleeping is how days pass quickly.
         RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
             () => Guidance.IsQuiet(Sim.State, _content) ? "Sleep until something needs you (days may pass)" : "Sleep until morning",
             () =>
             {
                 int days = 1;
-                if (Guidance.IsQuiet(Sim.State, _content)) days = Sim.RestUntilNeeded(); else Sim.AdvanceDay();
-                _dayClock = DayLengthSeconds * 0.05f;
+                if (Guidance.IsQuiet(Sim.State, _content)) days = Sim.RestUntilNeeded(); else Sim.Sleep();
+                _minuteFrac = 0;
                 if (days > 1) _pip.Say($"{days} days went by. {Sim.State.Date}. Something needs you.");
                 RefreshIdleScreens();
             });
@@ -357,12 +381,23 @@ public partial class GameRoot : Node3D
     private (string Prompt, Action? Use) LotAction(LotDef lot)
     {
         var s = Sim.State;
+        if (lot.Kind == LotKind.Depot)
+            return s.HasDepot ? ("1 Main Street: your depot. Staff collect their tickets here each morning and are paid by the week", null)
+                : StaffRules.CanLeaseDepot(s) ? ($"Sign the lease on 1 Main Street: ${StaffRules.DepotDeposit} down, ${StaffRules.DepotRentPerMonth} a month. Your staff will work from here", () => { if (StaffRules.LeaseDepot(s)) _pip.Once("depot"); })
+                : s.StaffMembers.Count == 0 ? ("TO LET: 1 Main Street. A yard and a workshop. (For when you have someone to put in it.)", null)
+                : ($"TO LET: 1 Main Street. ${StaffRules.DepotDeposit} down; you have ${s.Cash}", null);
+        // people keep hours: nobody comes to the door when nobody is in (a job already under way carries on)
+        if (!_ignoreHours && !_installs.ContainsKey(lot.Id) && !_oddJobs.ContainsKey(lot.Id) && HomeRules.WhyNot(s, _content, lot) is { } away)
+        {
+            _pip.Once("hours");
+            return ($"{lot.Resident}: {away}", null);
+        }
         // a broken line comes before anything else at this door
         if (TownRules.FaultAt(s, lot.Id) is { } fault && TownRules.CustomerAt(s, lot.Id) is { } broken)
         {
             var missing = TownRules.RepairNeeds & ~KitOnSite();
             return missing == Tools.None
-                ? ($"Fix {broken.Name}'s line: {fault.Text} ({TownRules.RepairMinutes} min)", () => { if (TownRules.Repair(s, fault.Id, KitOnSite())) SpendHours(TownRules.RepairMinutes / 60f); })
+                ? ($"Fix {broken.Name}'s line: {fault.Text}", () => TownRules.Repair(s, fault.Id, KitOnSite()))
                 : ($"{broken.Name} has a fault: {fault.Text}. You need {Cargo.Names(missing)} from the van", null);
         }
         if (OrderRules.OrderAt(s, lot.Id) is { } order && _content.Products.TryGetValue(order.ProductId, out var product)
@@ -382,7 +417,7 @@ public partial class GameRoot : Node3D
         if (TownRules.JobAt(s, lot.Id) is { } quick)
         {
             // the shop and the farm aren't enterable yet: the job is still done at the door
-            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay}, {quick.Hours} h)", () => { TownRules.CompleteJob(s, _content, quick.Id); SpendHours(quick.Hours); });
+            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay})", () => TownRules.CompleteJob(s, _content, quick.Id));
         }
         var cust = TownRules.CustomerAt(s, lot.Id);
         if (cust is { SocketFitted: false } && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } view)
@@ -397,7 +432,7 @@ public partial class GameRoot : Node3D
         }
         if (cust is { SocketFitted: false })
             return s.Modems > 0
-                ? ($"Fit the wall socket for {cust.Name} ({TownRules.SocketHours} h, uses a modem)", () => { TownRules.FitSocket(s, cust.Id); SpendHours(TownRules.SocketHours); })
+                ? ($"Fit the wall socket for {cust.Name} (uses a modem)", () => TownRules.FitSocket(s, cust.Id))
                 : ($"{cust.Name} is waiting for a socket. You have no modems (Sol's Electronics sells them)", null);
         if (cust is not null)
             return (cust.Installed ? $"{lot.Resident}: subscriber, satisfaction {cust.Satisfaction}%" : $"{lot.Resident}: socket fitted. Wire their line at the frame", null);
@@ -410,7 +445,7 @@ public partial class GameRoot : Node3D
         var h = TownRules.HouseholdOf(s, lot.Id);
         if (s.Day < h.RetryDay)
             return (h.Status == HouseholdStatus.Declined ? $"{lot.Resident} said no. Try again in {h.RetryDay - s.Day} days" : $"Nobody home at {lot.Resident}'s. Try tomorrow", null);
-        return ($"Knock on {lot.Resident}'s door", () => { Sim.Knock(lot.Id); SpendHours(TownRules.KnockMinutes / 60f); });
+        return ($"Knock on {lot.Resident}'s door", () => Sim.Knock(lot.Id));
     }
 
     // ---- the install at a customer's house: the sim owns the job, the house shows it -------------
@@ -423,12 +458,10 @@ public partial class GameRoot : Node3D
         view.Install!.Begin(job,
             (step, rush) =>
             {
-                int before = job.ElapsedMinutes;
                 if (step == InstallStep.Test) { var r = job.Test(); view.Install.NoteTest(r); _pip.Once(r.DialTone ? "dial" : "nodial"); }
                 else if (rush) { if (job.Rush(step, KitOnSite())) _pip.Once("bodge"); }
                 else if (job.Do(step, KitOnSite())) _pip.Once(step == InstallStep.Modem ? "modem" : "step");
                 Sim.RecordInstall(job);
-                SpendHours((job.ElapsedMinutes - before) / 60f);
                 // the modem is out of its box and on their table: the empty box goes back on the van
                 if (job.IsDone(InstallStep.Modem) && _cargo.Items.FirstOrDefault(i => i.Tool == Tools.ModemBox && i.Where != Carryable.Place.Van) is { } boxed) _cargo.Stow(boxed);
                 _cargo.Refresh();
@@ -501,18 +534,18 @@ public partial class GameRoot : Node3D
             var d = task.Next!;
             var missing = task.Missing(KitOnSite());
             return missing != Tools.None ? $"{d.Verb}: you need {Cargo.Names(missing)} here (from the van)"
-                : $"{d.Verb} ({task.NextProgress + 1}/{d.Clicks}, {task.MinutesFor(d)} min)";
+                : $"{d.Verb} ({task.NextProgress + 1} of {d.Clicks})";
         };
         bench.CanUse = () => task.Done || task.Missing(KitOnSite()) == Tools.None;
         bench.OnUse = () =>
         {
-            int before = task.ElapsedMinutes;
-            if (!task.Done) { if (task.Do(KitOnSite())) SpendHours((task.ElapsedMinutes - before) / 60f); return; }
+            if (!task.Done) { task.Do(KitOnSite()); return; }
             complete(task.Bodged);
             EndOddJob(view.Lot.Id);
         };
         bench.AltPrompt = () => task.Done ? null : "Give it a thump and call it done";
-        bench.OnAlt = () => { if (task.Bodge()) { SpendHours(OddJobTask.BodgeMinutes / 60f); _pip.Once("thump"); } };
+        bench.HoldSeconds = () => task.Done ? 0f : Hold(task.MinutesFor(task.Next!));
+        bench.OnAlt = () => { if (task.Bodge()) _pip.Once("thump"); };
         view.Body.AddChild(bench);
         _oddJobs[view.Lot.Id] = (task, bench, wanted);
         OpenDoor(view, true);
@@ -531,6 +564,90 @@ public partial class GameRoot : Node3D
         _pip.Say("By decree: " + what);
         foreach (var v in _town.Lots) if (_installs.Remove(v.Lot.Id)) v.Install?.ShowFitted();
         RefreshIdleScreens();
+    }
+
+    // ---- paper and people: tickets on the rail, handed to staff in person --------------------------
+    private string TicketPrompt(Ticket t)
+    {
+        var s = Sim.State;
+        string waited = t.WaitingDays > 0 ? $", waiting {t.WaitingDays} day{(t.WaitingDays == 1 ? "" : "s")}" : "";
+        if (t.AssignedTo is { } id && StaffRules.Member(s, id) is { } who) return $"{t.Title}{waited}. {who.Name.Split(' ')[0]} has this ticket";
+        if (_clipboard.Contains(t.Key)) return $"{t.Title}: on your clipboard. Hand it over in person, or put it back";
+        return s.StaffMembers.FirstOrDefault(m => m.Does.Contains(t.Kind)) is { } could
+            ? $"{t.Title}{waited}. Take this ticket to hand to {could.Name.Split(' ')[0]}"
+            : $"{t.Title}{waited}. Yours to do";
+    }
+
+    private string TicketLine(Ticket t)
+    {
+        string who = t.AssignedTo is { } id && StaffRules.Member(Sim.State, id) is { } m ? $"with {m.Name.Split(' ')[0].ToUpperInvariant()}" : _clipboard.Contains(t.Key) ? "ON YOUR CLIPBOARD" : "";
+        return $"{t.Kind.ToString().ToUpperInvariant()}  {(t.WaitingDays > 0 ? $"day {t.WaitingDays + 1}" : "new")}\n{t.Title}\n{who}";
+    }
+
+    /// <summary>The rail, the calendar and where each member of staff is standing all follow the sim.</summary>
+    private void SyncPaper()
+    {
+        var s = Sim.State;
+        var tickets = StaffRules.Tickets(s, _content);
+        _clipboard.RemoveWhere(k => tickets.All(t => t.Key != k || t.AssignedTo is not null));
+        _rail.Show(tickets, TicketLine);
+
+        var today = new Telo.Sim.Core.GameDate(s.Day).ToDate();
+        var lines = StaffRules.WeekAhead(s, _content).Select(d =>
+        {
+            var date = new Telo.Sim.Core.GameDate(d.Day).ToDate();
+            return $"{(d.Day == s.Day ? "▶" : "  ")} {date:ddd d}{(d.Note.Length > 0 ? "   " + d.Note : "")}";
+        });
+        _calendar.Show($"{today:MMMM yyyy}".ToUpperInvariant() + $"        {Clock.Text(s)}\n\n" + string.Join("\n", lines));
+
+        foreach (var m in s.StaffMembers.Where(m => m.Does.Count > 0))
+        {
+            if (!_figures.TryGetValue(m.Id, out var fig))
+            {
+                fig = new StaffFigure(m.Name, new Color(0.25f, 0.4f, 0.6f));
+                AddChild(fig);
+                _figures[m.Id] = fig;
+                var member = m;
+                fig.Hot.Prompt = () => StaffPrompt(member);
+                fig.Hot.CanUse = () => TicketToGive(member) is not null;
+                fig.Hot.OnUse = () =>
+                {
+                    if (TicketToGive(member) is not { } t || !StaffRules.Assign(Sim.State, _content, t.Key, member.Id)) return;
+                    _clipboard.Remove(t.Key);
+                    _pip.Once("given");
+                    SyncPaper();
+                };
+            }
+            bool here = Clock.WorkingHours(s) || _ignoreHours;
+            fig.Visible = here;
+            fig.Hot.CollisionLayer = here ? 2u : 0u;
+            // at the job they are on; otherwise waiting where they collect tickets: your door, or the depot once there is one
+            var at = tickets.FirstOrDefault(t => t.AssignedTo == m.Id && t.LotId is not null) is { } job && _town.Lots.FirstOrDefault(l => l.Lot.Id == job.LotId) is { } site
+                ? site.Body.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(1.9f, 0, 4.9f))
+                : s.HasDepot && _town.Lots.FirstOrDefault(l => l.Lot.Kind == LotKind.Depot) is { } depot
+                    ? depot.Body.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(1.6f, 0, 4.6f))
+                    : _town.Hq.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(RoomBuilder.DoorX + 2.4f, -0.1f, RoomBuilder.D / 2 + 1.1f));
+            fig.GlobalTransform = at;
+        }
+    }
+
+    private Ticket? TicketToGive(StaffMember m)
+    {
+        var tickets = StaffRules.Tickets(Sim.State, _content);
+        return _clipboard.Select(k => tickets.FirstOrDefault(t => t.Key == k)).FirstOrDefault(t => t is not null && StaffRules.CanTake(Sim.State, _content, m, t));
+    }
+
+    private string StaffPrompt(StaffMember m)
+    {
+        var s = Sim.State;
+        string first = m.Name.Split(' ')[0];
+        if (TicketToGive(m) is { } t) return $"Give {first} the ticket: {t.Title}";
+        int queue = StaffRules.Queue(s, _content, m);
+        string pay = s.HasDepot ? $"${m.WeeklyWage} a week" : $"${m.PieceRate} a job";
+        if (_clipboard.Count > 0 && queue >= m.JobsPerDay) return $"{first} has a day's work in hand ({queue} tickets). Paid {pay} on Fridays";
+        if (queue > 0) return $"{m.Name}: {queue} ticket{(queue == 1 ? "" : "s")} in hand, {m.JobsToday} done today. Paid {pay} on Fridays";
+        return s.HasDepot ? $"{m.Name}. Collects tickets from the depot each morning. Paid {pay} on Fridays"
+            : $"{m.Name}, waiting for a job ticket. Take one from the rail in your room. Paid {pay} on Fridays";
     }
 
     /// <summary>Is this world position inside the house (plus a margin, e.g. the doorstep)?</summary>
@@ -554,7 +671,9 @@ public partial class GameRoot : Node3D
         }
         if (step >= OnboardingStep.Install && s.Modems == 0 && s.Customers.Any(c => c.Live && !c.SocketFitted)) _pip.Once("nomodem");
         if (s.Staff == 0 && WorkRules.CanUpgrade(s, _content, "install") == UpgradeResult.Ok) _pip.Once("canhire");
-        if (s.Staff > 0) _pip.Once("hired");
+        if (s.StaffMembers.Any(m => m.Does.Count > 0)) _pip.Once("hired");
+        if (StaffRules.CanLeaseDepot(s)) _pip.Once("tolet");
+        if (s.StaffMembers.Count > 0 && Clock.Weekday(s.Day) == DayOfWeek.Friday) _pip.Once("payday");
         if (s.Faults.Count > 0) _pip.Once("fault");
         if (s.Lines.Values.Any(l => l.Planted > 0)) _pip.Once("pole");
         if (s.Orders.Count > 0) _pip.Once("catalogue");
@@ -602,30 +721,34 @@ public partial class GameRoot : Node3D
         }
     }
 
+    /// <summary>How long the thing this door currently offers takes to do by hand (zero for a knock or a chat).</summary>
+    private float LotHold(LotDef lot)
+    {
+        var s = Sim.State;
+        if (TownRules.FaultAt(s, lot.Id) is not null) return Hold(TownRules.RepairMinutes);
+        if (TownRules.JobAt(s, lot.Id) is { } job && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: null }) return Hold(job.Hours * 60);
+        return 0;
+    }
+
     private void WireLot(LotView view)
     {
+        view.Door.HoldSeconds = () => LotAction(view.Lot).Use is null ? 0f : LotHold(view.Lot);
         view.Door.Prompt = () => LotAction(view.Lot).Prompt;
         view.Door.CanUse = () => LotAction(view.Lot).Use is not null;
         view.Door.OnUse = () => LotAction(view.Lot).Use?.Invoke();
         if (view.Counter is { } counter)
         {
-            counter.Prompt = () => Sim.State.Cash >= TownRules.ModemPrice
+            bool Shut() => !_ignoreHours && HomeRules.ShopShut(Sim.State, _content, view.Lot);
+            counter.Prompt = () => Shut() ? $"The counter is {HomeRules.WhyNot(Sim.State, _content, view.Lot)}" : Sim.State.Cash >= TownRules.ModemPrice
                 ? $"Buy a modem at the counter: ${TownRules.ModemPrice} (you have {Sim.State.Modems})"
                 : $"A modem is ${TownRules.ModemPrice}. You have ${Sim.State.Cash}";
-            counter.CanUse = () => Sim.State.Cash >= TownRules.ModemPrice;
-            counter.OnUse = () => TownRules.BuyModem(Sim.State);
+            counter.CanUse = () => !Shut() && Sim.State.Cash >= TownRules.ModemPrice;
+            counter.OnUse = () => { if (!Shut()) TownRules.BuyModem(Sim.State); };
             // a second thing on Sol's counter, once the Board has started filling up
-            counter.AltPrompt = () => Onboarding.DeskOpen(Sim.State, _content) && Sim.State.LastEvening is { Engaged: > 0 } && BoardRules.CanAddLine(Sim.State) && Sim.State.Cash >= BoardRules.CardPrice
+            counter.AltPrompt = () => !Shut() && Onboarding.DeskOpen(Sim.State, _content) && Sim.State.LastEvening is { Engaged: > 0 } && BoardRules.CanAddLine(Sim.State) && Sim.State.Cash >= BoardRules.CardPrice
                 ? $"Buy a line card for the Board: ${BoardRules.CardPrice}" : null;
-            counter.OnAlt = () => { if (BoardRules.BuyCard(Sim.State)) { _cargo.Refresh(); _pip.Once("card"); } };
+            counter.OnAlt = () => { if (!Shut() && BoardRules.BuyCard(Sim.State)) { _cargo.Refresh(); _pip.Once("card"); } };
         }
-    }
-
-    /// <summary>Work takes time. Long jobs can roll the calendar over.</summary>
-    private void SpendHours(float hours)
-    {
-        _dayClock += hours / 24f * DayLengthSeconds;
-        while (_dayClock >= DayLengthSeconds) { _dayClock -= DayLengthSeconds; Sim.AdvanceDay(); }
     }
 
     private void EnterVan()
@@ -647,8 +770,10 @@ public partial class GameRoot : Node3D
     {
         if (!AnyScreenOpen)
         {
-            _dayClock += (float)delta;
-            if (_dayClock >= DayLengthSeconds) { _dayClock -= DayLengthSeconds; Sim.AdvanceDay(); }
+            // time passes only as it is lived: real seconds become game minutes, and nothing else moves the clock
+            _minuteFrac += (float)delta * Clock.MinutesPerDay / DayLengthSeconds;
+            int whole = (int)_minuteFrac;
+            if (whole > 0) { _minuteFrac -= whole; Sim.AdvanceMinutes(whole); }
         }
         _sky.SetHour(Hour);
         _hud.SetCrosshair(!AnyScreenOpen && !_van.Driven);
@@ -671,6 +796,13 @@ public partial class GameRoot : Node3D
             }
             if (!AnyScreenOpen) RefreshIdleScreens();
             SyncHouses(_player.GlobalPosition);
+            SyncPaper();
+            // who is in: warm windows after dark, and the car on the drive
+            foreach (var lot in _town.Lots)
+            {
+                if (lot.Lights is not null) lot.Lights.Visible = Clock.Dark(Sim.State) && HomeRules.IsHome(Sim.State, _content, lot.Lot);
+                if (lot.Car is not null) lot.Car.Visible = !HomeRules.OutAtWork(Sim.State, _content, lot.Lot);
+            }
             _cargo.Refresh();
             foreach (var refresh in _lineRefresh) refresh();
             WatchProgress();
@@ -683,9 +815,10 @@ public partial class GameRoot : Node3D
         string where = $"{biome}  alt {who.Altitude:0} m" + (_van.Driven ? $"  {Mathf.Abs(_van.Speed) * 3.6f:0} km/h{(_van.OnRoad ? "" : " (off-road)")}" : _player.Flying ? "  SURVEY FLIGHT" : "");
         string? prompt = AnyScreenOpen ? null
             : _van.Driven ? "[E] Get out   [W/S] drive   [A/D] steer"
-            : _player.Focus is { } f ? (f.CanUse() ? "[E] " : "") + f.Prompt() + (f.AltPrompt() is { } alt ? $"   [R] {alt}" : "")
+            : _player.Focus is { } f ? (!f.CanUse() ? "" : f.HoldSeconds() > 0 ? "[Hold E] " : "[E] ") + f.Prompt() + (f.AltPrompt() is { } alt ? $"   [R] {alt}" : "")
             : _cargo.Held is { } held ? $"Carrying the {held.Label}   [G] put it down" : null;
         _hud.Refresh(Sim, prompt, Hour, where, AnyScreenOpen ? "" : "▶ " + next);
+        _hud.SetHold(_van.Driven ? 0 : _player.HoldProgress);
     }
 
     public override void _UnhandledInput(InputEvent e)
@@ -695,7 +828,7 @@ public partial class GameRoot : Node3D
         else if (e.IsActionPressed("drop") && !_van.Driven) _cargo.Drop();
         else if (e.IsActionPressed("god_help")) _pip.Say("God keys. F2: $500. F3: next day. F4: finish what the game is asking for. F6: jump to the next act.");
         else if (e.IsActionPressed("god_cash")) God(Sim.GodCash(500));
-        else if (e.IsActionPressed("god_day")) { Sim.AdvanceDay(); _dayClock = DayLengthSeconds * 0.05f; God($"it is {Sim.State.Date}."); }
+        else if (e.IsActionPressed("god_day")) { Sim.Sleep(); _minuteFrac = 0; God($"it is {Sim.State.Date}."); }
         else if (e.IsActionPressed("god_stage")) God(Sim.GodNextStage(_planet));
         else if (e.IsActionPressed("god_act")) God(Sim.GodNextAct());
         else if (e.IsActionPressed("save")) Save();
@@ -731,6 +864,7 @@ public partial class GameRoot : Node3D
     {
         // --- world: the player stands on the room floor, the van drives down Main Street ---
         async Task Physics(int frames) { for (int i = 0; i < frames; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame); }
+        _ignoreHours = true;   // these checks are about the work, not the time of day (HOURS below checks that)
         await Physics(90);
         float floor = (float)_planet.Town.HeightM + 0.1f;
         bool standing = _player.IsOnFloor() && Mathf.Abs(_player.Altitude - floor) < 0.3f;
@@ -844,8 +978,41 @@ public partial class GameRoot : Node3D
         bool hired = WorkRules.Upgrade(Sim.State, _content, "install") == UpgradeResult.Ok;
         Customer? next = null;
         for (int i = 0; i < 6 && next is null; i++) { Sim.State.MessagesWaiting = 1; next = Sim.TakeEnquiry(); }
+        // paper and people: nothing happens until the ticket is taken off the rail and put in Jory's hand
         Sim.AdvanceDays(2);
-        bool techDid = next is { Installed: true } && Sim.State.TechInstalls > 0;
+        bool waited = next is { Installed: false };
+        SyncPaper();
+        var slip = StaffRules.Tickets(Sim.State, _content).First(t => t.Key == $"install:{next!.Id}");
+        bool onRail = _rail.CanUse(slip) && _figures.ContainsKey("install") && !_figures["install"].Hot.CanUse();
+        _rail.Use(slip);
+        _figures["install"].Hot.OnUse!();
+        bool handed = Sim.State.Assigned.ContainsKey(slip.Key) && _clipboard.Count == 0;
+        for (int i = 0; i < 4 && !next.Installed; i++) Sim.AdvanceDay();
+        bool techDid = waited && onRail && handed && next is { Installed: true } && Sim.State.TechInstalls > 0;
+        GD.Print($"TICKETS {(techDid ? "OK" : "FAIL")}: waitedWithoutTicket={waited} onRail={onRail} handedOver={handed} done={next.Installed}");
+
+        // people keep hours: on a weekday morning the family's car is gone and nobody answers; in the evening the windows are lit
+        _ignoreHours = false;
+        while (Clock.Weekday(Sim.State.Day) != DayOfWeek.Tuesday) Sim.AdvanceDay();
+        var famLot = _town.Lots.First(l => l.Lot.Archetype == "family" && l.Car is not null);
+        Sim.State.Minute = 5 * 60; _slowTick = 0; await Frames(3);
+        bool outByDay = !famLot.Car!.Visible && !famLot.Door.CanUse() && famLot.Door.Prompt().Contains("car");
+        Sim.State.Minute = 13 * 60 + 30; _slowTick = 0; await Frames(3);
+        bool inByNight = famLot.Car.Visible && famLot.Lights!.Visible;
+        _ignoreHours = true;
+        bool hours = outByDay && inByNight;
+        GD.Print($"HOURS {(hours ? "OK" : "FAIL")}: outAtEleven={outByDay} homeAndLitAtHalfSeven={inByNight}");
+
+        // the depot: lease 1 Main Street, and from the next working morning tickets are collected without you
+        Sim.State.Cash += 500;
+        var depotLot = _town.Lots.First(l => l.Lot.Kind == LotKind.Depot);
+        depotLot.Door.OnUse!();
+        Customer? later = null;
+        for (int i = 0; i < 8 && later is null; i++) { Sim.State.MessagesWaiting = 1; later = Sim.TakeEnquiry(); }
+        for (int i = 0; i < 5 && later is { Installed: false }; i++) Sim.AdvanceDay();
+        bool depot = Sim.State.HasDepot && later is { Installed: true };
+        GD.Print($"DEPOT {(depot ? "OK" : "FAIL")}: leased={Sim.State.HasDepot} collectedAndDone={later?.Installed}");
+        techDid &= hours && depot;
         Sim.State.Defects.Add(new LatentDefect { Id = "defect-smoke", SurfaceDay = Sim.State.Day + 1, Source = "technician", CustomerId = next!.Id, Text = "a loose terminal" });
         Sim.AdvanceDay();
         var faultLot = _town.Lots.First(l => l.Lot.Id == next.LotId);
@@ -886,7 +1053,9 @@ public partial class GameRoot : Node3D
         }
         // --- carry: the whole town rings the Board on two lines; a line card is bought, carried and fitted ---
         Sim.GodNextStage(_planet);                                   // connect everyone
-        Sim.AdvanceDays(3);
+        foreach (var w in BoardService.Waiting(Sim.State)) w.HasAccount = true;
+        Sim.AdvanceDay();
+        for (int i = 0; i < 14 && (Sim.State.LastEvening?.Engaged ?? 0) == 0; i++) Sim.AdvanceDay();   // some evenings are quiet; a fortnight never is
         int engagedBefore = Sim.State.LastEvening?.Engaged ?? 0;
         Sim.State.Cash += 500;
         var solCounter = _town.Lots.First(l => l.Counter is not null).Counter!;
@@ -1001,6 +1170,7 @@ public partial class GameRoot : Node3D
     private async Task TakeScreenshot(string path)
     {
         Input.MouseMode = Input.MouseModeEnum.Visible; // stray mouse motion must not move the camera
+        _ignoreHours = true;
         _dayClock = DayLengthSeconds * 0.2f;            // mid-morning light
         var cam = new Camera3D { Near = 0.1f, Far = 60000, Fov = 65 };
         AddChild(cam);
@@ -1087,6 +1257,34 @@ public partial class GameRoot : Node3D
         cam.GlobalTransform = _rack.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0.1f, 0.05f, 1.15f));
         await Frames(12);
         GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-board.png"));
+
+        // the wall of your room: job tickets on the rail and the calendar with pay day on it
+        Sim.State.Modems += 4;
+        for (int i = 0; i < 6; i++) { Sim.State.MessagesWaiting = 1; Sim.TakeEnquiry(); }
+        while (!Clock.IsWorkingDay(Sim.State.Day) || Clock.Weekday(Sim.State.Day) == DayOfWeek.Friday) Sim.AdvanceDay();
+        _dayClock = DayLengthSeconds * (9.5f - 6f) / 24f;
+        SyncPaper();
+        if (StaffRules.Tickets(Sim.State, _content).FirstOrDefault(t => _rail.CanUse(t)) is { } pick) _rail.Use(pick);
+        cam.GlobalTransform = _rail.GlobalTransform * new Transform3D(new Basis(Vector3.Up, 0.12f), new Vector3(0.62f, 0.02f, 1.75f));
+        await Frames(12);
+        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-wall.png"));
+        // Jory waiting at your door for a ticket
+        if (_figures.TryGetValue("install", out var jory))
+        {
+            cam.LookAtFromPosition(jory.GlobalPosition + jory.GlobalBasis.Z * 3.2f + jory.GlobalBasis.X * 1.4f + jory.GlobalBasis.Y * 1.5f, jory.GlobalPosition + jory.GlobalBasis.Y * 1.1f, jory.GlobalPosition.Normalized());
+            await Frames(12);
+            GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-jory.png"));
+        }
+        // Main Street at half past seven on a working day: lit windows and cars show who is in
+        _ignoreHours = false;
+        _dayClock = DayLengthSeconds * (19.5f - 6f) / 24f; _slowTick = 0;
+        await Frames(4);
+        await Shot("-evening", TownBuilder.Place(_planet, -62, 22, 0, 5).Origin, TownBuilder.Place(_planet, -20, 14, 0, 2).Origin);
+        _dayClock = DayLengthSeconds * (11f - 6f) / 24f; _slowTick = 0;
+        await Frames(4);
+        await Shot("-midday", TownBuilder.Place(_planet, -62, 22, 0, 5).Origin, TownBuilder.Place(_planet, -20, 14, 0, 2).Origin);
+        _ignoreHours = true;
+        _dayClock = DayLengthSeconds * (19.6f - 6f) / 24f;
         // the sysop's terminal, with a caller waiting and uploads to look through
         cam.Current = false; _player.Camera.Current = true;
         Sim.GodNextAct(); Sim.AdvanceDays(8);

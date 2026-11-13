@@ -17,6 +17,10 @@ public sealed class LotView
     public InstallSite? Install { get; init; }
     public Action<bool>? SetDoor { get; init; }
     public bool DoorOpen { get; set; }
+    /// <summary>Warm light in the windows: someone is in and it is dark out.</summary>
+    public Node3D? Lights { get; init; }
+    /// <summary>The household's car. Gone when they are out at work.</summary>
+    public Node3D? Car { get; init; }
 }
 
 /// <summary>What the rest of the game needs to know about the settlements.</summary>
@@ -85,12 +89,13 @@ public static class TownBuilder
             {
                 LotKind.Shop => ShopMesh(),
                 LotKind.Farm => FarmMesh(),
+                LotKind.Depot => DepotMesh(),
                 _ => HouseMesh(palette[i % palette.Length], roofs[i % roofs.Length], wallH, solids),
             };
             i++;
             // how far the street's pole line is from this front door (the drop wire comes from there)
             float poleDist = Mathf.Abs((float)lot.South - PoleLineSouth);
-            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist));
+            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist, palette[(i + 2) % palette.Length]));
         }
 
         // --- Main Street ---------------------------------------------------------------------
@@ -122,7 +127,7 @@ public static class TownBuilder
     /// <summary>Height of a house's floor above its lot origin (keeps the lawn from poking through the carpet).</summary>
     public const float HouseFloor = 0.15f;
 
-    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist)
+    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist, Color carColour)
     {
         bool shop = lot.Kind == LotKind.Shop, house = lot.Kind == LotKind.House;
         float w = shop ? 10 : 8, d = shop ? 8 : 7, front = d / 2;
@@ -134,6 +139,7 @@ public static class TownBuilder
 
         InstallSite? install = null;
         Action<bool>? setDoor = null;
+        Node3D? lights = null, car = null;
         if (house)
         {
             // a ramp over the doorstep, a door that can stand open, a ceiling light, and the install points
@@ -157,6 +163,24 @@ public static class TownBuilder
             body.AddChild(new OmniLight3D { Position = new Vector3(0, wallH - 0.6f, 0), LightColor = new Color(1f, 0.86f, 0.68f), LightEnergy = 1.0f, OmniRange = 7 });
             install = new InstallSite(wallH, HouseFloor, poleDist);
             body.AddChild(install);
+
+            // who is in: warm windows after dark, and (for households that go out to work) a car on the drive
+            lights = new Node3D { Visible = false };
+            var warm = new StandardMaterial3D { AlbedoColor = new Color(1f, 0.82f, 0.5f), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded };
+            foreach (float x in new[] { -2.5f, 2.5f })
+                foreach (float z in new[] { 3.585f, -3.585f })
+                    lights.AddChild(new MeshInstance3D { Position = new Vector3(x, 1.7f, z), Mesh = new BoxMesh { Size = new Vector3(1.3f, 1.0f, 0.02f) }, MaterialOverride = warm, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+            body.AddChild(lights);
+            if (Telo.Sim.Town.HomeRules.HasCar(lot))
+            {
+                var dark = new Color(0.1f, 0.1f, 0.11f);
+                var lp = new LowPoly().Box(new Vector3(0, 0.55f, 0), new Vector3(1.7f, 0.6f, 3.9f), carColour).Box(new Vector3(0, 1.05f, 0.2f), new Vector3(1.5f, 0.5f, 2.0f), carColour * 0.9f)
+                    .Box(new Vector3(0, 1.07f, -0.82f), new Vector3(1.4f, 0.4f, 0.04f), new Color(0.3f, 0.42f, 0.52f));
+                foreach (var (wx, wz) in new[] { (-0.85f, -1.25f), (0.85f, -1.25f), (-0.85f, 1.25f), (0.85f, 1.25f) }) lp.Box(new Vector3(wx, 0.3f, wz), new Vector3(0.22f, 0.6f, 0.6f), dark);
+                car = lp.Instance("Car");
+                car.Position = new Vector3(5.7f, 0, 1.2f);
+                body.AddChild(car);
+            }
         }
 
         Interactable Hotspot(Vector3 pos, Vector3 size)
@@ -172,7 +196,7 @@ public static class TownBuilder
 
         var name = new Label3D
         {
-            Text = lot.Resident, Position = new Vector3(0, shop ? 3.25f : 2.45f, front + 0.12f), FontSize = 64, PixelSize = (shop ? 0.5f : 0.16f) / 64f,
+            Text = lot.Resident, Position = new Vector3(0, shop ? 3.25f : lot.Kind == LotKind.Depot ? 2.95f : 2.45f, front + 0.12f), FontSize = 64, PixelSize = (shop ? 0.5f : lot.Kind == LotKind.Depot ? 0.36f : 0.16f) / 64f,
             Modulate = shop ? new Color(0.95f, 0.9f, 0.7f) : new Color(0.12f, 0.1f, 0.08f), OutlineSize = 0,
         };
         body.AddChild(name);
@@ -185,7 +209,7 @@ public static class TownBuilder
             Visible = false,
         };
         body.AddChild(marker);
-        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor };
+        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor, Lights = lights, Car = car };
     }
 
     /// <summary>The road surface, laid onto the real terrain by ray-casting down. Call once physics has the terrain.</summary>
@@ -292,6 +316,16 @@ public static class TownBuilder
             .Box(new Vector3(-3f, 1.1f, 3.8f), new Vector3(0.6f, 0.5f, 0.4f), new Color(0.15f, 0.15f, 0.16f))          // a television in the window
             .Build();
     }
+
+    /// <summary>1 Main Street: a small yard and workshop, to let.</summary>
+    private static Mesh DepotMesh() => new LowPoly()
+        .Box(new Vector3(0, 1.6f, 0), new Vector3(8, 3.8f, 7), new Color(0.6f, 0.38f, 0.3f))
+        .Box(new Vector3(0, 3.6f, 0), new Vector3(8.4f, 0.25f, 7.4f), new Color(0.28f, 0.28f, 0.3f))
+        .Box(new Vector3(-1.9f, 1.3f, 3.53f), new Vector3(3.2f, 2.6f, 0.08f), new Color(0.45f, 0.5f, 0.52f))      // roller door
+        .Box(new Vector3(0, 1.0f, 3.53f), new Vector3(1.0f, 2.0f, 0.1f), new Color(0.2f, 0.28f, 0.22f))           // door
+        .Box(new Vector3(2.6f, 1.7f, 3.53f), new Vector3(1.4f, 1.0f, 0.06f), new Color(0.3f, 0.42f, 0.52f))
+        .Box(new Vector3(0, 2.95f, 3.55f), new Vector3(5.0f, 0.55f, 0.06f), new Color(0.93f, 0.9f, 0.8f))          // sign board
+        .Build();
 
     private static Mesh FarmMesh()
     {

@@ -58,7 +58,8 @@ public class CarryTests
         var s = sim.State;
         BoardRules.Home(s).LinesIn = 4;
         long revenue = s.Customers.Where(c => c.Live && c.Installed).Sum(c => c.MonthlyFee);
-        long costs = Simulation.RentPerMonth + s.Staff * Simulation.WagePerStaffPerMonth + WorkRules.MonthlyUpkeep(s, sim.Content) + BoardRules.MonthlyRental(s);
+        long wages = s.StaffMembers.Sum(m => m.WeeklyWage) * 13 / 3 + StaffRules.DepotRentPerMonth;   // a month of weekly wages, working from the depot
+        long costs = Simulation.RentPerMonth + wages + WorkRules.MonthlyUpkeep(s, sim.Content) + BoardRules.MonthlyRental(s);
         Assert.True(revenue > costs, $"monthly: in {revenue}, out {costs}");
         Assert.True(revenue - costs < 400, "but not by so much that nothing else needs building");
     }
