@@ -25,7 +25,7 @@ public static class Guidance
             case OnboardingStep.Install when s.Modems > 0 && s.Customers.FirstOrDefault(x => x.Live && !x.SocketFitted) is { } firstCust:
                 return ($"Install the line at {firstCust.Name}'s house.", firstCust.LotId);
             case OnboardingStep.Frame:
-                return ("Wire the new line at the frame in your room.", null);
+                return ("Wire the new line at the switchboard in your room, then throw the test switch.", null);
             case OnboardingStep.OddJob:
                 return BestJob(s, c) is { } firstJob
                     ? ($"Odd job: {firstJob.Title.ToLowerInvariant()} at {Who(c, firstJob)}'s (${firstJob.Pay}).", firstJob.LotId)
@@ -36,6 +36,10 @@ public static class Guidance
 
         if (s.Faults.FirstOrDefault() is { } fault && s.Customers.FirstOrDefault(x => x.Id == fault.CustomerId) is { } faulty)
             return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
+
+        // nobody new can be connected until there is room on the board
+        if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s))
+            return (SwitchRules.CanAddPanel(s) ? $"The switchboard is full. Bolt on another panel (${SwitchRules.PanelPrice})." : $"The switchboard is full. Another panel is ${SwitchRules.PanelPrice}.", null);
 
         // someone is waiting for something they ordered
         if (s.Orders.FirstOrDefault() is { } order && s.Customers.FirstOrDefault(x => x.Id == order.CustomerId) is { } buyer && c.Products.TryGetValue(order.ProductId, out var wanted))
@@ -82,7 +86,7 @@ public static class Guidance
                     : BestJob(s, c) is { } pj ? ($"You can't afford a modem. Earn cash: {pj.Title.ToLowerInvariant()} at {Who(c, pj)}'s (${pj.Pay}).", pj.LotId)
                     : ("You can't afford a modem. Sleep and check for odd jobs tomorrow.", null);
 
-        if (!tech && s.ReadyForFrame > 0) return ($"Wire {s.ReadyForFrame} new line(s) at the frame in your room.", null);
+        if (!tech && s.ReadyForFrame > 0) return ($"Wire {s.ReadyForFrame} new line(s) at the switchboard in your room.", null);
         if (s.MessagesWaiting > 0) return ($"Play the answering machine in your room ({s.MessagesWaiting} waiting).", null);
         if (BestJob(s, c) is { } job && (s.Cash < 150 || !TownRules.Prospects(s, c).Any(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay)))
             return ($"Odd job: {job.Title.ToLowerInvariant()} at {Who(c, job)}'s (${job.Pay}).", job.LotId);

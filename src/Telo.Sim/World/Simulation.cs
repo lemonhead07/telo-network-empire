@@ -2,7 +2,6 @@ using Telo.Sim.Almanac;
 using Telo.Sim.Content;
 using Telo.Sim.Core;
 using Telo.Sim.Ledger;
-using Telo.Sim.Minigames.Frame;
 using Telo.Sim.Build;
 using Telo.Sim.Minigames.Install;
 using Telo.Sim.Minigames.OddJob;
@@ -57,6 +56,7 @@ public sealed class Simulation
         if (s.Day % 7 == 0) BoardService.Week(s, Content, _rng);
         TownRules.Tick(s, Content, _rng);
         OrderRules.Tick(s, Content);
+        SwitchRules.Tidy(s);
         StaffRules.EndOfDay(s, Content, _rng, s.Day - 1);
         SurfaceDefects();
         DriftSatisfaction();
@@ -170,7 +170,13 @@ public sealed class Simulation
     {
         var s = State; var c = Content;
         Customer? SignNext() => TownRules.Prospects(s, c).FirstOrDefault() is { } lot ? TownRules.SignUp(s, lot) : null;
-        void Connect(Customer cust) { if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); } if (!cust.Installed) GoLive(cust); cust.HasAccount = true; }
+        void Connect(Customer cust)
+        {
+            if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); }
+            if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s)) { s.Cash = Math.Max(s.Cash, SwitchRules.PanelPrice); SwitchRules.AddPanel(s); }
+            SwitchRules.AutoWire(s, c, cust, sloppy: false);
+            cust.HasAccount = true;
+        }
         string done;
         switch (Onboarding.Current(s, c))
         {
@@ -345,50 +351,14 @@ public sealed class Simulation
         return true;
     }
 
-    /// <summary>Lines for the next frame visit: new customers whose sockets are in, then existing subscribers to re-terminate.</summary>
-    public List<Customer> FrameWorkOrder(int max = 6) =>
-        State.Customers.Where(c => c.Live && !c.Installed && c.SocketFitted)
-            .Concat(State.Customers.Where(c => c.Live && c.Installed))
-            .Take(max).ToList();
-
-    /// <summary>Build a Frame job for the given customers. Seed is derived so the same job is reproducible.</summary>
-    public FramePuzzle NewFrameJob(IReadOnlyList<Customer> customers) =>
-        FramePuzzle.Generate(DetRng.Derive(State.Seed, $"frame:{State.Day}:{State.NextId}"),
-            customers.Select(c => (c.Id, c.Name)).ToList());
-
-    /// <summary>Delegate the job if the 'install' work kind has been delegated; otherwise the player must do it by hand.</summary>
-    public FrameOutcome? TryDelegateFrame(FramePuzzle job)
-    {
-        var stage = WorkRules.Current(State, Content, "install");
-        if (stage.Mode == WorkMode.Manual) return null;
-        return job.Delegate(_rng.NextU64(), stage.AccuracyPermille);
-    }
-
-    public void ApplyFrameOutcome(FrameOutcome o)
+    /// <summary>Throw the switchboard's test switch: every waiting subscriber with a jumper is tried, and the good ones go live.</summary>
+    public List<(string CustomerId, ThrowResult Result)> ThrowSwitch()
     {
         var s = State;
-        Customer? Find(string id) => s.Customers.FirstOrDefault(c => c.Id == id);
-        foreach (var id in o.CrossedCustomerIds) if (Find(id) is { } c) c.Satisfaction -= 30;
-        foreach (var id in o.DeadCustomerIds) if (Find(id) is { } c) c.Satisfaction -= 15;
-        foreach (var id in o.DefectCustomerIds)
-            s.Defects.Add(new LatentDefect
-            {
-                Id = s.NewId("defect"), SurfaceDay = s.Day + _rng.Range(10, 45), Source = "frame", CustomerId = id,
-                Text = o.Delegated ? "a jumper the technician swore was fine" : "a dirty pair you hot-wired in a hurry",
-            });
-        if (o.OvertimeSeconds > 0)
-            foreach (var c in s.Customers.Where(c => c.Live)) c.Satisfaction -= Math.Min(5, 1 + o.OvertimeSeconds / 30);
-        if (o.Crossed > 0) s.Emit(EventKind.Defect, $"Crossed lines: {o.Crossed} customer(s) can hear a stranger's calls. Privacy incident logged.");
-        if (o.PartyLineCut) s.Emit(EventKind.Defect, "You cut the party line. Next door has no dial tone and knows exactly who did it.");
-        if (o.Perfect && !o.Delegated) s.Emit(EventKind.Milestone, "Every line live, first time. The frame is a thing of beauty.");
-        var failed = o.CrossedCustomerIds.Concat(o.DeadCustomerIds).ToHashSet();
-        foreach (var c in s.Customers.Where(c => !c.Installed && c.Live && !failed.Contains(c.Id) && o.Involved.Contains(c.Id)).ToList())
-        {
-            GoLive(c);
-        }
-        foreach (var c in s.Customers) c.Satisfaction = Math.Clamp(c.Satisfaction, 0, 100);
+        var results = SwitchRules.Throw(s, Content, _rng);
         // the first line is live: now, and only now, the neighbours start asking for odd jobs
         if (Onboarding.Current(s, Content) == OnboardingStep.OddJob && s.Jobs.Count == 0) TownRules.OfferJob(s, Content, _rng);
         s.RngState = _rng.State;
+        return results;
     }
 }

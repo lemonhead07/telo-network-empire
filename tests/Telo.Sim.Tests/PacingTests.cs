@@ -31,9 +31,7 @@ public class PacingTests
         var cust = sim.TakeEnquiry()!;
         Town.TownRules.FitSocket(sim.State, cust.Id);
         long before = sim.State.Cash;
-        var frame = sim.NewFrameJob(sim.FrameWorkOrder());
-        foreach (var l in frame.Lines) frame.Jumper(l.Index, l.TargetPort);
-        sim.ApplyFrameOutcome(frame.Evaluate());
+        TestContent.WireUp(sim);
         Assert.Equal(before + World.Simulation.ConnectionFee(cust), sim.State.Cash);
 
         int day = sim.State.Day;

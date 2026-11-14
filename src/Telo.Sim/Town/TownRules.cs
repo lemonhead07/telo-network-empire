@@ -107,7 +107,8 @@ public static class TownRules
         if (cust is null || cust.SocketFitted || s.Modems <= 0) return false;
         s.Modems--; cust.SocketFitted = true;
         s.Installs.Remove(cust.Id);
-        s.Emit(EventKind.Work, $"Socket and modem fitted at {cust.Name}'s. Now wire their pair at the frame.", cust.Id);
+        Net.SwitchRules.Seat(s, cust);   // their pair arrives at a terminal on your switchboard (if there is room)
+        s.Emit(EventKind.Work, $"Socket and modem fitted at {cust.Name}'s. Now wire their pair at the switchboard.", cust.Id);
         return true;
     }
 

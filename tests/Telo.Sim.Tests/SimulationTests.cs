@@ -53,18 +53,17 @@ public class SimulationTests
         sim.State.Cash = 5000;
         Assert.Equal(UpgradeResult.Ok, WorkRules.Upgrade(sim.State, sim.Content, "install"));
         Assert.Equal(1, sim.State.Staff);
-        var job = sim.NewFrameJob(new[] { sim.AddCustomer("A", "x", 1), sim.AddCustomer("B", "x", 1), sim.AddCustomer("C", "x", 1) });
-        Assert.NotNull(sim.TryDelegateFrame(job));
+        Assert.Equal("Jory Pike", sim.State.StaffMembers.Single().Name);
     }
 
     [Fact]
     public void HotWiredDefectsSurfaceLater()
     {
         var sim = TestContent.NewGame();
-        var custs = Enumerable.Range(0, 4).Select(i => sim.AddCustomer($"C{i}", "x", 5)).ToList();
-        var job = sim.NewFrameJob(custs);
-        foreach (var l in job.Lines.Where(l => !l.IsPartyLine)) job.HotWire(l.Index);
-        sim.ApplyFrameOutcome(job.Evaluate());
+        sim.State.Modems = 4;
+        for (int i = 0; i < 4; i++) Town.TownRules.FitSocket(sim.State, sim.TakeEnquiry()!.Id);
+        foreach (var p in Net.SwitchRules.Pending(sim.State)) Assert.True(Net.SwitchRules.HotWire(sim.State, p.CustomerId));
+        Assert.All(sim.ThrowSwitch(), r => Assert.Equal(Net.ThrowResult.Live, r.Result));   // it works today
         Assert.NotEmpty(sim.State.Defects);
         sim.AdvanceDays(60);
         Assert.Empty(sim.State.Defects);
@@ -111,18 +110,12 @@ public class InstallFlowTests
         for (int i = 0; i < 3; i++) sim.TakeEnquiry();
         Assert.Equal(0, sim.State.LiveSubscribers);
         Assert.Equal(3, sim.State.PendingInstalls);
-        Assert.Empty(sim.FrameWorkOrder()); // nothing to wire until sockets are in at their houses
+        Assert.Empty(Net.SwitchRules.Pending(sim.State)); // nothing to wire until sockets are in at their houses
         sim.State.Modems = 3;
         foreach (var c in sim.State.Customers.ToList()) Assert.True(Town.TownRules.FitSocket(sim.State, c.Id));
         Assert.Equal(0, sim.State.Modems);
-
-        var job = sim.NewFrameJob(sim.FrameWorkOrder());
-        foreach (var l in job.Lines.Where(l => !l.IsPartyLine))
-        {
-            int t = job.VisibleTarget(l.Index) ?? job.Probe(l.Index);
-            job.Jumper(l.Index, job.TestPort(t) ? t : job.SparePorts[0]);
-        }
-        sim.ApplyFrameOutcome(job.Evaluate());
+        Assert.Equal(3, Net.SwitchRules.Pending(sim.State).Count);
+        TestContent.WireUp(sim);
         Assert.Equal(3, sim.State.LiveSubscribers);
         Assert.Contains(sim.State.Log, e => e.Text.StartsWith("First customer"));
     }

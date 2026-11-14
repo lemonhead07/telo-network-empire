@@ -27,9 +27,7 @@ public class OnboardingTests
         sim.ApplyInstallOutcome(job.Evaluate());
         Assert.Equal(OnboardingStep.Frame, Onboarding.Current(s, c));
 
-        var frame = sim.NewFrameJob(sim.FrameWorkOrder());
-        foreach (var l in frame.Lines) frame.Jumper(l.Index, l.TargetPort);
-        sim.ApplyFrameOutcome(frame.Evaluate());
+        TestContent.WireUp(sim);
         Assert.Equal(OnboardingStep.OddJob, Onboarding.Current(s, c));
         Assert.Single(s.Jobs);                                   // the first odd job turns up exactly now
 

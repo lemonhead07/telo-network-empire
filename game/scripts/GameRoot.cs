@@ -28,14 +28,14 @@ public partial class GameRoot : Node3D
     public Simulation Sim { get; private set; } = null!;
     private FirstPersonController _player = null!;
     private Hud _hud = null!;
-    private FrameView _frame = null!;
+    private SwitchboardStation _switch = null!;
     private AlmanacView _almanac = null!;
     private NotebookView _notebook = null!;
     private BoardView _board = null!;
     private WorldScreen _boardScreen = null!;
     private Node3D _terminal = null!;
     private Interactable _terminalUse = null!;
-    private WorldScreen _frameScreen = null!, _pipScreen = null!, _notebookScreen = null!;
+    private WorldScreen _pipScreen = null!, _notebookScreen = null!;
     private float _minuteFrac;
     /// <summary>Seconds into the day (which starts at six), as the sky and lamps want it. The sim owns the clock; this is a view of it.</summary>
     private float _dayClock
@@ -75,7 +75,7 @@ public partial class GameRoot : Node3D
     private readonly Dictionary<string, InstallJob> _installs = new();
 
     private float Hour => (6f + _dayClock / DayLengthSeconds * 24f) % 24f;
-    private bool AnyScreenOpen => _frame.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen;
+    private bool AnyScreenOpen => _switch.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen;
 
     public override void _Ready()
     {
@@ -97,12 +97,11 @@ public partial class GameRoot : Node3D
         foreach (var lot in _town.Lots) WireLot(lot);
         _ = BuildRoadsWhenPhysicsIsReady();
 
-        _frame = new FrameView { Sim = Sim };
         _almanac = new AlmanacView { Sim = Sim };
         _notebook = new NotebookView { Sim = Sim };
         _board = new BoardView { Sim = Sim };
         BuildRoom(_town.Hq);
-        foreach (var v in new ModalView[] { _frame, _almanac, _notebook, _board })
+        foreach (var v in new ModalView[] { _almanac, _notebook, _board })
         {
             v.Opened += () => LeanInto(ScreenOf(v));
             v.Closed += LeanBack;
@@ -238,9 +237,11 @@ public partial class GameRoot : Node3D
         float back = -RoomBuilder.D / 2 + 0.1f;
 
         // The frame: a backboard on the wall. Its face is the work surface.
-        RoomBuilder.Prop(room, "Frame", new Vector3(-1.4f, 1.35f, back), new Vector3(1.6f, 1.1f, 0.08f), RoomBuilder.Board, FramePrompt, UseFrame);
-        _frameScreen = Screen(room, _frame, 1.44f, new Vector3(-1.4f, 1.35f, back + 0.05f), Vector3.Zero, glows: false);
-        RoomBuilder.Label(room, "FRAME", new Vector3(-1.4f, 2.0f, back + 0.06f), 0.12f);
+        _switch = new SwitchboardStation { Sim = Sim, Position = new Vector3(-1.4f, 1.36f, back + 0.02f), Tip = key => _pip.Once(key), OnLineNow = WhoIsOnTheBoard };
+        room.AddChild(_switch);
+        _switch.Use.Prompt = SwitchPrompt;
+        _switch.Opened += () => { var size = GetViewport().GetVisibleRect().Size; LeanTo(_switch.LeanPose(_player.Camera.Fov, size.X / size.Y)); };
+        _switch.Closed += LeanBack;
 
         // The Board's lines in: lamps, empty sockets for cards not yet bought, and the tally of engaged tones.
         _rack = new LineRack { Position = new Vector3(-0.22f, 1.4f, back + 0.04f) };
@@ -323,16 +324,21 @@ public partial class GameRoot : Node3D
         return s;
     }
 
-    private WorldScreen ScreenOf(ModalView v) => v == _frame ? _frameScreen : v == _almanac ? _pipScreen : v == _board ? _boardScreen : _notebookScreen;
+    private WorldScreen ScreenOf(ModalView v) => v == _almanac ? _pipScreen : v == _board ? _boardScreen : _notebookScreen;
 
     private void LeanInto(WorldScreen screen)
+    {
+        var size = GetViewport().GetVisibleRect().Size;
+        LeanTo(screen.LeanPose(_player.Camera.Fov, size.X / size.Y));
+    }
+
+    private void LeanTo(Transform3D pose)
     {
         var cam = _player.Camera;
         if (_lean is null || !_lean.IsRunning()) _cameraHome = cam.Transform;
         _lean?.Kill();
-        var size = GetViewport().GetVisibleRect().Size;
         _lean = CreateTween();
-        _lean.TweenProperty(cam, "global_transform", screen.LeanPose(cam.Fov, size.X / size.Y), 0.35).SetTrans(Tween.TransitionType.Sine);
+        _lean.TweenProperty(cam, "global_transform", pose, 0.35).SetTrans(Tween.TransitionType.Sine);
     }
 
     private void LeanBack()
@@ -346,29 +352,30 @@ public partial class GameRoot : Node3D
     /// <summary>Screens show live information even when nobody is using them.</summary>
     private void RefreshIdleScreens()
     {
-        _frame.Show(WorkRules.InterfaceFor(Sim.State, Sim.Content, "install"));
+        _switch.Sync();
         _almanac.Show(InterfaceTier.Terminal);
         _notebook.Show(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing"));
         _board.Show(InterfaceTier.Terminal);
     }
 
     // ---- interactions ------------------------------------------------------------------------
-    private string FramePrompt()
+    private string SwitchPrompt()
     {
-        if (Sim.State.ReadyForFrame == 0)
-            return Sim.State.PendingInstalls > 0 ? "The frame (fit the sockets at their houses first)" : "The frame (no installs waiting)";
-        return WorkRules.Current(Sim.State, Sim.Content, "install").Mode != WorkMode.Manual
-            ? $"Wire {Sim.State.ReadyForFrame} line(s) yourself (otherwise your technician does one customer a day)"
-            : $"Work the frame ({Sim.State.ReadyForFrame} to wire)";
+        var s = Sim.State;
+        int waiting = SwitchRules.Pending(s).Count;
+        if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s)) return "Work at the switchboard: it is full. It needs another panel";
+        if (waiting > 0) return $"Work at the switchboard ({waiting} new line{(waiting == 1 ? "" : "s")} to jumper)";
+        return s.Switch.Positions.Any(p => p.Loose) ? "Work at the switchboard (one of those jumpers looks loose)" : "Work at the switchboard";
     }
 
-    private void UseFrame()
+    /// <summary>Who is on a call to the Board at this moment of the evening (their port lamps burn bright).</summary>
+    private HashSet<string> WhoIsOnTheBoard()
     {
-        if (Sim.State.ReadyForFrame == 0) return;
-        var job = Sim.NewFrameJob(Sim.FrameWorkOrder());
-        _pip.Once("frame");
-        _frame.Start(job);
-        _frame.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "install"));
+        int slot = Mathf.FloorToInt((Hour - BoardRules.FirstHour) * 2);
+        if (slot < 0 || slot >= BoardRules.Slots) return new HashSet<string>();
+        var onLine = new List<string>[BoardRules.Slots];
+        BoardRules.Evening(Sim.State, Sim.State.Day, BoardRules.Home(Sim.State), _content, onLine);
+        return (onLine[slot] ?? new List<string>()).ToHashSet();
     }
 
     private void PlayMessages()
@@ -768,7 +775,7 @@ public partial class GameRoot : Node3D
     // ---- loop --------------------------------------------------------------------------------
     public override void _Process(double delta)
     {
-        if (!AnyScreenOpen)
+        if (!AnyScreenOpen || _switch.IsOpen)
         {
             // time passes only as it is lived: real seconds become game minutes, and nothing else moves the clock
             _minuteFrac += (float)delta * Clock.MinutesPerDay / DayLengthSeconds;
@@ -813,7 +820,7 @@ public partial class GameRoot : Node3D
 
         var biome = _planet.BiomeAt(PlanetBuilder.ToSim(who.GlobalPosition));
         string where = $"{biome}  alt {who.Altitude:0} m" + (_van.Driven ? $"  {Mathf.Abs(_van.Speed) * 3.6f:0} km/h{(_van.OnRoad ? "" : " (off-road)")}" : _player.Flying ? "  SURVEY FLIGHT" : "");
-        string? prompt = AnyScreenOpen ? null
+        string? prompt = _switch.IsOpen ? (_switch.HoverText.Length > 0 ? _switch.HoverText : "Esc steps back") : AnyScreenOpen ? null
             : _van.Driven ? "[E] Get out   [W/S] drive   [A/D] steer"
             : _player.Focus is { } f ? (!f.CanUse() ? "" : f.HoldSeconds() > 0 ? "[Hold E] " : "[E] ") + f.Prompt() + (f.AltPrompt() is { } alt ? $"   [R] {alt}" : "")
             : _cargo.Held is { } held ? $"Carrying the {held.Label}   [G] put it down" : null;
@@ -946,30 +953,37 @@ public partial class GameRoot : Node3D
 
         // --- install: sockets, then the frame on its in-world screen ---
         QuickCustomers(3);
-        UseFrame();
-        var job = _frame.Job!;
-
-        // --- a real mouse click on the in-world frame board must reach the right button ---
+        _switch.Open();
         await ToSignal(GetTree().CreateTimer(0.6), SceneTreeTimer.SignalName.Timeout);
-        var btn = _frame.FirstLineButton!;
-        var at = _frameScreen.DisplayPointFor(btn.GetGlobalRect().GetCenter(), _player.Camera);
+        // real mouse clicks on the object: take a jumper, touch the first waiting terminal, touch its port
+        var firstPos = SwitchRules.Pending(Sim.State)[0];
+        int firstRow = Sim.State.Switch.Positions.IndexOf(firstPos);
+        foreach (string key in new[] { "hook", $"terminal:{firstRow}", $"port:{firstPos.AssignedPort}" })
+        {
+            var at = _switch.DisplayPointFor(key, _player.Camera);
+            foreach (bool down in new[] { true, false })
+            {
+                GetViewport().PushInput(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = down, Position = at, GlobalPosition = at }, true);
+                await Frames(2);
+            }
+        }
+        bool clicked = firstPos.Jumper == firstPos.AssignedPort;
+        GD.Print($"SWITCHBOARD {(clicked ? "OK" : "FAIL")}: three clicks ran a jumper from terminal {firstRow} to port {firstPos.Jumper}");
+        // the rest the proper way (read, test, spare if bad), then a click on the test switch
+        foreach (var pos in SwitchRules.Pending(Sim.State))
+        {
+            SwitchRules.ReadTag(Sim.State, pos.CustomerId);
+            int port = SwitchRules.TestPort(Sim.State, pos.AssignedPort) ? pos.AssignedPort : SwitchRules.SparePorts.First(i => SwitchRules.OnPort(Sim.State, i) is null);
+            SwitchRules.Jumper(Sim.State, pos.CustomerId, port);
+        }
+        var sw = _switch.DisplayPointFor("switch", _player.Camera);
         foreach (bool down in new[] { true, false })
         {
-            GetViewport().PushInput(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = down, Position = at, GlobalPosition = at }, true);
-            await Frames(3);
+            GetViewport().PushInput(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = down, Position = sw, GlobalPosition = sw }, true);
+            await Frames(2);
         }
-        bool clicked = _frame.SelectedLine == 0;
-        GD.Print($"SCREEN {(clicked ? "OK" : "FAIL")}: clicked display point {at} -> selected line {_frame.SelectedLine?.ToString() ?? "none"}");
-
-        foreach (var l in job.Lines.Where(l => !l.IsPartyLine))
-        {
-            int t = job.VisibleTarget(l.Index) ?? job.Probe(l.Index);
-            job.Jumper(l.Index, job.TestPort(t) ? t : job.SparePorts[0]);
-        }
-        _frame.Rebuild();
-        var outcome = job.Evaluate();
-        Sim.ApplyFrameOutcome(outcome);
-        _frame.Close();
+        bool perfect = SwitchRules.Pending(Sim.State).Count == 0 && Sim.State.LiveSubscribers >= 3;
+        _switch.Close();
         _almanac.Open(InterfaceTier.Terminal); _almanac.Close();
         _notebook.Open(InterfaceTier.Paper); _notebook.Close();
         // --- the first automation stage: hire the technician, they connect someone without you, a fault needs a repair visit ---
@@ -1081,90 +1095,9 @@ public partial class GameRoot : Node3D
         GD.Print($"TERMINAL {(sysop ? "OK" : "FAIL")}: shown={terminalShown} letIn={letIn} mailed={mailed} closed={!_board.IsOpen}");
         Sim.AdvanceDays(700);
         var reloaded = new Simulation(_content, SaveCodec.FromJson(SaveCodec.ToJson(Sim.State)));
-        bool ok = world && doors && paid && house && auto && lineBuilt && catalogue && board && sysop && clicked && outcome.Perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
-        GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: doors={doors} paid={paid} perfect={outcome.Perfect} {Sim.State.Date} act={Sim.State.ActIndex} subs={Sim.State.LiveSubscribers} cash={Sim.State.Cash}");
+        bool ok = world && doors && paid && house && auto && lineBuilt && catalogue && board && sysop && clicked && perfect && reloaded.State.Day == Sim.State.Day && Sim.State.ActIndex >= 1;
+        GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: doors={doors} paid={paid} perfect={perfect} {Sim.State.Date} act={Sim.State.ActIndex} subs={Sim.State.LiveSubscribers} cash={Sim.State.Cash}");
         GetTree().Quit(ok ? 0 : 1);
-    }
-
-    /// <summary>
-    /// A MOCK-UP for the owner, not part of the game: what the frame could look like as a real switchboard with wires and lamps
-    /// (docs/DESK_AND_DAY_DESIGN.md). Built only for this screenshot, then thrown away.
-    /// </summary>
-    private async Task ConceptSwitchboard(Camera3D cam, string path)
-    {
-        _board.Close();
-        await ToSignal(GetTree().CreateTimer(0.6), SceneTreeTimer.SignalName.Timeout);
-        var mock = new Node3D { Position = new Vector3(-1.0f, 1.35f, -RoomBuilder.D / 2 + 0.55f) };
-        _town.Hq.AddChild(mock);
-        var lp = new LowPoly();
-        var ply = new Color(0.72f, 0.58f, 0.4f); var brass = new Color(0.8f, 0.66f, 0.3f); var paper = new Color(0.95f, 0.93f, 0.85f);
-        lp.Box(Vector3.Zero, new Vector3(1.9f, 1.3f, 0.04f), ply).Box(new Vector3(0, -0.56f, 0.09f), new Vector3(1.9f, 0.04f, 0.2f), ply * 0.85f);   // board and shelf
-        void Text3(string t, Vector3 at, float size, Color col) => mock.AddChild(new Label3D { Text = t, Position = at, FontSize = 48, PixelSize = size / 48f, Modulate = col, OutlineSize = 0 });
-        Text3("SUBSCRIBERS", new Vector3(-0.62f, 0.53f, 0.03f), 0.05f, new Color(0.15f, 0.1f, 0.05f));
-        Text3("BOARD PORTS", new Vector3(0.5f, 0.53f, 0.03f), 0.05f, new Color(0.15f, 0.1f, 0.05f));
-        Text3("LINES IN", new Vector3(0.0f, 0.6f, 0.03f), 0.04f, new Color(0.15f, 0.1f, 0.05f));
-        string[] names = { "D. Brennan", "C. Achebe", "Lindqvist", "T. Okafor", "H. Moss", "▒▒▒▒▒▒", "P. Duarte", "▒▒▒▒" };
-        var wireCols = new[] { new Color(0.8f, 0.15f, 0.12f), new Color(0.15f, 0.3f, 0.8f), new Color(0.9f, 0.8f, 0.2f), new Color(0.15f, 0.6f, 0.25f), new Color(0.9f, 0.9f, 0.88f) };
-        int[] goesTo = { 2, 0, 4, 1, -1, -1, 6, -1 };   // which port each subscriber is jumpered to (-1: not yet)
-        var lit = new HashSet<int> { 0, 2, 6 };
-        for (int i = 0; i < 8; i++)
-        {
-            float y = 0.42f - i * 0.115f;
-            lp.Box(new Vector3(-0.92f + 0.17f, y, 0.025f), new Vector3(0.34f, 0.075f, 0.01f), paper);                // name tag
-            Text3(names[i], new Vector3(-0.75f, y, 0.035f), 0.042f, new Color(0.12f, 0.1f, 0.3f));
-            lp.Box(new Vector3(-0.5f, y, 0.035f), new Vector3(0.05f, 0.05f, 0.03f), brass);                          // subscriber terminal
-            lp.Box(new Vector3(0.4f, y, 0.035f), new Vector3(0.05f, 0.05f, 0.03f), brass);                           // port jack
-            Text3($"{i + 1}", new Vector3(0.5f, y, 0.03f), 0.045f, new Color(0.15f, 0.1f, 0.05f));
-            mock.AddChild(new MeshInstance3D
-            {
-                Position = new Vector3(0.62f, y, 0.04f), Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.05f, 0.03f) },
-                MaterialOverride = lit.Contains(i) ? new StandardMaterial3D { AlbedoColor = new Color(1f, 0.75f, 0.2f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.15f), EmissionEnergyMultiplier = 2 }
-                    : new StandardMaterial3D { AlbedoColor = i == 3 ? new Color(0.5f, 0.08f, 0.06f) : new Color(0.1f, 0.25f, 0.12f) },
-            });
-        }
-        // jumper wires: each hangs in a shallow curve between its two terminals
-        void Jumper(Vector3 from, Vector3 to, Color col)
-        {
-            var prev = from;
-            for (int k = 1; k <= 8; k++)
-            {
-                float t = k / 8f, sag = Mathf.Sin(t * Mathf.Pi);
-                var p = from.Lerp(to, t) + new Vector3(0, -0.07f * sag, 0.08f * sag);
-                var d = p - prev; var z = d.Normalized(); var x = Vector3.Up.Cross(z).Normalized();
-                var seg = new LowPoly().Box(Vector3.Zero, new Vector3(0.012f, 0.012f, d.Length() + 0.004f), col).Instance();
-                seg.Transform = new Transform3D(new Basis(x, z.Cross(x), z), (p + prev) / 2);
-                mock.AddChild(seg);
-                prev = p;
-            }
-        }
-        for (int i = 0; i < 8; i++)
-            if (goesTo[i] >= 0) Jumper(new Vector3(-0.5f, 0.42f - i * 0.115f, 0.05f), new Vector3(0.4f, 0.42f - goesTo[i] * 0.115f, 0.05f), i == 6 ? new Color(0.35f, 0.33f, 0.3f) : wireCols[i % wireCols.Length]);
-        lp.Box(new Vector3(-0.05f, 0.42f - 0.115f * 0.5f, 0.11f), new Vector3(0.2f, 0.06f, 0.005f), new Color(0.85f, 0.15f, 0.1f));
-        Text3("PARTY LINE: LEAVE", new Vector3(-0.05f, 0.42f - 0.115f * 0.5f, 0.115f), 0.028f, Colors.White);
-        for (int i = 0; i < 4; i++)                                                                                   // lines in: two fitted and busy, two empty sockets
-            mock.AddChild(new MeshInstance3D
-            {
-                Position = new Vector3(-0.15f + i * 0.1f, 0.53f, 0.04f), Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.05f, 0.03f) },
-                MaterialOverride = i < 2 ? new StandardMaterial3D { AlbedoColor = new Color(1f, 0.75f, 0.2f), EmissionEnabled = true, Emission = new Color(1f, 0.7f, 0.15f), EmissionEnergyMultiplier = 2 } : new StandardMaterial3D { AlbedoColor = new Color(0.06f, 0.06f, 0.06f) },
-            });
-        // the shelf: tone probe, test handset, spare jumpers on a hook, the test switch
-        lp.Box(new Vector3(-0.7f, -0.5f, 0.1f), new Vector3(0.26f, 0.05f, 0.05f), new Color(0.95f, 0.8f, 0.15f)).Box(new Vector3(-0.55f, -0.5f, 0.1f), new Vector3(0.05f, 0.02f, 0.02f), new Color(0.7f, 0.7f, 0.72f));
-        lp.Box(new Vector3(-0.3f, -0.49f, 0.1f), new Vector3(0.24f, 0.07f, 0.07f), new Color(0.1f, 0.1f, 0.11f));
-        for (int i = 0; i < 5; i++) lp.Box(new Vector3(0.1f + i * 0.035f, -0.36f, 0.04f), new Vector3(0.012f, 0.3f, 0.012f), wireCols[i]);
-        lp.Box(new Vector3(0.17f, -0.2f, 0.04f), new Vector3(0.22f, 0.02f, 0.03f), brass);
-        lp.Box(new Vector3(0.7f, -0.42f, 0.05f), new Vector3(0.16f, 0.2f, 0.03f), new Color(0.15f, 0.15f, 0.16f)).Box(new Vector3(0.7f, -0.36f, 0.12f), new Vector3(0.03f, 0.16f, 0.1f), brass);
-        Text3("probe", new Vector3(-0.68f, -0.43f, 0.1f), 0.03f, paper); Text3("test set", new Vector3(-0.3f, -0.42f, 0.1f), 0.03f, paper);
-        Text3("jumpers", new Vector3(0.17f, -0.15f, 0.06f), 0.03f, new Color(0.15f, 0.1f, 0.05f)); Text3("TEST", new Vector3(0.7f, -0.28f, 0.07f), 0.035f, paper);
-        mock.AddChild(lp.Instance());
-        mock.AddChild(new OmniLight3D { Position = new Vector3(0, 0.3f, 1.2f), LightEnergy = 0.8f, OmniRange = 4 });
-
-        _player.Camera.Current = false; cam.Current = true;
-        cam.GlobalTransform = mock.GlobalTransform * new Transform3D(new Basis(Vector3.Up, 0.18f), new Vector3(0.38f, -0.02f, 1.75f));
-        _hud.Visible = false;
-        await Frames(14);
-        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-concept-switchboard.png"));
-        _hud.Visible = true;
-        mock.QueueFree();
     }
 
     private async Task TakeScreenshot(string path)
@@ -1245,7 +1178,14 @@ public partial class GameRoot : Node3D
         RefreshIdleScreens();
         async Task Inside(string suffix) { await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout); GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", suffix + ".png")); }
         await Inside("-room");
-        UseFrame(); await Inside("-frame"); _frame.Close(); await ToSignal(GetTree().CreateTimer(0.5), SceneTreeTimer.SignalName.Timeout);
+        // the switchboard part-way through a job: one line done properly, one hot-wired, one still to do
+        if (SwitchRules.Pending(Sim.State) is { Count: >= 2 } todo)
+        {
+            SwitchRules.Jumper(Sim.State, todo[0].CustomerId, todo[0].AssignedPort);
+            Sim.ThrowSwitch();
+            SwitchRules.HotWire(Sim.State, todo[1].CustomerId);
+        }
+        _switch.Open(); await Inside("-switchboard"); _switch.Close(); await ToSignal(GetTree().CreateTimer(0.5), SceneTreeTimer.SignalName.Timeout);
         _almanac.Open(InterfaceTier.Terminal); await Inside("-pip"); _almanac.Close(); await ToSignal(GetTree().CreateTimer(0.5), SceneTreeTimer.SignalName.Timeout);
         _notebook.Open(InterfaceTier.Paper); await Inside("-notebook"); _notebook.Close();
         // the Board at half past seven with the whole town on two lines
@@ -1291,7 +1231,6 @@ public partial class GameRoot : Node3D
         Sim.State.Customers.First(c => c.Live && c.Installed).HasAccount = false;
         await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
         _board.Open(InterfaceTier.Terminal); await Inside("-terminal"); _board.Press(2); await Inside("-terminal-files"); _board.Close();
-        await ConceptSwitchboard(cam, path);
         GD.Print($"SHOTS OK fps={Engine.GetFramesPerSecond()}");
         GetTree().Quit();
     }

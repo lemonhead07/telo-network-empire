@@ -95,10 +95,16 @@ public static class StaffRules
             s.Modems--; cust.SocketFitted = true;
             s.Installs.Remove(cust.Id);
         }
-        Simulation.GoLive(s, c, cust);
+        if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s))
+        {
+            if (s.Day % 7 == 0 && m.JobsToday == 0) s.Emit(EventKind.Defect, $"{m.Name} cannot connect {cust.Name}: the switchboard is full. It needs another panel.");
+            return false;
+        }
+        bool sloppy = !rng.ChancePermille(m.AccuracyPermille);
+        SwitchRules.AutoWire(s, c, cust, sloppy);
         s.Assigned.Remove(t.Key);
         m.JobsToday++; m.JobsThisWeek++; s.TechInstalls++;
-        if (!rng.ChancePermille(m.AccuracyPermille))
+        if (sloppy)
             s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + rng.Range(7, 41), Source = "technician", CustomerId = cust.Id, Text = $"an install {m.Name.Split(' ')[0]} swore was tested" });
         if (s.TechInstalls == 1) s.Emit(EventKind.Milestone, $"{m.Name} connected {cust.Name} while you were doing something else. Nobody needed you. It is a strange feeling.", cust.Id);
         return true;

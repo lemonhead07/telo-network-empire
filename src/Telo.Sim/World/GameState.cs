@@ -150,6 +150,31 @@ public sealed class StaffMember
     public int JobsThisWeek { get; set; }
 }
 
+/// <summary>One subscriber's terminal on the switchboard.</summary>
+public sealed class BoardPosition
+{
+    public required string CustomerId { get; set; }
+    /// <summary>The port their number lives on.</summary>
+    public int AssignedPort { get; set; }
+    /// <summary>False while the name tag is too smudged to read.</summary>
+    public bool TagRead { get; set; } = true;
+    /// <summary>The port their jumper currently goes to, or -1 for none.</summary>
+    public int Jumper { get; set; } = -1;
+    public bool HotWired { get; set; }
+    /// <summary>A jumper somebody left loose. Visible, and fixable before it becomes a fault.</summary>
+    public bool Loose { get; set; }
+    public bool EverLive { get; set; }
+}
+
+/// <summary>The switchboard on your wall: who is on which terminal, which ports are bad, how big it is.</summary>
+public sealed class BoardState
+{
+    public int Stage { get; set; }
+    public List<BoardPosition> Positions { get; set; } = new();
+    public List<int> FaultyPorts { get; set; } = new();
+    public List<int> TestedPorts { get; set; } = new();
+}
+
 public sealed class PromiseRecord
 {
     public PromiseStatus Status { get; set; }
@@ -162,7 +187,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 6;
+    public const int CurrentVersion = 7;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -237,6 +262,9 @@ public sealed class GameState
     public Dictionary<string, string> Assigned { get; set; } = new();
     /// <summary>1 Main Street is leased: staff collect their own tickets and are paid by the week.</summary>
     public bool HasDepot { get; set; }
+
+    /// <summary>The switchboard (v7).</summary>
+    public BoardState Switch { get; set; } = new();
     public List<GameEvent> Log { get; set; } = new();
     public int NextId { get; set; } = 1;
 

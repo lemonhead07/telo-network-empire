@@ -1,6 +1,6 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "the working day: lived time, home hours, tickets, Jory, the depot". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-12, commit "the switchboard". Everything is pushed; the working tree is clean.*
 
 ## Where things stand (the demo loop so far)
 1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
@@ -23,18 +23,19 @@ Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and lad
 **The biggest gap now: the town runs out.** 12 houses, a shop and a farm is about 40 minutes of content. After that the only thing left is waiting for June 1984. The next age (Act 1, the bulletin board) has data but no gameplay. That, or a second settlement, is what makes "overlap and pace increase between rounds" real.
 
 ## Plan for next time
-**The owner has answered `docs/DESK_AND_DAY_DESIGN.md`** (decisions D23–D27). Its top section lists what is built and the order of what is next. In short:
+The switchboard is built (2026-11-14); the owner wants to **work on other ideas next**, so ask what they are before picking from this list. The agreed backlog, from `docs/DESK_AND_DAY_DESIGN.md`:
 
-1. **Build the switchboard** (section 1 of that document): replaces `FrameView` and absorbs `LineRack`. Lean in, the mouse is your hand, wires hang between terminals, lamps, a test switch. Use hold-to-work (`Interactable.HoldSeconds`) and show bodged jumpers crooked. Delete `GameRoot.ConceptSwitchboard` (the mock-up) when the real one exists.
-2. **Desk objects that replace the text strip** (cash tin, job spike, card index, telex roll); PIP and highlights explain tasks as they are done.
-3. **Training** (a person earns a new kind of ticket by coming along for three of them) and **each person's own visible place**.
-4. Appointments, night rate for the mail, light tiredness.
-5. Then phase D of `docs/EXPANSION_DESIGN.md`, built as objects.
+1. **Desk objects that replace the text strip** (cash tin, job spike, card index, telex roll); PIP and highlights explain tasks as they are done.
+2. **Training** (a person earns a new kind of ticket by coming along for three of them) and **each person's own visible place**.
+3. Appointments, night rate for the mail, light tiredness.
+4. Phase D of `docs/EXPANSION_DESIGN.md` (invoices, late payers, mixed phone messages, bookkeeper, receptionist), built as objects.
+5. The art track (`docs/ASSET_LIST.md`).
 
 Things to check with the owner after they play this build:
+- The switchboard: is leaning in and clicking with the mouse comfortable? Is it clear which port a tag names (the `›3` on the tag)?
 - Is a day of 8 real minutes the right length now that nothing jumps the clock? (`GameRoot.DayLengthSeconds`)
-- Hold times: a step is held for as long as its game minutes say, between 0.8 and 6 seconds. Too slow, too quick?
-- Handing Jory tickets every morning is deliberate friction until the depot ($150 down). Is it fun or a chore?
+- Hold times: a step is held for as long as its game minutes say, between 0.8 and 6 seconds.
+- Handing Jory tickets every morning is deliberate friction until the depot ($150 down). Fun or a chore?
 - Half the town being out from nine to five on weekdays.
 
 ## Rules to keep

@@ -30,6 +30,7 @@ public static class SaveCodec
             s.StaffMembers ??= new(); s.Assigned ??= new();
             Work.WorkRules.RestoreHires(s, content);
         }
+        if (s.Version < 7) { s.Switch ??= new(); Net.SwitchRules.Rebuild(s, content); } // v7: the switchboard is a persistent object
         s.Version = GameState.CurrentVersion;
         return s;
     }

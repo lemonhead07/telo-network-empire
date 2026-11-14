@@ -20,14 +20,20 @@
 - **1 Main Street:** lease it and staff collect their own tickets and go on a weekly wage.
 - **A wall calendar** with today, pay day, rent day, Sundays and days off, and the time.
 
+- **The switchboard (2026-11-14).** The printed work sheet is gone. One persistent board on the wall: terminals with paper tags, ports with lamps, real jumper wires, a tone probe, a test set, clean and old jumpers on hooks, a test switch. Lean in and the mouse is your hand. Every wire stays where it was put. Live wires are people's telephones. Jory's loose jumpers are visible and can be pushed home before they become faults. The board holds 8 subscribers until a second panel ($120) makes it 16. Port lamps burn bright while that subscriber is on the Board.
+
+![The switchboard in the game](img/switchboard.png)
+
 ### Still to build, in order
 
-1. **The switchboard** (section 1), on the same hold-to-work mechanic, with crooked jumpers you can see.
-2. **The desk objects** that replace the text strip: cash tin, job spike, card index, telex roll. PIP and highlights carry the explaining.
-3. **Training:** a person learns a new kind of ticket by coming along while you do three of them.
-4. **Each person's own place:** Jory at a bench in the depot, Tobi at the terminal, and so on, as visible people.
-5. **Appointments, night rate for the mail, tiredness (light).**
+1. **The desk objects** that replace the text strip: cash tin, job spike, card index, telex roll. PIP and highlights carry the explaining.
+2. **Training:** a person learns a new kind of ticket by coming along while you do three of them.
+3. **Each person's own place:** Jory at a bench in the depot, Tobi at the terminal, and so on, as visible people.
+4. **Appointments, night rate for the mail, tiredness (light).**
+5. **Switchboard stage 2 and 3** (a proper frame at 1 Main Street; later a digital switch), and absorbing the lines-in rack into the board itself.
 6. Then phase D of `EXPANSION_DESIGN.md`, built as objects.
+
+---
 
 ---
 

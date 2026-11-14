@@ -38,7 +38,8 @@ public static class BoardRules
 
     /// <summary>Play out one evening at one exchange. Does not change anything.</summary>
     /// <param name="c">Content, so that products which change calling habits (a fast modem, a second line) count. Optional.</param>
-    public static EveningReport Evening(GameState s, int day, Exchange ex, ContentDb? c = null)
+    /// <param name="onLine">If given, filled with who is on the Board in each half-hour (for the switchboard's lamps).</param>
+    public static EveningReport Evening(GameState s, int day, Exchange ex, ContentDb? c = null, List<string>[]? onLine = null)
     {
         var rng = new DetRng(DetRng.Derive(s.Seed, $"evening:{ex.Id}:{day}"));
         var report = new EveningReport { Day = day, LinesIn = ex.LinesIn, InUse = new int[Slots] };
@@ -57,19 +58,20 @@ public static class BoardRules
                     if (c.Products.TryGetValue(pid, out var prod)) len = Math.Max(1, (len * prod.CallLengthPermille + 500) / 1000);
             arriving[start].Add((cust.Id, len, false));
         }
-        var ends = new List<int>();
+        var ends = new List<(int End, string Id)>();
         for (int t = 0; t < Slots; t++)
         {
-            ends.RemoveAll(e => e <= t);
+            ends.RemoveAll(e => e.End <= t);
             foreach (var (id, len, redial) in arriving[t])
             {
                 report.Attempts++;
-                if (ends.Count < ex.LinesIn) { ends.Add(t + len); continue; }
+                if (ends.Count < ex.LinesIn) { ends.Add((t + len, id)); continue; }
                 report.Engaged++;
                 if (!redial && t + 1 < Slots) arriving[t + 1].Add((id, len, true));   // one more try in half an hour
                 else report.GaveUp.Add(id);
             }
             report.InUse[t] = ends.Count;
+            if (onLine is not null && t < onLine.Length) onLine[t] = ends.Select(e => e.Id).ToList();
             if (ends.Count > report.Peak) { report.Peak = ends.Count; report.BusiestSlot = t; }
         }
         return report;

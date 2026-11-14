@@ -16,5 +16,19 @@ public static class TestContent
     });
 
     public static ContentDb Db => _db.Value;
+    /// <summary>Wire every waiting subscriber the proper way (read the tag, test the port, use a spare if it is bad), then throw the switch.</summary>
+    public static void WireUp(Simulation sim)
+    {
+        var s = sim.State; var b = s.Switch;
+        foreach (var p in Net.SwitchRules.Pending(s))
+        {
+            Net.SwitchRules.ReadTag(s, p.CustomerId);
+            int port = Net.SwitchRules.TestPort(s, p.AssignedPort) ? p.AssignedPort
+                : Net.SwitchRules.SparePorts.First(i => Net.SwitchRules.OnPort(s, i) is null);
+            Net.SwitchRules.Jumper(s, p.CustomerId, port);
+        }
+        sim.ThrowSwitch();
+    }
+
     public static Simulation NewGame(ulong seed = 42) => Simulation.NewGame(Db, seed);
 }
