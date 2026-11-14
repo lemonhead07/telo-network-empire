@@ -3,7 +3,7 @@ using Godot;
 namespace Telo.Game.World;
 
 /// <summary>
-/// The Board's lines in, on the wall beside the frame: one lamp per line (lit while someone is on it), empty sockets for
+/// The Board's lines in, on the wall beside the switchboard: one lamp per line (lit while someone is on it), empty sockets for
 /// lines not yet fitted, and the tally sheet of engaged tones. It only shows what the sim's BoardRules worked out.
 /// </summary>
 public partial class LineRack : Node3D

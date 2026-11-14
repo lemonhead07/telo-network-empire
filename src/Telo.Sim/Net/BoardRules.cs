@@ -94,7 +94,7 @@ public static class BoardRules
     {
         if (s.Cash < CardPrice || !CanAddLine(s)) return false;
         s.Cash -= CardPrice; s.LineCards++;
-        s.Emit(EventKind.Money, $"Bought a line card for ${CardPrice}. It needs fitting beside the frame, and the line is ${LineRentalPerMonth} a month.");
+        s.Emit(EventKind.Money, $"Bought a line card for ${CardPrice}. It needs fitting in the rack beside the switchboard, and the line is ${LineRentalPerMonth} a month.");
         return true;
     }
 

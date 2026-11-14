@@ -36,7 +36,7 @@ public sealed class PipTips
         ["thump"] = "A firm thump and a confident nod. They'll pay. They'll also remember.",
         ["linedone"] = "The farm has dial tone. The county has paid its rural lines grant, and the whole town has heard who built it.",
         ["engaged"] = "Last night someone rang the Board and got the engaged tone. The lamps beside your frame are its lines in. Two is not enough for this many people.",
-        ["card"] = "A line card. It's on the van's tailboard. Carry it in and slot it into the rack beside the frame.",
+        ["card"] = "A line card. It's on the van's tailboard. Carry it in and slot it into the rack beside the switchboard.",
         ["cardfit"] = "One more line in from tonight. Watch the lamps around seven. It also costs rental every month.",
         ["cap"] = "Four lines is all a home-made board can answer. There's a page in my Almanac about rolling calls across more: hunt groups.",
         ["almanac"] = "You've outgrown this chapter and the world hasn't caught up. My Almanac has the page. Recall it early and you start ahead of everyone. It costs Archive, and the world notices.",

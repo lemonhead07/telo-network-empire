@@ -1,54 +1,61 @@
 # Next Session — start here
 
-*Left off: 2026-11-12, commit "the switchboard". Everything is pushed; the working tree is clean.*
+*Left off: 2026-11-14. Branch: `feature/gameplay-rapid` (the same commit is also on `claude/charming-allen-6djprx`). Everything is pushed; the working tree is clean. 64 sim tests and the smoke test pass.*
 
-## Where things stand (the demo loop so far)
-1. **By hand:** sign up neighbours (answering machine, door-knocking), buy modems at Sol's, drive to the house, carry the kit from the van, do the six-stage install, wire the frame. Odd jobs for cash.
-2. **Hire:** with 4 paying subscribers and $300, the company notebook lets you hire a junior technician ($90 a month). The "what next" line tells the player when they can.
-3. **Automated:** the technician connects one waiting customer a day without you, as long as there are modems in stock. They are right 85% of the time.
-4. **The new problem:** wrong installs (theirs, or your own bodges) surface weeks later as faults. A fault keeps hurting that customer until you drive out with the toolbox and fix it. `!` marks the house.
+## Read these, in this order
 
-Van kit: `[E]` pick up, `[G]` put down, use the van to put it back. Drum and ladder are two-handed and slow you. Parking close matters.
+1. **`docs/NEZ_AND_THE_SPINE.md`**: the newest direction. Thinking only; nothing in it is built. Its section 9 has eight questions (N1–N8) for the owner. **Ask the owner for their answers before building from it.**
+2. `CLAUDE.md`: how every built system works.
+3. `docs/DECISIONS.md`: D1–D29.
 
-5. **New infrastructure:** with installs running themselves, the "what next" line sends the player to build the pole line to Hollow Farm: 14 poles beside the farm road. Take a pole off the van roof, plant it at the yellow marker ($15, 30 min), then string each span from the blue marker (cable drum and ladder, 15 min). The last span reaches the farmhouse and connects Ruth Adeyemi. The old "Connect them ($350)" button is gone for her: this line can only be built.
+## What the owner wants next (their words, 2026-11-14)
 
-**The first hour is staged.** A new game starts with one phone message and nothing else: no odd jobs, no door-knocking, no Almanac notices, a short HUD. Each thing appears only after the one before has been done once: answering machine → install → frame → first odd job → door-knocking → everything. Later systems were already gated (the hire needs 4 subscribers, faults come weeks later, pole-line markers appear after the hire).
+- A branch for **rapid gameplay development**. Modelling and animation later.
+- The game **fully playable by an in-game character, programmatically**, who can do every action the player can. This character is **Nez**, the opponent to beat: starts on the far side of the planet, already owning the infrastructure. An overthrow-the-monopoly story.
+- That same ability is the **playtest**: play every job in a test.
+- **Mechanically simple, theoretically complex:** few verbs, many jobs, assembling and taking apart many kinds of simple things.
+- **All text on a phone** you can read while walking. "Light hardcore."
+- **One plot, one trajectory, no overlap.** A first five minutes that hints at the depth and shows the player round the room.
+- **Time travel: one text a day.** Texting other people only later in the game.
+- **The day cycle as real gameplay:** a timesheet beside the job board for upcoming jobs; plan a day, then weeks, then months.
 
-**PIP talks as you work.** One short speech bubble the first time you do each thing (`PipTips.cs`). The "▶ next" line is now short. The desk (Almanac, notebook) opens once the basic round is learned; the farm road has a council barrier until the first hire.
+## The build order proposed (section 8 of the new document)
 
-**Owner playtest, 2026-11-12 (10 minutes):** pacing good; still a lot of information; wants polish and each part reviewed in more detail; bubbles are welcome; floating name text on doors should go once there are real models; wants models, textures, walking talking residents, then a gameplay trailer. See `docs/ASSET_LIST.md`.
+1. **Actors and actions in the simulation.** Place, hands, vehicle, travel time move into `src/Telo.Sim`. One question for anyone: "what can this actor do now, and what is stopping the rest?" `GameRoot` (1,200 lines, much of it player-only logic such as `LotAction`, `StartInstall`, `StartBenchJob`, `KitOnSite`) shrinks to showing and forwarding.
+2. **The script player:** a test that plays today's game from the first message to the farm line by choosing actions. No cheats (`GodNextStage` is not this).
+3. **The plot as a data file,** replacing `Onboarding`'s hand-written steps.
+4. **The phone** (PIP in your hand), removing the HUD strip and speech bubbles; the first five minutes.
+5. **The day planner** beside the ticket rail.
+6. **Assemblies:** parts, fasteners, connections as data; odd jobs first.
+7. **The walking player** (`--autoplay`).
+8. **Nez.**
 
-**Owner playtest 2, 2026-11-12 (39 minutes, reached 15 Jan 1983):** 13 subscribers (the whole town), technician hired, farm line built. Liked the pacing and the "quiet day" line. Problems: too slow on the calendar; the farm line "didn't feel like I accomplished anything" and paid almost nothing; odd jobs too shallow; wants a way to skip through stages and ages. Done in response: god keys (F1–F4, F6), connection fees, the rural lines grant, sleeping through quiet days, hands-on odd jobs.
+Steps 1 and 2 are the foundation. Do not skip them.
 
-**The biggest gap now: the town runs out.** 12 houses, a shop and a farm is about 40 minutes of content. After that the only thing left is waiting for June 1984. The next age (Act 1, the bulletin board) has data but no gameplay. That, or a second settlement, is what makes "overlap and pace increase between rounds" real.
+## What is built (all on this branch)
 
-## Plan for next time
-The switchboard is built (2026-11-14); the owner wants to **work on other ideas next**, so ask what they are before picking from this list. The agreed backlog, from `docs/DESK_AND_DAY_DESIGN.md`:
+The first hour, staged one thing at a time; walk-in houses and the hands-on install; van kit; the switchboard as a real object; the Board with lines in, engaged tones and line cards; the Board's terminal (callers, file area, night mail); the catalogue of orders; Jory Pike and job tickets handed over in person; pay day and the wall calendar; the depot; who is home by time of day; lived time with hold-to-work; faults and repairs; the pole line to Hollow Farm; early act start through the Almanac; god keys.
 
-1. **Desk objects that replace the text strip** (cash tin, job spike, card index, telex roll); PIP and highlights explain tasks as they are done.
-2. **Training** (a person earns a new kind of ticket by coming along for three of them) and **each person's own visible place**.
-3. Appointments, night rate for the mail, light tiredness.
-4. Phase D of `docs/EXPANSION_DESIGN.md` (invoices, late payers, mixed phone messages, bookkeeper, receptionist), built as objects.
-5. The art track (`docs/ASSET_LIST.md`).
+## Still open from earlier plans (lower priority than the list above)
 
-Things to check with the owner after they play this build:
-- The switchboard: is leaning in and clicking with the mouse comfortable? Is it clear which port a tag names (the `›3` on the tag)?
-- Is a day of 8 real minutes the right length now that nothing jumps the clock? (`GameRoot.DayLengthSeconds`)
-- Hold times: a step is held for as long as its game minutes say, between 0.8 and 6 seconds.
-- Handing Jory tickets every morning is deliberate friction until the depot ($150 down). Fun or a chore?
-- Half the town being out from nine to five on weekdays.
+- Things to ask the owner after they play: day length (8 real minutes), hold times, whether handing Jory tickets each morning is fun, half the town being out nine to five, whether the switchboard is comfortable.
+- `docs/DESK_AND_DAY_DESIGN.md` backlog: training staff, each person's own visible place, appointments, night rate, light tiredness, folding the lines-in rack into the switchboard.
+- `docs/EXPANSION_DESIGN.md`: phase D (invoices, late payers, bookkeeper, receptionist) and the places beyond the farm.
+- `docs/ASSET_LIST.md`: all of it.
 
 ## Rules to keep
-- Outcomes and defects are decided in `src/Telo.Sim`; Godot only shows and drives it.
-- No overlay menus: any reading/clicking surface is a `WorldScreen` or an object in the world.
-- Develop lots, test little: compile + screenshot; full tests only before a commit that changes sim rules.
+
+- Outcomes are decided in `src/Telo.Sim`; Godot only shows and drives it.
+- Time is lived, not spent: never jump the clock for work.
+- Develop lots, test little: compile and screenshot; full tests only before a commit that changes sim rules.
+- Everything new ships as a labelled box first.
 
 ## Known rough edges
-- Kit you put down, and odd jobs or orders in progress, are forgotten on save/load (the install itself is now saved).
-- Pole line: poles go in fixed sites in order; you can't choose the route. Wires are straight (no sag).
-- Repair is a single press at the door (needs the toolbox with you).
-- The technician is invisible; you only see the results.
-- Act 1 itself still waits for the June 1984 announcement; the first hire no longer does.
-- House interiors are one template; no residents visible. Markers show through walls indoors.
-- You can drive through trees; the shop and farm are solid boxes.
-- The HUD text strip is still an overlay. The frame is still a printed work sheet.
+
+- Kit you put down, and odd jobs or orders in progress, are forgotten on save and load.
+- Repair is a single hold at the door.
+- Jory is the only visible member of staff; Tobi is not shown.
+- The shop and farm are solid boxes; buying a line card is `R` at Sol's counter.
+- PIP's bubble can cover the bottom of the switchboard.
+- Floating name text on doors; `$`, `▼` and `!` markers show through walls.
+- The HUD text strip is still an overlay.

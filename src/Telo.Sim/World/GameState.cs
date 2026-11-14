@@ -15,13 +15,13 @@ public sealed class Customer
     public int Satisfaction { get; set; } = 70;
     public int JoinedDay { get; set; }
     public bool Live { get; set; } = true;
-    /// <summary>False until someone physically wires them in at the frame. Nothing works just because it was sold.</summary>
+    /// <summary>False until someone physically jumpers them in at the switchboard. Nothing works just because it was sold.</summary>
     public bool Installed { get; set; } = true;
     /// <summary>Set when this customer came from the Promise Ledger — a named person, not a number.</summary>
     public string? PremiseId { get; set; }
     /// <summary>The building they live in, if any.</summary>
     public string? LotId { get; set; }
-    /// <summary>The wall socket and modem are in at their house. Needed before the frame work means anything.</summary>
+    /// <summary>The wall socket and modem are in at their house. Needed before the switchboard work means anything.</summary>
     public bool SocketFitted { get; set; } = true;
     /// <summary>Which exchange their line runs to (v4).</summary>
     public string ExchangeId { get; set; } = "ex-town";

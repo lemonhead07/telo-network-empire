@@ -54,7 +54,7 @@ public static class Guidance
         }
 
         // the Board is full of an evening: more lines in
-        if (s.LineCards > 0) return ("Fit the line card beside the frame in your room.", null);
+        if (s.LineCards > 0) return ("Fit the line card in the rack beside the switchboard.", null);
         if (s.LastEvening is { GaveUp.Count: >= 2 } eve)
         {
             if (BoardRules.CanAddLine(s))

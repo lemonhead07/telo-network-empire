@@ -329,14 +329,6 @@ public sealed class Simulation
         if (State.Customers.Any(c => c.Id == job.CustomerId && c.Live && !c.SocketFitted)) State.Installs[job.CustomerId] = job.Snapshot();
     }
 
-    /// <summary>Send the technician if the 'install' work kind has been delegated; otherwise the player does it by hand.</summary>
-    public InstallOutcome? TryDelegateInstall(InstallJob job)
-    {
-        var stage = WorkRules.Current(State, Content, "install");
-        if (stage.Mode == WorkMode.Manual) return null;
-        return job.Delegate(_rng.NextU64(), stage.AccuracyPermille);
-    }
-
     /// <summary>Sign off a house install: the modem leaves stock, the socket is in, and any bodges go into the wall as latent defects.</summary>
     public bool ApplyInstallOutcome(InstallOutcome o)
     {

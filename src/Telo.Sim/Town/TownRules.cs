@@ -13,7 +13,7 @@ public enum KnockResult { NobodyHome, NotInterested, SignedUp, AlreadySigned, To
 public static class TownRules
 {
     public const long ModemPrice = 35;
-    public const int SocketHours = 1, KnockMinutes = 10, RepairMinutes = 45;
+    public const int RepairMinutes = 45;
     public const Tools RepairNeeds = Tools.Toolbox;
 
     private static readonly Dictionary<string, int> Interest = new()

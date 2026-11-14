@@ -5,7 +5,7 @@ namespace Telo.Game.World;
 
 /// <summary>
 /// A screen that exists in the world: the UI is drawn onto the surface of an object (a handset, a notebook page,
-/// the frame board). Using the object leans the camera in; the mouse then clicks on the object itself.
+/// the Board's terminal). Using the object leans the camera in; the mouse then clicks on the object itself.
 /// There are no floating menus — if you can read it, it is somewhere.
 /// </summary>
 public partial class WorldScreen : Node3D

@@ -57,9 +57,9 @@ PIP's speech bubbles stay (the owner approved them), and so does a small prompt 
 
 Replaces the frame's printed work sheet and absorbs the "lines in" rack that sits beside it.
 
-![Mock-up of the switchboard](img/concept-switchboard.png)
+![The switchboard as built](img/switchboard.png)
 
-*A mock-up built in the game engine for this document. It is a picture, not yet a working object.*
+*The switchboard as built on 2026-11-14.*
 
 **What is on it**
 

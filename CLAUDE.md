@@ -4,7 +4,7 @@
 
 First-person, open-world telecom business sim, 1983–2035, set on **one small planet** (2.5 km radius, ~16 km lap) that you walk, drive, sail and fly around, and eventually launch satellites from. You start alone wiring a frame in a rented room and end up running infrastructure millions depend on. **The core idea: the job itself changes as you play.** Verbs you do by hand become delegated, then automated, and the interface you see goes from paper to terminal to database to dashboard.
 
-**Starting a session? Read `docs/NEXT_SESSION.md` first.** **What the game becomes after the first hour, and the order to build it: `docs/EXPANSION_DESIGN.md`** (the five-job loop, the Board and line capacity, places on the planet, rounds, phases A–J). **Agreed direction for interfaces, time and staff: `docs/DESK_AND_DAY_DESIGN.md`** (every panel becomes an object, starting with a real switchboard; time is lived, not spent; tickets handed to staff in person). Its top section lists what is built and what is next. Models, textures, characters and the trailer plan: `docs/ASSET_LIST.md`. Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`.
+**Starting a session? Read `docs/NEXT_SESSION.md` first.** **Newest direction (2026-11-14, thinking only, awaiting the owner's answers): `docs/NEZ_AND_THE_SPINE.md`**: every player action becomes a sim action anyone can perform (a test, staff, and Nez the opponent), one plot line, all text on a phone, a day planner. Where it conflicts with the two design docs below, it is newer. Rapid gameplay work happens on the branch `feature/gameplay-rapid`; models and animation come later. **What the game becomes after the first hour, and the order to build it: `docs/EXPANSION_DESIGN.md`** (the five-job loop, the Board and line capacity, places on the planet, rounds, phases A–J). **Agreed direction for interfaces, time and staff: `docs/DESK_AND_DAY_DESIGN.md`** (every panel becomes an object, starting with a real switchboard; time is lived, not spent; tickets handed to staff in person). Its top section lists what is built and what is next. Models, textures, characters and the trailer plan: `docs/ASSET_LIST.md`. Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`.
 
 ## Layout
 
@@ -80,7 +80,7 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 
 - `game/content/lots.json`: every building someone lives or works in (site, east/south offsets, resident, archetype, fee). `TownBuilder` builds them; `GameRoot.LotAction` decides what each door offers from sim state.
 - `Telo.Sim/Town/TownRules.cs`: door-knocking, odd jobs (cash + goodwill), modem stock, fitting sockets. `Guidance.Next` gives the "what next" line and target lot (shown as ▼ above the building; `$` marks an odd job).
-- **One thing at a time** (`Telo.Sim/Town/Onboarding.cs`): a new game introduces the answering machine → the install → the frame → an odd job → door-knocking, then everything (`Free`). The step is derived from the save, never stored. It gates odd-job offers, knocking, word-of-mouth calls, and which HUD numbers show; `Guidance.Next` explains each step once. When adding a new system, decide which step first shows it.
+- **One thing at a time** (`Telo.Sim/Town/Onboarding.cs`): a new game introduces the answering machine → the install → the switchboard → an odd job → door-knocking, then everything (`Free`). The step is derived from the save, never stored. It gates odd-job offers, knocking, word-of-mouth calls, and which HUD numbers show; `Guidance.Next` explains each step once. When adding a new system, decide which step first shows it.
 - **PIP's speech bubbles** (`game/scripts/UI/PipTips.cs`, `Hud.Say`): one short bubble the first time the player does each thing, fired from the action itself (pick up kit, first step, bodge, test, sign-off, hire, first fault…). The owner approved bubbles as an exception to "no overlays". Keep the top "▶ next" line short; explanations belong in a bubble. New systems should add a line here.
 - **Held back until needed** (`Onboarding`): the Almanac and notebook open at `Free` (`DeskOpen`); the road out of town has a council barrier and no farm odd jobs until the first hire or first pole (`RoadOpen`).
 - **God keys** (owner's testing tool): `F1` lists them, `F2` +$500, `F3` next day, `F4` finishes whatever the game is asking for (`Simulation.GodNextStage`: each first-hour step, then the hire, the pole line, the rest of the town, then the next act), `F6` jumps to the next act (`GodNextAct`).
@@ -103,7 +103,7 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 - **Van kit** (`game/scripts/Player/Cargo.cs`): cable drum, ladder, toolbox and a boxed modem ride on the van. `[E]` picks one up (one thing in your hands; drum and ladder slow you), `[G]` puts it down, using the van puts it back. Kit is "on site" when held or lying within 6 m of you. What each step needs is a sim rule (`InstallJob.Needs`, `TownRules.RepairNeeds`, the `Tools` flags). Not saved: after a load it is all back on the van.
 - **First automation stage** (`work.json` → `install` stage 1, $300, needs 4 paying subscribers): hires Jory Pike. Jory connects customers whose tickets they hold (see Tickets and staff), needs modems in stock, and is right 85% of the time. The player can still do any install by hand.
 - **Faults**: a latent defect that surfaces at a real address becomes a `Fault` in `GameState.Faults`. The line stays bad (satisfaction −2 a day) until the player drives out with the toolbox and fixes it at the door (`TownRules.Repair`). `!` marks the house.
-- **Pole lines** (`Telo.Sim/Build/LineRules.cs`, `game/scripts/World/PoleLineView.cs`): a premise with `poleLine` in `premises.json` can't be bought, only built. Pole sites run beside a `PlanetGen` road; plant each pole (needs a pole from the van, $15, 30 min), then string each span (cable drum + ladder, 15 min). The last span connects the premise. Progress is `GameState.Lines` (save version 3).
+- **Pole lines** (`Telo.Sim/Build/LineRules.cs`, `game/scripts/World/PoleLineView.cs`): a premise with `poleLine` in `premises.json` can't be bought, only built. Pole sites run beside a `PlanetGen` road; plant each pole (hold E; needs a pole from the van, $15), then string each span (hold E; cable drum + ladder). The last span connects the premise. Progress is `GameState.Lines`.
 - Houses (`LotKind.House`) are hollow and enterable: the door opens when the resident lets you in for an install. The shop and farm are still solid boxes.
 - `PlanetGen.Roads`: graded routes that cut/fill terrain; `IsPaved` makes the van full speed on roads and in settlements, half speed off-road. Road surfaces are ray-cast onto the terrain (`TownBuilder.BuildRoads`).
 
@@ -132,7 +132,7 @@ Decision D15 (changed 2026-11-12). Two stages:
 1. Write a pure class in `src/Telo.Sim/Minigames/<Name>/` with: `Generate(seed, ...)`, the player verbs, `Evaluate()`, and `Delegate(seed, accuracy)`.
 2. Tests: same seed gives the same puzzle; the proper solution is perfect; the chaos option leaves latent defects; the soft clock never fails.
 3. Add `Simulation.Apply<Name>Outcome` to turn the result into state changes.
-4. Add a `ModalView` UI in `game/scripts/UI/` (later: make it diegetic, in the 3D world), and an `Interactable` in the room.
+4. Show it as an object in the world (D26): click points on the thing itself like `InstallSite`, or a station you lean into like `SwitchboardStation`. Steps that take time use `Interactable.HoldSeconds`. Not a `ModalView` panel.
 
 ## Gotchas
 
@@ -143,4 +143,5 @@ Decision D15 (changed 2026-11-12). Two stages:
 - Use `SetAnchorsAndOffsetsPreset`, not `SetAnchorsPreset`, for full-screen Controls (the latter left modals collapsed).
 - Content JSON is camelCase and enums are camelCase strings (`"mode": "delegated"`).
 - Exported builds need `include_filter="content/*.json"` (already in `export_presets.cfg`).
-- Economy is **not balanced yet**: Act 0 runs at a loss because counter-trade/odd-job income isn't built. See `docs/BUILD_PLAN.md`.
+- The economy has had one rough pass (a test checks a fully connected town with a technician turns a modest profit). Prices, wages and fees are still first guesses.
+- `--smoke` and `--shot` set `GameRoot._ignoreHours` and `_kitEverywhere`; a check that depends on the time of day or on kit must set them back itself.

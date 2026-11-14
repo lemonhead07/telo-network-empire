@@ -442,7 +442,7 @@ public partial class GameRoot : Node3D
                 ? ($"Fit the wall socket for {cust.Name} (uses a modem)", () => TownRules.FitSocket(s, cust.Id))
                 : ($"{cust.Name} is waiting for a socket. You have no modems (Sol's Electronics sells them)", null);
         if (cust is not null)
-            return (cust.Installed ? $"{lot.Resident}: subscriber, satisfaction {cust.Satisfaction}%" : $"{lot.Resident}: socket fitted. Wire their line at the frame", null);
+            return (cust.Installed ? $"{lot.Resident}: subscriber, satisfaction {cust.Satisfaction}%" : $"{lot.Resident}: socket fitted. Jumper their line at the switchboard", null);
 
         if (lot.Premise is not null)
             return ($"{lot.Resident}: \"A line out here? I've asked twice.\" (Promise Ledger, in your notebook)", null);
@@ -951,7 +951,7 @@ public partial class GameRoot : Node3D
             await Physics(30);
         }
 
-        // --- install: sockets, then the frame on its in-world screen ---
+        // --- install: sockets, then the switchboard, by real mouse clicks ---
         QuickCustomers(3);
         _switch.Open();
         await ToSignal(GetTree().CreateTimer(0.6), SceneTreeTimer.SignalName.Timeout);
