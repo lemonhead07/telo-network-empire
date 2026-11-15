@@ -8,9 +8,26 @@ public enum WorkMode { Manual, Delegated, Automated }
 /// <summary>How the player *sees* a kind of work. The UI literally changes as this climbs.</summary>
 public enum InterfaceTier { Paper, Terminal, Database, Dashboard }
 
-public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries }
+public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries, Customers, SocketsFitted, JobsDone, Knocked }
 
 public sealed record Condition(ConditionKind Kind, long Value);
+
+/// <summary>
+/// One chapter of the plot (game/content/plot.json). Chapters run in one line, never overlapping: the current chapter is the first
+/// whose <see cref="DoneWhen"/> is not yet met (any one condition finishes it). Each teaches one thing; the last has no end.
+/// </summary>
+public sealed record ChapterDef
+{
+    public required string Id { get; init; }
+    public string Title { get; init; } = "";
+    /// <summary>Which first-hour step this chapter is (everything after the first hour is "free").</summary>
+    public Town.OnboardingStep Step { get; init; } = Town.OnboardingStep.Free;
+    /// <summary>The action (by id prefix) this chapter teaches. The bot and the phone use it.</summary>
+    public string Teaches { get; init; } = "";
+    /// <summary>The morning text that opens the chapter (on the phone).</summary>
+    public string Text { get; init; } = "";
+    public List<Condition> DoneWhen { get; init; } = new();
+}
 
 public sealed record ActDef
 {

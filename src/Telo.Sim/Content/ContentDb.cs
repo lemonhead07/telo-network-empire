@@ -13,6 +13,8 @@ public sealed class ContentDb
     public IReadOnlyDictionary<string, PremiseDef> Premises { get; }
     public IReadOnlyDictionary<string, LotDef> Lots { get; }
     public IReadOnlyDictionary<string, ProductDef> Products { get; }
+    /// <summary>The plot: chapters in order (plot.json).</summary>
+    public IReadOnlyList<ChapterDef> Plot { get; }
 
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -26,7 +28,7 @@ public sealed class ContentDb
 
     public ContentDb(IEnumerable<ActDef> acts, IEnumerable<AnnouncementDef> announcements,
         IEnumerable<AlmanacEntryDef> almanac, IEnumerable<WorkKindDef> work, IEnumerable<PremiseDef> premises,
-        IEnumerable<LotDef>? lots = null, IEnumerable<ProductDef>? products = null)
+        IEnumerable<LotDef>? lots = null, IEnumerable<ProductDef>? products = null, IEnumerable<ChapterDef>? plot = null)
     {
         Acts = acts.OrderBy(a => a.Index).ToList();
         Announcements = announcements.ToDictionary(a => a.Id);
@@ -35,6 +37,7 @@ public sealed class ContentDb
         Premises = premises.ToDictionary(p => p.Id);
         Lots = (lots ?? Array.Empty<LotDef>()).ToDictionary(l => l.Id);
         Products = (products ?? Array.Empty<ProductDef>()).ToDictionary(p => p.Id);
+        Plot = (plot ?? Array.Empty<ChapterDef>()).ToList();
         var errors = Validate();
         if (errors.Count > 0) throw new InvalidDataException("Content invalid:\n" + string.Join("\n", errors));
     }
@@ -48,10 +51,10 @@ public sealed class ContentDb
                 : throw new InvalidDataException($"Missing content file {name}.json");
 
         return new ContentDb(Load<ActDef>("acts"), Load<AnnouncementDef>("announcements"),
-            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"), Load<ProductDef>("products"));
+            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"), Load<ProductDef>("products"), Load<ChapterDef>("plot"));
     }
 
-    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json", "products.json" };
+    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json", "products.json", "plot.json" };
 
     public ActDef ActAt(int index) => Acts[Math.Clamp(index, 0, Acts.Count - 1)];
 
@@ -59,6 +62,13 @@ public sealed class ContentDb
     public List<string> Validate()
     {
         var e = new List<string>();
+        // the plot is one line: ids unique, first-hour steps never go backwards, every chapter but the last can finish
+        for (int i = 0; i < Plot.Count; i++)
+        {
+            if (Plot.Take(i).Any(p => p.Id == Plot[i].Id)) e.Add($"plot {Plot[i].Id}: duplicate id");
+            if (i > 0 && Plot[i].Step < Plot[i - 1].Step) e.Add($"plot {Plot[i].Id}: step goes backwards");
+            if (i < Plot.Count - 1 && Plot[i].DoneWhen.Count == 0) e.Add($"plot {Plot[i].Id}: only the last chapter may have no end");
+        }
         for (int i = 0; i < Acts.Count; i++)
         {
             if (Acts[i].Index != i) e.Add($"act {Acts[i].Id}: index {Acts[i].Index} should be {i}");

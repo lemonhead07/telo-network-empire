@@ -1,0 +1,33 @@
+[
+  { "id": "ch-message", "title": "A message on the machine", "step": "enquiry", "teaches": "messages",
+    "text": "…signal. Low battery. Year reads 1983. That can't be right. Your answering machine is blinking.",
+    "doneWhen": [ { "kind": "customers", "value": 1 } ] },
+
+  { "id": "ch-install", "title": "The first install", "step": "install", "teaches": "install:",
+    "text": "Someone wants a line. Everything you need is on the van. Outside wall first, then indoors.",
+    "doneWhen": [ { "kind": "socketsFitted", "value": 1 }, { "kind": "subscribers", "value": 1 } ] },
+
+  { "id": "ch-switchboard", "title": "The switchboard", "step": "frame", "teaches": "switch:",
+    "text": "Their socket is in. The line is still dead until you jumper it at the switchboard in your room.",
+    "doneWhen": [ { "kind": "subscribers", "value": 1 } ] },
+
+  { "id": "ch-oddjob", "title": "Odd jobs", "step": "oddJob", "teaches": "oddjob:",
+    "text": "One subscriber won't cover the rent. A neighbour has something that needs fixing.",
+    "doneWhen": [ { "kind": "jobsDone", "value": 1 }, { "kind": "subscribers", "value": 2 }, { "kind": "staff", "value": 1 } ] },
+
+  { "id": "ch-knock", "title": "Door to door", "step": "knock", "teaches": "knock:",
+    "text": "Customers won't all ring you. Knock on a door.",
+    "doneWhen": [ { "kind": "knocked", "value": 1 }, { "kind": "subscribers", "value": 2 }, { "kind": "staff", "value": 1 } ] },
+
+  { "id": "ch-round", "title": "The round", "step": "free", "teaches": "invest:install",
+    "text": "You know the round now. The phone will ring by itself. When you can afford help, the notebook has the page.",
+    "doneWhen": [ { "kind": "staff", "value": 1 } ] },
+
+  { "id": "ch-farm", "title": "The farm line", "step": "free", "teaches": "pole:",
+    "text": "Ruth Adeyemi has asked politely twice. No fee buys a line out there. You'll have to build it.",
+    "doneWhen": [ { "kind": "ledgerServed", "value": 1 } ] },
+
+  { "id": "ch-open", "title": "The town is yours", "step": "free", "teaches": "",
+    "text": "The farm has dial tone. The whole town has heard who built it. The rest of the planet hasn't.",
+    "doneWhen": [] }
+]
