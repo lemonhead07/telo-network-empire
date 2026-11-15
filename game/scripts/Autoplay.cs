@@ -105,7 +105,7 @@ public partial class GameRoot
 
         await Snap("end", force: true);
         bool farm = Sim.Content.Premises.Values.Where(p => p.PoleLine is not null).All(p => LedgerRules.StatusOf(Sim.State, p.Id) == PromiseStatus.Served);
-        string summary = $"AUTOPLAY {(Done(until) ? "OK" : "STOPPED")}: until={until} {Sim.State.Date} step={Onboarding.Current(Sim.State, _content)} subs={Sim.State.LiveSubscribers} cash={Sim.State.Cash} farm={farm} photos={_shotN} assists={_assists}";
+        string summary = $"AUTOPLAY {(Done(until) ? "OK" : "STOPPED")}: until={until} {Sim.State.Date} step={Onboarding.Current(Sim.State, _content)} act={Sim.State.ActIndex} subs={Sim.State.TotalSubscribers} cash={Sim.State.Cash} farm={farm} photos={_shotN} assists={_assists}";
         _autoLog.Add(summary);
         GD.Print(summary);
         if (_autoDir is not null) Godot.FileAccess.Open($"{_autoDir}/autoplay.txt", Godot.FileAccess.ModeFlags.Write)?.StoreString(string.Join("\n", _autoLog));
