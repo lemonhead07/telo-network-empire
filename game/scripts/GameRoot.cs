@@ -42,11 +42,22 @@ public partial class GameRoot : Node3D
     /// <summary>Seconds into the day (which starts at six), as the sky and lamps want it. The sim owns the clock; this is a view of it.</summary>
     private float _dayClock
     {
-        get => (Sim.State.Minute + _minuteFrac) / Clock.MinutesPerDay * DayLengthSeconds;
-        set { float m = Mathf.Clamp(value / DayLengthSeconds * Clock.MinutesPerDay, 0, Clock.MinutesPerDay - 1); Sim.State.Minute = (int)m; _minuteFrac = m - (int)m; }
+        get => (Sim.State.Minute + _minuteFrac) / SleepRules.Bedtime * DayLengthSeconds;
+        set { float m = Mathf.Clamp(value / DayLengthSeconds * SleepRules.Bedtime, 0, Clock.MinutesPerDay - 1); Sim.State.Minute = (int)m; _minuteFrac = m - (int)m; }
     }
-    /// <summary>Real seconds of holding E for a job step of this many game minutes: exactly as long as the clock says, within reason.</summary>
-    private static float Hold(float minutes) => Mathf.Clamp(minutes * DayLengthSeconds / Clock.MinutesPerDay, 0.8f, 6f);
+    /// <summary>Real seconds of holding E for a job step of this many game minutes: as long as the clock says, within reason, and longer when you're tired.</summary>
+    private float Hold(float minutes) => Mathf.Clamp(minutes * DayLengthSeconds / SleepRules.Bedtime, 0.8f, 6f) * SleepRules.WorkTimePermille(Sim.State) / 1000f;
+
+    /// <summary>
+    /// Where the sun is for a clock hour. Daylight is stretched over the waking day so most of it is light: the sun is up
+    /// from six until nine at night, dusk is short, and the dark after ten belongs to people who should be in bed.
+    /// </summary>
+    private static float SkyHour(float h)
+    {
+        if (h < 6) h += 24;                                  // the small hours (only if you are still up)
+        return h <= 21 ? 6f + (h - 6f) * 12f / 15f           // 06:00-21:00 -> sunrise to sunset
+             : Mathf.Min(18f + (h - 21f) * 1.2f, 24f);       // 21:00-02:00 -> dusk, then night
+    }
     private TicketRail _rail = null!;
     private WallCalendar _calendar = null!;
     private Timesheet _sheet = null!;
@@ -77,7 +88,7 @@ public partial class GameRoot : Node3D
     /// <summary>House installs under way, by lot. Not saved: a half-done job is simply started again.</summary>
     private Dictionary<string, InstallJob> _installs => Sim.Installs;   // the sim keeps the jobs; the houses show them
 
-    private float Hour => (6f + _dayClock / DayLengthSeconds * 24f) % 24f;
+    private float Hour => (6f + _dayClock / DayLengthSeconds * SleepRules.Bedtime / 60f) % 24f;
     private bool AnyScreenOpen => _switch.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen;
 
     public override void _Ready()
@@ -89,6 +100,7 @@ public partial class GameRoot : Node3D
         ulong seed = args.FirstOrDefault(a => a.StartsWith("--seed=")) is { } sa ? ulong.Parse(sa["--seed=".Length..]) : DefaultSeed;
         Sim = _pendingLoad is { } json ? new Simulation(_content, SaveCodec.FromJson(json, _content)) : Simulation.NewGame(_content, seed);
         _pendingLoad = null;
+        Sim.Morning += WakeInBed;
 
         // The world: a small planet, built from the sim's pure terrain function.
         _planet = new PlanetGen(Sim.State.Seed);
@@ -489,7 +501,11 @@ public partial class GameRoot : Node3D
             {
                 if (step == InstallStep.Test) { var r = job.Test(); view.Install.NoteTest(r); _pip.Once(r.DialTone ? "dial" : "nodial"); }
                 else if (rush) { if (job.Rush(step, KitOnSite())) _pip.Once("bodge"); }
-                else if (job.Do(step, KitOnSite())) _pip.Once(step == InstallStep.Modem ? "modem" : "step");
+                else if (job.Do(step, KitOnSite()))
+                {
+                    _pip.Once(step == InstallStep.Modem ? "modem" : "step");
+                    if (Sim.TiredSlip()) { job.Slip(step); _pip.Once("slip"); } // tired hands: it went in crooked
+                }
                 Sim.RecordInstall(job);
                 // the modem is out of its box and on their table: the empty box goes back on the van
                 if (job.IsDone(InstallStep.Modem) && _cargo.Items.FirstOrDefault(i => i.Tool == Tools.ModemBox && i.Where != Carryable.Place.Van) is { } boxed) _cargo.Stow(boxed);
@@ -805,6 +821,25 @@ public partial class GameRoot : Node3D
         _pip.Once("van");
     }
 
+    /// <summary>
+    /// Every day starts in bed. After a proper night you are already there; after falling asleep on your feet at two,
+    /// PIP has got you home, put the kit back on the van and parked it outside.
+    /// </summary>
+    private void WakeInBed(bool collapsed)
+    {
+        if (_player is null || _town is null) return;
+        if (_switch?.IsOpen == true) _switch.Close();
+        if (_van.Driven) ExitVan();
+        if (collapsed)
+        {
+            _cargo.StowHeld();
+            _van.PlaceAt(_town.HqPark, _van.Forward);
+        }
+        var bed = _town.Hq.GetNode<Node3D>("Bed");
+        _player.PlaceAt(bed.GlobalPosition + bed.GlobalBasis.X * 0.9f + _player.Up * 0.3f, _player.Forward);
+        _minuteFrac = 0;
+    }
+
     private void ExitVan()
     {
         _van.SetDriven(false);
@@ -819,11 +854,12 @@ public partial class GameRoot : Node3D
         if (!AnyScreenOpen || _switch.IsOpen)
         {
             // time passes only as it is lived: real seconds become game minutes, and nothing else moves the clock
-            _minuteFrac += (float)delta * Clock.MinutesPerDay / DayLengthSeconds;
+            // the waking day (six till ten) lasts DayLengthSeconds; the night is slept, never lived
+            _minuteFrac += (float)delta * SleepRules.Bedtime / DayLengthSeconds;
             int whole = (int)_minuteFrac;
             if (whole > 0) { _minuteFrac -= whole; Sim.AdvanceMinutes(whole); }
         }
-        _sky.SetHour(Hour);
+        _sky.SetHour(SkyHour(Hour));
         _hud.SetCrosshair(!AnyScreenOpen && !_van.Driven);
         _hud.SetReading(true);   // the phone carries the numbers now
         _phone.Visible = !AnyScreenOpen;
@@ -835,6 +871,8 @@ public partial class GameRoot : Node3D
         if (_slowTick <= 0)
         {
             _slowTick = 0.5f;
+            if (SleepRules.PastBedtime(Sim.State)) _pip.Once("bedtime");
+            if (SleepRules.Level(Sim.State) >= Tiredness.Tired) _pip.Once("tired");
             foreach (var lot in _town.Lots)
             {
                 bool job = TownRules.JobAt(Sim.State, lot.Lot.Id) is not null || TownRules.FaultAt(Sim.State, lot.Lot.Id) is not null;
@@ -1242,7 +1280,7 @@ public partial class GameRoot : Node3D
         // the Board at half past seven with the whole town on two lines
         for (int i = 0; i < 12 && (Sim.State.Staff == 0 || TownRules.Prospects(Sim.State, _content).Any() || !_lines.All(l => LineRules.Complete(Sim.State, _planet, l.Premise))); i++) Sim.GodNextStage(_planet);
         Sim.AdvanceDays(2);
-        _dayClock = DayLengthSeconds * (19.6f - 6f) / 24f;
+        _dayClock = DayLengthSeconds * (19.6f - 6f) * 60f / SleepRules.Bedtime;
         await ToSignal(GetTree().CreateTimer(1.2), SceneTreeTimer.SignalName.Timeout);
         _player.Camera.Current = false; cam.Current = true;
         cam.GlobalTransform = _rack.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0.1f, 0.05f, 1.15f));
@@ -1253,7 +1291,7 @@ public partial class GameRoot : Node3D
         Sim.State.Modems += 4;
         for (int i = 0; i < 6; i++) { Sim.State.MessagesWaiting = 1; Sim.TakeEnquiry(); }
         while (!Clock.IsWorkingDay(Sim.State.Day) || Clock.Weekday(Sim.State.Day) == DayOfWeek.Friday) Sim.AdvanceDay();
-        _dayClock = DayLengthSeconds * (9.5f - 6f) / 24f;
+        _dayClock = DayLengthSeconds * (9.5f - 6f) * 60f / SleepRules.Bedtime;
         SyncPaper();
         if (StaffRules.Tickets(Sim.State, _content).FirstOrDefault(t => _rail.CanUse(t)) is { } pick) _rail.Use(pick);
         cam.GlobalTransform = _rail.GlobalTransform * new Transform3D(new Basis(Vector3.Up, 0.12f), new Vector3(0.62f, 0.02f, 1.75f));
@@ -1268,14 +1306,14 @@ public partial class GameRoot : Node3D
         }
         // Main Street at half past seven on a working day: lit windows and cars show who is in
         _ignoreHours = false;
-        _dayClock = DayLengthSeconds * (19.5f - 6f) / 24f; _slowTick = 0;
+        _dayClock = DayLengthSeconds * (19.5f - 6f) * 60f / SleepRules.Bedtime; _slowTick = 0;
         await Frames(4);
         await Shot("-evening", TownBuilder.Place(_planet, -62, 22, 0, 5).Origin, TownBuilder.Place(_planet, -20, 14, 0, 2).Origin);
-        _dayClock = DayLengthSeconds * (11f - 6f) / 24f; _slowTick = 0;
+        _dayClock = DayLengthSeconds * (11f - 6f) * 60f / SleepRules.Bedtime; _slowTick = 0;
         await Frames(4);
         await Shot("-midday", TownBuilder.Place(_planet, -62, 22, 0, 5).Origin, TownBuilder.Place(_planet, -20, 14, 0, 2).Origin);
         _ignoreHours = true;
-        _dayClock = DayLengthSeconds * (19.6f - 6f) / 24f;
+        _dayClock = DayLengthSeconds * (19.6f - 6f) * 60f / SleepRules.Bedtime;
         // the sysop's terminal, with a caller waiting and uploads to look through
         cam.Current = false; _player.Camera.Current = true;
         Sim.GodNextAct(); Sim.AdvanceDays(8);

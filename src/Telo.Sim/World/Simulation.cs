@@ -123,16 +123,43 @@ public sealed class Simulation
     {
         while (minutes > 0)
         {
-            int step = Math.Min(minutes, Clock.MinutesPerDay - State.Minute);
+            // nobody lives the small hours: at two you fall asleep where you stand (see Town/SleepRules)
+            int limit = State.Minute < SleepRules.Collapse ? SleepRules.Collapse : Clock.MinutesPerDay;
+            int step = Math.Min(minutes, limit - State.Minute);
             State.Minute += step; minutes -= step;
+            if (State.Minute >= SleepRules.Collapse && State.Minute < Clock.MinutesPerDay) { PassOut(); break; }
             if (State.Minute >= Clock.MinutesPerDay) { State.Minute = 0; AdvanceDay(); }
             else StaffRules.Clocked(State, Content, _rng);
         }
         State.RngState = _rng.State;
     }
 
-    /// <summary>Go to bed: it is seven the next morning.</summary>
-    public void Sleep() { AdvanceDay(); State.Minute = 60; }
+    /// <summary>Every morning begins in bed. The presentation puts the player there when this fires (true: they collapsed and were brought home).</summary>
+    public event Action<bool>? Morning;
+
+    /// <summary>Go to bed: you wake after a night's sleep (six at the earliest, nine at the latest), owing whatever the night didn't give you.</summary>
+    public void Sleep() => Sleep(collapsed: false);
+
+    private void Sleep(bool collapsed)
+    {
+        int wake = SleepRules.Sleep(State, collapsed);
+        AdvanceDay();
+        State.Minute = wake;
+        var lvl = SleepRules.Level(State);
+        if (collapsed) State.Emit(EventKind.Info, "You woke up in your own bed with your boots on. PIP: \"You fell asleep standing up. I got you home. Don't do that.\"");
+        else if (lvl >= Tiredness.Exhausted) State.Emit(EventKind.Info, $"PIP: \"{State.SleepDebt / 60} hours of sleep short. Your hands will shake. Early night tonight.\"");
+        Morning?.Invoke(collapsed);
+    }
+
+    private void PassOut() => Sleep(collapsed: true);
+
+    /// <summary>Did tiredness spoil a step that was done properly? Seeded, so the same game slips the same way.</summary>
+    public bool TiredSlip()
+    {
+        bool slip = _rng.ChancePermille(SleepRules.SlipPermille(State));
+        State.RngState = _rng.State;
+        return slip;
+    }
 
     /// <summary>A line goes live: the customer starts paying, beginning with a connection fee in your hand today.</summary>
     private void GoLive(Customer c) => GoLive(State, Content, c);

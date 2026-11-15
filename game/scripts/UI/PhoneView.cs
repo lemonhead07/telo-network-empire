@@ -39,7 +39,8 @@ public partial class PhoneView : ModalView
         string counters = $"${s.Cash}"
             + (step >= OnboardingStep.OddJob ? $"   {s.LiveSubscribers} on the network" : "")
             + (step >= OnboardingStep.Install ? $"   {s.PendingInstalls} waiting   {s.Modems} modem{(s.Modems == 1 ? "" : "s")}" : "")
-            + (s.Faults.Count > 0 ? $"   {s.Faults.Count} fault{(s.Faults.Count == 1 ? "" : "s")}" : "");
+            + (s.Faults.Count > 0 ? $"   {s.Faults.Count} fault{(s.Faults.Count == 1 ? "" : "s")}" : "")
+            + (Telo.Sim.Town.SleepRules.Describe(s) is { } tired ? $"   [{tired}]" : "");
         Text(Body, counters, 54);
         if (_next.Length > 0) Text(Body, _next, 54);
         // working on an install: your time against Nez's by-the-book par

@@ -38,7 +38,7 @@ public partial class GameRoot
         float speed = args.FirstOrDefault(a => a.StartsWith("--autoplay-speed=")) is { } sp ? float.Parse(sp.Split('=')[1]) : 1f;
         float minutes = args.FirstOrDefault(a => a.StartsWith("--autoplay-minutes=")) is { } mn ? float.Parse(mn.Split('=')[1]) : 30f;
         Engine.TimeScale = speed;
-        Me.OnSiteOverride = KitOnSite;
+        Me.OnSiteOverride = KitInWorkArea;
         await Frames(40);
         await Snap("start", force: true);
 
@@ -95,7 +95,9 @@ public partial class GameRoot
                 await Use(item);
                 break;
             case "put":
-                if (lot is { Install: not null }) await WalkTo(lot.Body.ToGlobal(new Vector3(0.6f, TownBuilder.HouseFloor + 0.1f, 2.2f)), 0.5f);
+                // hands are for carrying; the work area is for working. Put it down where the next step that needs it is done,
+                // so it is in reach there, and the hands are free to fetch the next piece
+                if (WorkArea(lot) is { } area) await WalkTo(area, 1.2f);
                 _cargo.Drop();
                 break;
             case "stow": await Use(_van.Door); break;
@@ -218,10 +220,37 @@ public partial class GameRoot
     {
         var target = WorldOf(place);
         float dist = (target - BodyPos()).Length();
-        if (_cargo.Held is null && dist > (float)Places.DriveOverM) await Drive(target);
+        if (_cargo.Held is null && dist > (float)Places.DriveOverM) { await Drive(ParkOf(place) ?? target); Me.VanAt = place; }
         else await WalkTo(target, 1.0f);
         Me.Place = place;
     }
+
+    /// <summary>
+    /// The work area here: where the next step of the job is done (the eaves for the drop wire, the skirting for the cable,
+    /// the bench for an odd job, the door for a repair, the pole). Kit put down here counts as on site when that step is done.
+    /// Null when there's no job here: put it down where you stand.
+    /// </summary>
+    private Vector3? WorkArea(LotView? lot)
+    {
+        if (lot?.Install is { } site && Sim.Installs.TryGetValue(lot.Lot.Id, out var job))
+            return job.NextStep is { } step && site.SpotFor(step) is { } spot ? spot.GlobalPosition : site.Phone.GlobalPosition;
+        if (lot is not null && _oddJobs.TryGetValue(lot.Lot.Id, out var bench)) return bench.Bench.GlobalPosition;
+        if (lot is not null && TownRules.FaultAt(Sim.State, lot.Lot.Id) is not null) return lot.Door.GlobalPosition;
+        if (Places.IsPole(Me.Place, out _, out _)) return WorldOf(Me.Place);
+        return null;
+    }
+
+    /// <summary>
+    /// What kit is in reach of the next step, judged from where that step is done rather than where we happen to stand:
+    /// the drop wire's clips run along the wire, so the drum and ladder have to follow them.
+    /// </summary>
+    private Tools KitInWorkArea() =>
+        _kitEverywhere ? Tools.All
+        : WorkArea(_town.Lots.FirstOrDefault(l => l.Lot.Id == Me.Place)) is { } p ? _cargo.OnSite(p) : KitOnSite();
+
+    /// <summary>Where the van stops for a place: its driveway (or yard, or forecourt). Null where there is none, such as a pole by the road.</summary>
+    private Vector3? ParkOf(string place) =>
+        place == Places.Room ? _town.HqPark : _town.Lots.FirstOrDefault(v => v.Lot.Id == place)?.Park;
 
     private Vector3 BodyPos() => _van.Driven ? _van.GlobalPosition : _player.GlobalPosition;
 
@@ -290,40 +319,101 @@ public partial class GameRoot
             EnterVan();
             await Seconds(0.4f);
         }
-        float t = 0, stuck = 0;
-        bool shotMid = false;
-        while (t < 90)
+        // keep to the roads: along Main Street, in at the driveway, out along the road; never across lawns and through houses
+        _roadNet ??= new RoadNet(_planet, _town, GetWorld3D().DirectSpaceState, new Godot.Collections.Array<Rid> { _van.GetRid(), _player.GetRid() });
+        var route = _roadNet.Route(_van.GlobalPosition, target);
+        float length = 0; var at = _van.GlobalPosition;
+        foreach (var p in route) { length += at.DistanceTo(p); at = p; }
+        float limit = 40 + length / 4f;
+
+        float t = 0, stuck = 0, nearT = 0;
+        int i = 0, stucks = 0, decided = -1;
+        bool shotMid = false, reversing = false;
+        Vector3 backTo = Vector3.Zero;
+        while (t < limit)
         {
             var up = _van.Up;
-            var d = target - _van.GlobalPosition;
-            var flat = d - up * d.Dot(up);
-            float dist = flat.Length();
-            if (dist < 7) break;
-            float angle = _van.Forward.SignedAngleTo(flat.Normalized(), up);
-            float steer = Mathf.Clamp(angle * 1.8f, -1f, 1f);
-            Input.ActionRelease("move_left"); Input.ActionRelease("move_right");
+            Vector3 Flat(Vector3 v) => v - up * v.Dot(up);
+            bool last = i == route.Count - 1;
+            var to = Flat(route[i] - _van.GlobalPosition);
+            float dist = to.Length();
+
+            if (decided != i)
+            {
+                // a point close behind (backing out of a driveway): reverse out, swinging the tail away from where we're going next,
+                // so the van ends up in the street pointing the right way instead of turning circles on the lawn
+                decided = i;
+                reversing = Mathf.Abs(_van.Forward.SignedAngleTo(to.Normalized(), up)) > 2.0f && dist < 20;
+                var next = last ? Vector3.Zero : Flat(route[i + 1] - route[i]).Normalized();
+                backTo = route[i] - next * 3.5f;
+            }
+            if (reversing)
+            {
+                var back = Flat(backTo - _van.GlobalPosition);
+                if (back.Length() < 2.5f) { reversing = false; if (!last) { i++; decided = i; } continue; }
+                to = back; dist = back.Length();
+            }
+            else
+            {
+                if (!last && dist < 5f) { i++; stucks = 0; continue; }
+                // parked: on the spot, or it has been circling close by for a while (the van can't turn that tight)
+                if (last && dist < 6f) nearT += (float)GetPhysicsProcessDeltaTime();
+                if (last && (dist < 1.8f || (dist < 3.5f && Mathf.Abs(_van.Speed) < 0.6f)
+                    || (nearT > 2.5f && Mathf.Abs(_van.Forward.SignedAngleTo(to.Normalized(), up)) > 0.8f))) break;
+            }
+
+            float angle = _van.Forward.SignedAngleTo(to.Normalized(), up);
+            foreach (var a in new[] { "move_forward", "move_back", "move_left", "move_right" }) Input.ActionRelease(a);
+            float steer;
+            if (reversing)
+            {
+                float back = (-_van.Forward).SignedAngleTo(to.Normalized(), up);
+                steer = -Mathf.Clamp(back * 1.8f, -1f, 1f);
+                Input.ActionPress("move_back", Mathf.Clamp(dist / 6f, 0.4f, 1f));
+            }
+            else
+            {
+                steer = Mathf.Clamp(angle * 1.8f, -1f, 1f);
+                // how fast: slow enough to make the next corner, and to stop at the end
+                float corner = 0;
+                if (!last)
+                {
+                    float turn = to.AngleTo(Flat(route[i + 1] - route[i]));
+                    corner = turn < 0.25f ? Van.MaxSpeed : turn < 0.7f ? 11f : 6f;
+                }
+                float want = Mathf.Min(Van.MaxSpeed, Mathf.Sqrt(corner * corner + 2 * 9f * Mathf.Max(0, dist - (last ? 1.2f : 4f))));
+                if (Mathf.Abs(angle) > 0.9f) want = Mathf.Min(want, 6f);
+                if (last) want = Mathf.Min(want, Mathf.Max(2.5f, dist * 0.8f)); // creep up the driveway
+                float throttle = Mathf.Clamp(want / (_van.OnRoad ? Van.MaxSpeed : Van.OffRoadSpeed), 0f, 1f);
+                if (throttle > 0.03f) Input.ActionPress("move_forward", throttle);
+            }
             if (Mathf.Abs(steer) > 0.05f) Input.ActionPress(steer > 0 ? "move_left" : "move_right", Mathf.Abs(steer));
-            Input.ActionPress("move_forward", Mathf.Clamp(dist / 35f, 0.35f, 1f) * (Mathf.Abs(angle) > 1.2f ? 0.5f : 1f));
+
             await Physics(1);
             float dt = (float)GetPhysicsProcessDeltaTime();
             t += dt;
-            stuck = Mathf.Abs(_van.Speed) < 1f ? stuck + dt : 0;
+            stuck = Mathf.Abs(_van.Speed) < 0.8f ? stuck + dt : 0;
             if (!shotMid && t > 2.5f) { shotMid = true; await Snap("drive", force: true); }
-            if (stuck > 2.5f)
+            if (stuck > 2.0f)
             {
-                // reverse out of whatever we hit, then try again
-                Input.ActionRelease("move_forward"); Input.ActionPress("move_back");
+                // hit something: back off (or pull forward, if we were reversing), then try again; after a few goes, aim for the next point
+                foreach (var a in new[] { "move_forward", "move_back", "move_left", "move_right" }) Input.ActionRelease(a);
+                Input.ActionPress(reversing ? "move_forward" : "move_back");
                 await Seconds(1.2f);
-                Input.ActionRelease("move_back");
+                Input.ActionRelease("move_forward"); Input.ActionRelease("move_back");
                 stuck = 0;
+                if (++stucks >= 3 && !last) { i++; stucks = 0; }
             }
         }
         foreach (var a in new[] { "move_forward", "move_back", "move_left", "move_right" }) Input.ActionRelease(a);
-        if (t >= 90) { _van.PlaceAt(target, _van.Forward); _assists++; _autoLog.Add("   (assist: van placed at the destination)"); }
-        await Seconds(0.8f);
+        if (t >= limit) { _van.PlaceAt(target, _van.Forward); _assists++; _autoLog.Add($"   (assist: van placed at the destination; stuck at route point {i + 1} of {route.Count}{(reversing ? ", reversing" : "")})"); }
+        for (int k = 0; k < 60 && Mathf.Abs(_van.Speed) > 0.3f; k++) await Physics(1); // let it roll to a stop
+        await Seconds(0.5f);
         ExitVan();
         await Physics(10);
     }
+
+    private RoadNet? _roadNet;
 
     /// <summary>Walk up to a thing, look at it, and press or hold E on it (R for the second way).</summary>
     private async Task Use(Interactable it, bool alt = false)

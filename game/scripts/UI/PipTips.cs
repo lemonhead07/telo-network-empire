@@ -14,7 +14,10 @@ public sealed class PipTips
     {
         ["hello"] = "…I'm PIP. I'm the handset on your desk. I'll speak up when something's new. Start with the answering machine.",
         ["customer"] = "A customer. Their house has the ▼ over it. Everything you need is on the van outside.",
-        ["van"] = "W and S to drive, A and D to steer, E to get out. Roads are twice as fast as grass.",
+        ["slip"] = "That one went in crooked. You're tired: careful work comes out wrong sometimes, and you won't know which until it fails. Sleep.",
+        ["bedtime"] = "It's past ten. Every minute you stay up comes off tomorrow. At two you'll fall asleep wherever you are.",
+        ["tired"] = "You're short of sleep. Everything takes longer, and your hands slip. A night in bed by ten pays some of it back.",
+        ["van"] ="W and S to drive, A and D to steer, E to get out. Roads are twice as fast as grass.",
         ["carry"] = "One thing in your hands at a time. G puts it down. Anything within a few steps of you counts as 'to hand'.",
         ["install"] = "They've let you in. Yellow markers show the work: outside wall first, top to bottom, then indoors.",
         ["step"] = "Hold E to do a step properly, and keep holding to carry on to the next. It takes as long as it takes. R bodges the whole stage: quick today, crooked, and trouble in a few weeks.",

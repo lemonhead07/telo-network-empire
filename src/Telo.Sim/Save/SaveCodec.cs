@@ -35,6 +35,7 @@ public static class SaveCodec
         if (s.Version < 9) s.Texts ??= new(); // v9: texts on PIP's phone
         if (s.Version < 10) s.Plans ??= new(); // v10: the day planner
         if (s.Version < 11) s.NezLots ??= new(); // v11: Nez takes territory
+        if (s.Version < 12) { s.SleepDebt = 0; s.LastSleep = Town.SleepRules.Need; } // v12: sleep debt; older saves wake rested
         s.Version = GameState.CurrentVersion;
         return s;
     }

@@ -187,12 +187,16 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 11;
+    public const int CurrentVersion = 12;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
     public ulong RngState { get; set; }
     public int Day { get; set; }
+    /// <summary>Sleep you are owed, in minutes, from short nights (v12, see Town/SleepRules).</summary>
+    public int SleepDebt { get; set; }
+    /// <summary>How long last night was, in minutes.</summary>
+    public int LastSleep { get; set; } = Town.SleepRules.Need;
     public int ActIndex { get; set; }
 
     /// <summary>Everyone who acts in the world, by id: where they are, what they hold, where their kit and van are (v8).</summary>

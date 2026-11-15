@@ -21,6 +21,16 @@ public static class Bot
         var s = sim.State; var c = sim.Content;
         string Go(string place) => $"go:{place}";
 
+        // 0. Bed by ten. A job under way may run late, to eleven at most (a half-done install keeps till morning).
+        //    Every day ends in bed and starts there: staying up only borrows from tomorrow (Town/SleepRules).
+        double hour = Clock.Hour(s);
+        bool busy = sim.Installs.Count + sim.Benches.Count > 0;
+        if ((hour >= 21.75 || hour < 6) && (!busy || hour >= 23 || hour < 6))
+        {
+            if (a.Holding != Tools.None) return (a.VanAt == a.Place ? $"stow:{a.Holding}" : $"put:{a.Holding}", "bedtime: hands free");
+            return (a.Place == Places.Room ? "sleep" : Go(Places.Room), "bedtime");
+        }
+
         // 1-2. Work under way (here, or somewhere we walked off from): carry on with it, fetching kit when a step needs it.
         string? job = sim.Installs.ContainsKey(a.Place) || sim.Benches.ContainsKey(a.Place) || TownRules.FaultAt(s, a.Place) is not null && sim.Installs.Count + sim.Benches.Count == 0
             ? a.Place : sim.Installs.Keys.Concat(sim.Benches.Keys).FirstOrDefault();

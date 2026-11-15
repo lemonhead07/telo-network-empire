@@ -17,7 +17,8 @@ public static class Clock
     public static bool IsWeekend(int day) => Weekday(day) is DayOfWeek.Saturday or DayOfWeek.Sunday;
     public static bool IsWorkingDay(int day) => !IsWeekend(day);
     public static bool WorkingHours(GameState s) => IsWorkingDay(s.Day) && Hour(s) >= WorkStartsHour && Hour(s) < WorkEndsHour;
-    public static bool Dark(GameState s) => Hour(s) is >= 17.5 or < 7.5;
+    /// <summary>Lights-on time. The waking day is mostly daylight: dusk comes late, and the night itself is slept through.</summary>
+    public static bool Dark(GameState s) => Hour(s) is >= 21 or < 6.5;
     public static string Text(GameState s) { double h = Hour(s); return $"{(int)h:00}:{(int)(h * 60) % 60:00}"; }
 }
 

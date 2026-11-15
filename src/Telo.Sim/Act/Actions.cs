@@ -233,7 +233,7 @@ public static class Actions
             var d = InstallJob.Def(step);
             var missing = job.Missing(step, onSite);
             list.Add(new($"install:do:{step}", $"{d.Verb} ({job.Progress(step) + 1} of {d.Clicks})", d.MinutesPerClick,
-                missing == Tools.None ? null : $"you need the {Names(missing)} here", () => { job.Do(step, onSite); sim.RecordInstall(job); }));
+                missing == Tools.None ? null : $"you need the {Names(missing)} here", () => { if (job.Do(step, onSite) && sim.TiredSlip()) job.Slip(step); sim.RecordInstall(job); }));
             if (d.CanRush)
                 list.Add(new($"install:bodge:{step}", $"Bodge the {d.Title.ToLowerInvariant()}", InstallJob.RushMinutes,
                     job.Missing(step, onSite, rush: true) == Tools.None ? null : "nothing to bodge it with", () => { job.Rush(step, onSite); sim.RecordInstall(job); }));

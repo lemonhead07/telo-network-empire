@@ -34,7 +34,14 @@ public partial class InstallSite : Node3D
     public static Func<int, float> HoldFor { get; set; } = minutes => minutes * 0.33f;
 
     /// <summary>Where the player works on a step (for the walking player and automated checks).</summary>
-    public Interactable? SpotFor(InstallStep step) => _spots.FirstOrDefault(x => x.Step == step)?.Hotspot;
+    /// A stage with several clicks (three clips along the drop wire, three staples along the skirting) has a point for each:
+    /// this is the one for the next click, not always the first.
+    public Interactable? SpotFor(InstallStep step)
+    {
+        int done = _job?.Progress(step) ?? 0;
+        return (_spots.FirstOrDefault(x => x.Step == step && done >= x.First && done <= x.Last)
+                ?? _spots.FirstOrDefault(x => x.Step == step))?.Hotspot;
+    }
     public Interactable Phone => _phone;
     public Interactable Sheet => _sheet;
 

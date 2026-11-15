@@ -123,6 +123,12 @@ public sealed class InstallJob
         return true;
     }
 
+    /// <summary>A tired hand: the stage was done carefully but went in wrong all the same. It counts like a bodge, and nobody knows yet.</summary>
+    public void Slip(InstallStep step)
+    {
+        if (step != InstallStep.Test && IsDone(step)) _rushed[(int)step] = true;
+    }
+
     /// <summary>Chaos option: call the stage finished. Fast now; persists in the world.</summary>
     public bool Rush(InstallStep step, Tools onSite = Tools.All)
     {

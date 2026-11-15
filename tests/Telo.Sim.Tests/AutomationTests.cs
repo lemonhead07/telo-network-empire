@@ -58,7 +58,7 @@ public class AutomationTests
         sim.Sleep();                                                   // morning of a working day: the ticket is collected
         Assert.Contains(StaffRules.Tickets(s, c), t => t.AssignedTo == "install");
         Assert.False(a.Installed);
-        sim.AdvanceMinutes(5 * 60);                                    // seven until noon
+        sim.AdvanceMinutes(6 * 60);                                    // up at six after a full night, until noon
         Assert.True(a.Installed);
         Assert.Equal(1, s.StaffMembers[0].JobsToday);
     }
