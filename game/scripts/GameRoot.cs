@@ -159,6 +159,7 @@ public partial class GameRoot : Node3D
         for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
         TownBuilder.BuildRoads(_town.Root, _planet, GetWorld3D().DirectSpaceState);
         foreach (var p in _content.Premises.Values) BuildPoleLine(p);
+        BuildNadir();
         if (!Onboarding.RoadOpen(Sim.State, _content)) BuildRoadBarrier();
     }
 
@@ -472,6 +473,7 @@ public partial class GameRoot : Node3D
         var h = TownRules.HouseholdOf(s, lot.Id);
         if (s.Day < h.RetryDay)
             return (h.Status == HouseholdStatus.Declined ? $"{lot.Resident} said no. Try again in {h.RetryDay - s.Day} days" : $"Nobody home at {lot.Resident}'s. Try tomorrow", null);
+        if (s.NezLots.Contains(lot.Id)) return ($"{lot.Resident} signed with the national phone monopoly. There's a plaque by the door", null);
         return ($"Knock on {lot.Resident}'s door", () => Sim.Knock(lot.Id));
     }
 
@@ -843,6 +845,7 @@ public partial class GameRoot : Node3D
             }
             if (!AnyScreenOpen) RefreshIdleScreens();
             _phoneView.Rebuild();
+            SyncNez();
             SyncHouses(_player.GlobalPosition);
             SyncPaper();
             // who is in: warm windows after dark, and the car on the drive
@@ -1161,6 +1164,12 @@ public partial class GameRoot : Node3D
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 66, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 72, 1, 0, 2).Origin);
         await Shot("-aerial", TownBuilder.Place(_planet, 250, 500, 0, 420).Origin, hq);
+        if (_nadir != Vector3.Zero)
+        {
+            var nu = _nadir.Normalized(); var side = nu.Cross(Vector3.Up).Normalized();
+            if (side.LengthSquared() < 0.1f) side = nu.Cross(Vector3.Right).Normalized();
+            await Shot("-nadir", _nadir + nu * 30 + side * 70 + nu.Cross(side) * 40, _nadir + nu * 8, nu);
+        }
         if (_planet.SiteById("farm-hollow") is { } farm)
         {
             var f = TownBuilder.Place(_planet, farm, 0, 0).Origin;
@@ -1273,6 +1282,12 @@ public partial class GameRoot : Node3D
         Sim.State.Customers.First(c => c.Live && c.Installed).HasAccount = false;
         await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
         _board.Open(InterfaceTier.Terminal); await Inside("-terminal"); _board.Press(2); await Inside("-terminal-files"); _board.Close();
+        // Nez: grow past the point it notices you, let a few weeks go by, and look down the street
+        for (int i = 0; Sim.State.LiveSubscribers < Telo.Sim.Nez.NezRules.TerritoryAt + 1 && i < 30; i++) Sim.AddCustomer($"Caller {i}", "family", 30);
+        Sim.AdvanceDays(21); SyncNez();
+        cam.Current = true;
+        if (_nezVan is not null) await Shot("-nez-van", _nezVan.ToGlobal(new Vector3(-6f, 2.4f, 7f)), _nezVan.ToGlobal(new Vector3(0, 1.2f, 0)));
+        if (_nezPlaques.Values.FirstOrDefault() is { } plaque) await Shot("-nez-house", plaque.GetParent<Node3D>().ToGlobal(new Vector3(2.5f, 2.2f, 9f)), plaque.GlobalPosition);
         GD.Print($"SHOTS OK fps={Engine.GetFramesPerSecond()}");
         GetTree().Quit();
     }

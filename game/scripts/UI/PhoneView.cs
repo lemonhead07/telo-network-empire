@@ -42,6 +42,9 @@ public partial class PhoneView : ModalView
             + (s.Faults.Count > 0 ? $"   {s.Faults.Count} fault{(s.Faults.Count == 1 ? "" : "s")}" : "");
         Text(Body, counters, 54);
         if (_next.Length > 0) Text(Body, _next, 54);
+        // working on an install: your time against Nez's by-the-book par
+        if (Sim.Installs.Values.FirstOrDefault(j => j.ElapsedMinutes > 0) is { } job)
+            Text(Body, $"You {job.ElapsedMinutes / 60}h{job.ElapsedMinutes % 60:00}   Nez's par {Telo.Sim.Nez.NezRules.InstallPar / 60}h{Telo.Sim.Nez.NezRules.InstallPar % 60:00}", 44);
         // what PIP is saying right now, else today's text
         if (_saying is not null) Text(Body, $"» {_saying}", 46);
         else if (PhoneRules.Recent(s, 1).FirstOrDefault() is { } t) Text(Body, $"{(t.Out ? "you" : t.From)}: {t.Body}", 46);

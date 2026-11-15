@@ -219,7 +219,8 @@ public static class Actions
         if (cust is null && lot.Premise is null && lot.Kind != LotKind.Shop)
         {
             var h = TownRules.HouseholdOf(s, lot.Id);
-            string? why = !Onboarding.CanKnock(s, c) ? "not yet: see one customer through first"
+            string? why = s.NezLots.Contains(lot.Id) ? "they signed with the national phone monopoly"
+                : !Onboarding.CanKnock(s, c) ? "not yet: see one customer through first"
                 : s.Day < h.RetryDay ? (h.Status == HouseholdStatus.Declined ? "they said no; try again later" : "nobody home; try tomorrow") : away;
             list.Add(new($"knock:{lot.Id}", $"Knock on {lot.Resident}'s door", 5, why, () => sim.Knock(lot.Id)));
         }

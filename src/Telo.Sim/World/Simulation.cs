@@ -65,7 +65,7 @@ public sealed class Simulation
         BoardRules.ApplyEvening(s, Content, s.Day - 1);   // last night at the Board
         BoardService.EndOfDay(s, s.Day - 1);
         BoardService.CoSysopDay(s, Content);
-        if (s.Day % 7 == 0) BoardService.Week(s, Content, _rng);
+        if (s.Day % 7 == 0) { BoardService.Week(s, Content, _rng); Nez.NezRules.Week(s, Content); }
         TownRules.Tick(s, Content, _rng);
         OrderRules.Tick(s, Content);
         SwitchRules.Tidy(s);

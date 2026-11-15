@@ -1,3 +1,5 @@
+using Telo.Sim.Content;
+using Telo.Sim.Minigames.Install;
 using Telo.Sim.Act;
 using Telo.Sim.Ledger;
 using Telo.Sim.Planet;
@@ -146,5 +148,34 @@ public class AssemblyTests
         var radio = TestContent.Db.Assemblies["asm-radio"];
         var faults = Enumerable.Range(1, 30).Select(i => Telo.Sim.Minigames.Assembly.AssemblyRules.Steps(radio, (ulong)i).Fault!.Id).Distinct().Count();
         Assert.True(faults >= 2);
+    }
+}
+
+public class NezTests
+{
+    [Fact]
+    public void Nez_notices_competes_then_takes_a_house_a_week_but_never_the_last_house_on_the_road()
+    {
+        var sim = Simulation.NewGame(TestContent.Db, 21);
+        var s = sim.State;
+        Assert.Equal(Telo.Sim.Nez.NezStage.Background, Telo.Sim.Nez.NezRules.Stage(s));
+        for (int i = 0; i < 10; i++) sim.AddCustomer($"Sub {i}", "family", 30);
+        while (s.Day % 7 != 6) sim.AdvanceDay();
+        sim.AdvanceDay();
+        Assert.True(s.NezNoticed);
+        Assert.Empty(s.NezLots);                                       // noticed, not yet taking houses
+        for (int i = 0; i < 6; i++) sim.AddCustomer($"More {i}", "family", 30);
+        Assert.Equal(Telo.Sim.Nez.NezStage.Territory, Telo.Sim.Nez.NezRules.Stage(s));
+        sim.AdvanceDays(7);
+        Assert.Single(s.NezLots);                                      // slow: one a week
+        sim.AdvanceDays(7 * 30);
+        Assert.All(s.NezLots, id => Assert.Null(sim.Content.Lots[id].Premise));   // never a Promise Ledger home
+        Assert.All(s.NezLots, id => Assert.Equal(LotKind.House, sim.Content.Lots[id].Kind));
+        var taken = s.NezLots.First();
+        Assert.Equal(KnockResult.AlreadySigned, sim.Knock(taken));
+        Assert.DoesNotContain(TownRules.Prospects(s, sim.Content), l => l.Id == taken);
+        Assert.True(Telo.Sim.Nez.NezRules.InstallPar > InstallJob.Steps.Sum(d => d.Clicks * d.MinutesPerClick));
+        var back = Telo.Sim.Save.SaveCodec.FromJson(Telo.Sim.Save.SaveCodec.ToJson(s), sim.Content);
+        Assert.Equal(s.NezLots, back.NezLots);
     }
 }
