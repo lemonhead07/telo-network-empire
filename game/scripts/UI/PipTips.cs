@@ -14,7 +14,8 @@ public sealed class PipTips
     {
         ["hello"] = "…I'm PIP. I'm the handset on your desk. I'll speak up when something's new. Start with the answering machine.",
         ["customer"] = "A customer. Their house has the ▼ over it. Everything you need is on the van outside.",
-        ["booked"] = "Jobs on tomorrow's timesheet ask the customer to be in. They ring back overnight: by morning it's booked, and they'll stay in for you, even if they'd normally be at work. Don't stand them up.",
+        ["project"] = "A project: something you build that opens the next part of the game. Each step needs kit from the van, and the first one pays for it. The signboard says what's next.",
+        ["booked"] ="Jobs on tomorrow's timesheet ask the customer to be in. They ring back overnight: by morning it's booked, and they'll stay in for you, even if they'd normally be at work. Don't stand them up.",
         ["jobclock"] = "On the job clock: a booked job fills its two-hour window, and the world slows while you work it. About four minutes, no rush. Under two and they tip you. Go over and the next booking won't wait.",
         ["slip"] = "That one went in crooked. You're tired: careful work comes out wrong sometimes, and you won't know which until it fails. Sleep.",
         ["bedtime"] = "It's past ten. Every minute you stay up comes off tomorrow. At two you'll fall asleep wherever you are.",

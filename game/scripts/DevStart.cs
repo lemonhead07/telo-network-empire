@@ -36,6 +36,16 @@ public partial class GameRoot
                 {
                     while (Onboarding.Current(s, _content) != OnboardingStep.Free && Step()) { }
                     while (s.ActIndex < act && s.ActIndex + 1 < _content.Acts.Count) Sim.GodNextAct();
+                    // the world you'd have built by then: earlier acts' projects up, their towns signed, the pages they needed known
+                    foreach (var p in _content.Projects.Where(p => p.Act < act))
+                    {
+                        if (p.RequiresEntry is { } e) s.Entries[e] = Telo.Sim.World.EntryStatus.Recalled;
+                        if (p.RequiresDepot) s.HasDepot = true;
+                        Telo.Sim.Build.ProjectRules.Finish(s, _content, p);
+                        if (p.Reward.Region > 0) s.RegionSigned[p.Id] = p.Reward.Region;
+                    }
+                    Telo.Sim.Almanac.AlmanacRules.RefreshStatuses(s, _content, quiet: true);
+                    s.Cash = Math.Max(s.Cash, 2000L * (act + 1) * (act + 1));
                 }
                 else GD.PrintErr($"--from={from}: use free, hire, poles or act1..act{_content.Acts.Count - 1}");
                 break;

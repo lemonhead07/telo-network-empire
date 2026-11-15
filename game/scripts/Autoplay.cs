@@ -49,22 +49,47 @@ public partial class GameRoot
         string last = ""; int same = 0;
         string Sig() => $"{Sim.State.Day}:{Sim.State.Minute / 20}:{Me.Place}:{Me.Holding}:{string.Join(",", Me.Kit)}:{Sim.State.Cash}:{string.Join(",", Sim.Installs.Values.Select(j => j.ElapsedMinutes))}:{string.Join(",", Sim.Benches.Values.Select(b => b.Task.ElapsedMinutes))}:{Sim.State.Customers.Count}:{Sim.State.Switch.Positions.Sum(p => p.Jumper + (p.TagRead ? 1 : 0))}";
         string before = "";
-        for (int i = 0; i < 4000; i++)
+        // --autoplay-fast (development, with --autoplay-sample): everything but the jobs shown in full runs at the rules' speed,
+        // like the script player, so a run sweeps through the acts; a job picked to show is played live in the world
+        bool fast = args.Contains("--autoplay-fast") && _sample > 1;
+        for (int i = 0; i < (fast ? 400000 : 4000); i++)
         {
             if (Done(until) || Time.GetTicksMsec() - started > minutes * 60000) break;
-            SyncActor();
+            bool live = !fast || LiveJobOpen();
+            if (live) SyncActor();
+            // what's in reach: the world's answer while a job is shown live, the rules' own record at rules speed
+            Me.OnSiteOverride = live ? KitInWorkArea : null;
             if (Sim.State.ActIndex != _actLogged)
             {
                 _actLogged = Sim.State.ActIndex;
                 var act = _content.Acts[Sim.State.ActIndex];
-                _autoLog.Add($"===== Act {act.Index}: {act.Name} ({Sim.State.Date}, {Sim.State.LiveSubscribers} subscribers, ${Sim.State.Cash})");
+                _autoLog.Add($"===== Act {act.Index}: {act.Name} ({Sim.State.Date}, {Sim.State.TotalSubscribers} subscribers, ${Sim.State.Cash})");
                 GD.Print("AUTO ", _autoLog[^1]);
+                if (fast) await LineUpWorld();
                 await Snap($"act{act.Index}", force: true);
             }
             var (id, why) = Bot.Choose(Sim, Me, _planet);
             _autoWhy = why;
             _autoLog.Add($"{Sim.State.Date} {Clock.Text(Sim.State)}  {id}  — {why}");
-            GD.Print("AUTO ", _autoLog[^1]);
+            if (!fast || live) GD.Print("AUTO ", _autoLog[^1]);
+            if (fast && !live)
+            {
+                if (SkipBySample(id)) continue;
+                if (_liveKeys.Count > 0)
+                {
+                    // this one is shown in full: put the world where the rules are, then play it live
+                    _autoLog.Add($"   (showing in full from {Sim.State.Date} {Clock.Text(Sim.State)})");
+                    GD.Print("AUTO ", _autoLog[^1]);
+                    await LineUpWorld();
+                    SyncActor();
+                    await Do(id);
+                    await Snap(Kind(id));
+                    continue;
+                }
+                if (!Actions.Perform(Sim, Me, _planet, id)) Actions.Perform(Sim, Me, _planet, "wait");
+                if (i % 25 == 0) { RefreshViews(); SyncProjects(); await Physics(1); }
+                continue;
+            }
             string now = Sig();
             same = id == last && now == before ? same + 1 : 0; last = id; before = now;
             if (same >= 2 && id != "wait" && id != "sleep")
@@ -92,6 +117,38 @@ public partial class GameRoot
     private int _actLogged = -1;
     private int _sample = 1, _jobsSeen;
     private readonly HashSet<string> _played = new();
+    /// <summary>The job being shown in full right now (fast runs): ticket keys, a project or pole place; and a pole line's progress when it started.</summary>
+    private readonly List<string> _liveKeys = new();
+    private (int, int) _livePole;
+
+    /// <summary>Is the job being shown in full still going? Its tickets open, its project unbuilt, its pole step not yet done.</summary>
+    private bool LiveJobOpen()
+    {
+        if (_liveKeys.Count == 0) return false;
+        var open = Telo.Sim.Work.StaffRules.Tickets(Sim.State, _content).Select(t => t.Key).ToHashSet();
+        bool going = _liveKeys.Any(k =>
+            Places.IsProject(k, out var pj) ? !Telo.Sim.Build.ProjectRules.Done(Sim.State, pj)
+            : Places.IsPole(k, out var pid, out _) ? (Telo.Sim.Build.LineRules.ProgressOf(Sim.State, pid) is var l && (l.Planted, l.Strung) == _livePole)
+            : open.Contains(k) && Telo.Sim.Plan.AppointmentRules.HouseWorkLeft(Sim.State, k))
+            || Sim.Installs.Count + Sim.Benches.Count > 0;
+        if (!going) { _autoLog.Add("   (back to fast)"); _liveKeys.Clear(); }
+        return going;
+    }
+
+    /// <summary>Fast runs: put the world where the rules say things are. Kit back on the van, the van where it's parked, you beside it.</summary>
+    private async Task LineUpWorld()
+    {
+        if (_van.Driven) ExitVan();
+        foreach (var item in _cargo.Items.Where(i => i.Where != Carryable.Place.Van).ToList()) _cargo.Stow(item);
+        Me.Kit.Clear(); Me.Holding = Tools.None;
+        var vanAt = ParkOf(Me.VanAt) ?? WorldOf(Me.VanAt);
+        _van.PlaceAt(vanAt + vanAt.Normalized() * 0.3f, _van.Forward);
+        await Physics(5);
+        var me = Me.Place == Me.VanAt ? _van.GlobalPosition - _van.GlobalBasis.X * 2.4f : WorldOf(Me.Place);
+        _player.PlaceAt(me + me.Normalized() * 0.4f, _player.Forward);
+        RefreshViews(); SyncProjects();
+        await Physics(10);
+    }
 
     /// <summary>
     /// --autoplay-sample=X (development): play one job in X in full, in the world; finish the rest by decree the moment the
@@ -106,8 +163,26 @@ public partial class GameRoot
             .Select(t => t.Key).ToList();
         bool pole = Places.IsPole(place, out var pid, out _);
         if (pole) keys.Add(place);
+        if (Places.IsProject(place, out var projId) && _content.Project(projId) is { } projDef)
+        {
+            // a project is played in full one time in X like any job; otherwise it's built by decree (paid for, waits skipped)
+            if (_played.Contains(place)) return false;
+            if (++_jobsSeen % _sample == 1) { _played.Add(place); _liveKeys.Add(place); _autoLog.Add($"   (playing this one in full: {projDef.Name})"); return false; }
+            if (!Telo.Sim.Build.ProjectRules.Started(Sim.State, projId)) Sim.State.Cash -= projDef.Cost;
+            Telo.Sim.Build.ProjectRules.Finish(Sim.State, _content, projDef);
+            _autoLog.Add($"   (skipped by sample: {projDef.Name})");
+            SyncProjects(); RefreshViews();
+            return true;
+        }
         if (keys.Count == 0 || keys.Any(_played.Contains)) return false;   // not a job, or one we're already playing
-        if (++_jobsSeen % _sample == 1) { foreach (var k in keys) _played.Add(k); _autoLog.Add($"   (playing this one in full: {string.Join(", ", keys)})"); return false; }
+        if (++_jobsSeen % _sample == 1)
+        {
+            foreach (var k in keys) _played.Add(k);
+            _liveKeys.AddRange(keys);
+            if (pole) _livePole = (Telo.Sim.Build.LineRules.ProgressOf(Sim.State, pid).Planted, Telo.Sim.Build.LineRules.ProgressOf(Sim.State, pid).Strung);
+            _autoLog.Add($"   (playing this one in full: {string.Join(", ", keys)})");
+            return false;
+        }
 
         foreach (var k in keys)
         {
@@ -179,6 +254,7 @@ public partial class GameRoot
                 await Use(parts[1] == "plant" ? view.PlantSpot : view.StringSpot);
                 break;
             case "card": await Use(_rack.Slot); break;
+            case "project" when Places.IsProject(Me.Place, out var projId) && _projects.TryGetValue(projId, out var site): await Use(site.Spot); break;
             case "ticket":
                 var ticket = StaffRules.Tickets(Sim.State, _content).FirstOrDefault(t => t.Key == $"{parts[1]}:{parts[2]}");
                 if (ticket is null) break;
@@ -292,6 +368,7 @@ public partial class GameRoot
             return job.NextStep is { } step && site.SpotFor(step) is { } spot ? spot.GlobalPosition : site.Phone.GlobalPosition;
         if (lot is not null && _oddJobs.TryGetValue(lot.Lot.Id, out var bench)) return bench.Bench.GlobalPosition;
         if (lot is not null && TownRules.FaultAt(Sim.State, lot.Lot.Id) is not null) return lot.Door.GlobalPosition;
+        if (Places.IsProject(Me.Place, out var projId) && _projects.TryGetValue(projId, out var proj)) return proj.Spot.GlobalPosition;
         // at a pole site the work area is the marker itself (plant here, or string the span back from here), whichever is here
         if (Places.IsPole(Me.Place, out var pid, out _) && _lines.FirstOrDefault(l => l.Premise.Id == pid) is { View: { } view })
         {
@@ -566,6 +643,8 @@ public partial class GameRoot
     /// <summary>The named place nearest a world position, if it is close enough to count as being there.</summary>
     private string? PlaceOf(Vector3 p)
     {
+        foreach (var (id, view) in _projects)
+            if (view.Visible && (view.GlobalPosition - p).Length() < 8) return Places.Project(id);
         if ((_town.Hq.GlobalPosition - p).Length() < 13) return Places.Room;
         var lot = _town.Lots.OrderBy(v => (v.Body.GlobalPosition - p).Length()).FirstOrDefault();
         if (lot is not null && (lot.Body.GlobalPosition - p).Length() < 13) return lot.Lot.Id;
@@ -585,6 +664,8 @@ public partial class GameRoot
             var outward = door - lot.Body.GlobalPosition; outward -= up * outward.Dot(up);
             return door + outward.Normalized() * 2.2f;
         }
+        if (Places.IsProject(place, out var projId) && _projects.TryGetValue(projId, out var proj))
+            return proj.Spot.GlobalPosition + proj.GlobalBasis.Z * 2.5f;   // in front of the work spot
         if (Places.IsPole(place, out var pid, out int k) && _lines.FirstOrDefault(l => l.Premise.Id == pid) is { View: { } view })
             return view.PolePosition(k) + view.PolePosition(k).Normalized().Cross(Vector3.Up).Normalized() * 2.5f;
         return _player.GlobalPosition;

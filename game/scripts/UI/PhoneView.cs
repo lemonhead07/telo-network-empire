@@ -37,7 +37,7 @@ public partial class PhoneView : ModalView
         Title.AddThemeFontSizeOverride("font_size", 62);
         var step = Onboarding.Current(s, c);
         string counters = $"${s.Cash}"
-            + (step >= OnboardingStep.OddJob ? $"   {s.LiveSubscribers} on the network" : "")
+            + (step >= OnboardingStep.OddJob ? $"   {s.TotalSubscribers} on the network" : "")
             + (step >= OnboardingStep.Install ? $"   {s.PendingInstalls} waiting   {s.Modems} modem{(s.Modems == 1 ? "" : "s")}" : "")
             + (s.Faults.Count > 0 ? $"   {s.Faults.Count} fault{(s.Faults.Count == 1 ? "" : "s")}" : "")
             + (Telo.Sim.Town.SleepRules.Describe(s) is { } tired ? $"   [{tired}]" : "");

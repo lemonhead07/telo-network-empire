@@ -1,6 +1,16 @@
 # Next Session — start here
 
-*Left off: 2026-11-15. Branch: `feature/gameplay-rapid`. Everything is pushed. 70 sim tests and the smoke test pass. Saves are at v11.*
+*Left off: 2026-11-16. Branch: `feature/gameplay-rapid`. 82 sim tests pass. Saves are at v17. The owner wants **early access to cover Acts 0–5**, gameplay first, models later.*
+
+## Newest (2026-11-16, a long local session): the path from the first message into Act 5
+
+- **Projects** (`game/content/projects.json`, `src/Telo.Sim/Build/ProjectRules.cs`, world view `game/scripts/Projects.cs` + `World/ProjectSiteView.cs`): things built in the world, step by step with kit from the van, that open the next part of the game. Gated by act, earlier projects, an Almanac page, the depot, or size. Rewards: lines in, a service on every line, income, a bill (or ending one), or a **region**. 15 projects through Act 5 (Church Lane poles → Eastgate cabinet → modem bank → leased line → microwave hop → Millbrook → cold-store datacentre → Kestrel Point landing → ocean cable → broadband → fibre ring → Farland city → first cell mast → coast cell sites → fibre to every mast). Add more as data; `ContentDb.Validate()` checks requirements come earlier in the file.
+- **Regions**: a project can open a whole town (Millbrook 150, Farland coast 260, Easthaven and the bay 700, Farland city 1000, mobile 1500 + 4000) whose subscribers sign over ~3 weeks, billed as a block. `GameState.TotalSubscribers` is what acts measure. The valley's ~37 households stay individual.
+- **The "what next" line** points at the next project, or at what it waits on (the Almanac page to recall, the depot to lease). Every act gate has an Almanac page readable in the act before it, so no act waits years for a calendar date.
+- **The script player plays from the first message into Act 5** (`ScriptPlayerTests.The_bot_plays_from_the_first_message_into_act_5`, ~6 s): Act 1 Jan 1983, Act 2 Feb 1983, Act 3 Jul 1984, Act 4 Oct 1984, Act 5 Feb 1985. If a gate ever breaks, this test says where it stuck and what the line said.
+- Also this session: roads and driveways (`World/RoadNet.cs`), the waking day and sleep debt (`Town/SleepRules.cs`), appointments and the job clock (`Plan/AppointmentRules.cs`), service in nines and VIP jobs (`Town/ServiceRules.cs`), install twists (`InstallJob.Twists`), Church Lane and Eastgate (`TownBuilder.Streets`, `PlanetGen.FindVillageSite`), a 32-line switchboard.
+- **Dev shortcuts** (`game/scripts/DevStart.cs`, `Autoplay.cs`): `--from=free|hire|poles|act1..act7` (act starts build the earlier acts' projects), `--autoplay-teleport`, `--autoplay-sample=X` (play one job in X in full, decree the rest), `--autoplay-until=actN`, `--autoplay-speed=N`.
+- **Known and next:** the economy is generous by Act 4–5 (cash in the hundreds of thousands): tune. Historical years run fast (Act 5 by 1985) because every gate is recalled early: decide if that's the time-travel joke or needs Echo to bite harder. Project sites are placeholder boxes with a signboard. The far towns (Millbrook, Farland) are only regions: places to visit come with world-building.
 
 ## What just happened: the spine, first slice of all eight steps
 

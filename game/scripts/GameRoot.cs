@@ -112,6 +112,7 @@ public partial class GameRoot : Node3D
         _town = TownBuilder.Build(this, _planet, _content);
         foreach (var lot in _town.Lots) WireLot(lot);
         _ = BuildRoadsWhenPhysicsIsReady();
+        BuildProjects();   // project sites (Projects.cs): shown once open to you
 
         _almanac = new AlmanacView { Sim = Sim };
         _notebook = new NotebookView { Sim = Sim };
@@ -897,6 +898,7 @@ public partial class GameRoot : Node3D
         if (_slowTick <= 0)
         {
             _slowTick = 0.5f;
+            SyncProjects();
             if (SleepRules.PastBedtime(Sim.State)) _pip.Once("bedtime");
             if (Sim.State.Appointments.Count > 0) _pip.Once("booked");
             if (Telo.Sim.Plan.AppointmentRules.OnTheClock(Sim.State) is not null) _pip.Once("jobclock");
