@@ -61,6 +61,7 @@ public partial class GameRoot : Node3D
     private TicketRail _rail = null!;
     private WallCalendar _calendar = null!;
     private Timesheet _sheet = null!;
+    private AdBoard _ads = null!;
     private readonly HashSet<string> _clipboard = new();
     private readonly Dictionary<string, StaffFigure> _figures = new();
     /// <summary>Automated checks ignore who is home and whether the shop is open.</summary>
@@ -329,6 +330,16 @@ public partial class GameRoot : Node3D
         // the timesheet: tomorrow, hour by hour (spine step 5)
         _sheet = new Timesheet { Position = new Vector3(-RoomBuilder.W / 2 + 0.07f, 1.5f, 1.0f), RotationDegrees = new Vector3(0, 90, 0) };
         room.AddChild(_sheet);
+        // the ad board: the booking loop's one lever (D37)
+        _ads = new AdBoard { Position = new Vector3(RoomBuilder.W / 2 - 0.07f, 1.55f, -1.15f), RotationDegrees = new Vector3(0, -90, 0) };
+        room.AddChild(_ads);
+        _ads.Hot.Prompt = () => Sim.State.AdLevel < BookingRules.MaxAdLevel(Sim.State, _content)
+            ? $"Put up {BookingRules.Ads[Sim.State.AdLevel + 1].Name} (${BookingRules.Ads[Sim.State.AdLevel + 1].WeeklyCost} a week)"
+            : BookingRules.MaxAdLevel(Sim.State, _content) == 0 ? "The ad board. Nothing to advertise yet" : "Every ad you can buy is up";
+        _ads.Hot.CanUse = () => Sim.State.AdLevel < BookingRules.MaxAdLevel(Sim.State, _content);
+        _ads.Hot.OnUse = () => { BookingRules.SetAds(Sim.State, _content, Sim.State.AdLevel + 1); SyncPaper(); };
+        _ads.Hot.AltPrompt = () => Sim.State.AdLevel > 0 ? $"Cancel {BookingRules.Ads[Sim.State.AdLevel].Name}" : null;
+        _ads.Hot.OnAlt = () => { BookingRules.SetAds(Sim.State, _content, Sim.State.AdLevel - 1); SyncPaper(); };
         _sheet.Hot.Prompt = () => $"Plan tomorrow: fill the timesheet with what fits";
         _sheet.Hot.OnUse = () => { Telo.Sim.Plan.PlanRules.AutoPlan(Sim.State, _content, _planet, PlanDay()); SyncPaper(); };
         _sheet.Hot.AltPrompt = () => "Clear the sheet";
@@ -432,12 +443,16 @@ public partial class GameRoot : Node3D
             _pip.Once("hours");
             return ($"{lot.Resident}: {away}", null);
         }
+        // a day holds three jobs (D37): starting a fourth waits till tomorrow; work already under way carries on
+        bool capped = !BookingRules.CanStartJob(s, _content) && !_installs.ContainsKey(lot.Id) && !_oddJobs.ContainsKey(lot.Id);
+        Action Job(Action start) => () => { start(); BookingRules.CountJob(s); };
         // a broken line comes before anything else at this door
         if (TownRules.FaultAt(s, lot.Id) is { } fault && TownRules.CustomerAt(s, lot.Id) is { } broken)
         {
             var missing = TownRules.RepairNeeds & ~KitOnSite();
+            if (capped) return ($"{broken.Name}'s line: {fault.Text}. {BookingRules.CapReason}", null);
             return missing == Tools.None
-                ? ($"Fix {broken.Name}'s line: {fault.Text}", () => TownRules.Repair(s, fault.Id, KitOnSite()))
+                ? ($"Fix {broken.Name}'s line: {fault.Text}", Job(() => TownRules.Repair(s, fault.Id, KitOnSite())))
                 : ($"{broken.Name} has a fault: {fault.Text}. You need {Cargo.Names(missing)} from the van", null);
         }
         if (OrderRules.OrderAt(s, lot.Id) is { } order && _content.Products.TryGetValue(order.ProductId, out var product)
@@ -445,19 +460,22 @@ public partial class GameRoot : Node3D
         {
             if (_oddJobs.TryGetValue(lot.Id, out var fitting))
                 return ($"{fitting.Task.Title}: {(fitting.Task.Next is { } n ? n.Verb.ToLowerInvariant() : "show them how it works")} (indoors, on the rug)", null);
-            return ($"{lot.Resident} ordered: {product.Name.ToLowerInvariant()} (+${product.Price}). They let you in", () => StartOrder(orderHome, order, product));
+            if (capped) return ($"{lot.Resident} ordered: {product.Name.ToLowerInvariant()}. {BookingRules.CapReason}", null);
+            return ($"{lot.Resident} ordered: {product.Name.ToLowerInvariant()} (+${product.Price}). They let you in", Job(() => StartOrder(orderHome, order, product)));
         }
         if (TownRules.JobAt(s, lot.Id) is { } job && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } jobHome)
         {
             // houses: the job is done by hand indoors
             if (_oddJobs.TryGetValue(lot.Id, out var doing))
                 return ($"{doing.Task.Title}: {(doing.Task.Next is { } nx ? nx.Verb.ToLowerInvariant() : "hand it back")} (indoors, on the rug)", null);
-            return ($"{job.Title} for {lot.Resident} (+${job.Pay}): they let you in. Bring the toolbox", () => StartOddJob(jobHome, job));
+            if (capped) return ($"{job.Title} for {lot.Resident}. {BookingRules.CapReason}", null);
+            return ($"{job.Title} for {lot.Resident} (+${job.Pay}): they let you in. Bring the toolbox", Job(() => StartOddJob(jobHome, job)));
         }
         if (TownRules.JobAt(s, lot.Id) is { } quick)
         {
             // the shop and the farm aren't enterable yet: the job is still done at the door
-            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay})", () => TownRules.CompleteJob(s, _content, quick.Id));
+            if (capped) return ($"{quick.Title} for {lot.Resident}. {BookingRules.CapReason}", null);
+            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay})", Job(() => TownRules.CompleteJob(s, _content, quick.Id)));
         }
         var cust = TownRules.CustomerAt(s, lot.Id);
         if (cust is { SocketFitted: false } && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } view)
@@ -467,12 +485,12 @@ public partial class GameRoot : Node3D
             return s.Modems > 0
                 ? (WorkRules.Current(s, _content, "install").Mode != WorkMode.Manual
                     ? $"{cust.Name} is booked in with your technician. Or do the install yourself now"
-                    : $"Start {cust.Name}'s install: they let you in (about an hour; bring the kit from the van)", () => StartInstall(view, cust))
+                    : $"Start {cust.Name}'s install: they let you in (about an hour; bring the kit from the van)", capped ? null : Job(() => StartInstall(view, cust)))
                 : ($"{cust.Name} is waiting for their line. You have no modems (Sol's Electronics sells them)", null);
         }
         if (cust is { SocketFitted: false })
             return s.Modems > 0
-                ? ($"Fit the wall socket for {cust.Name} (uses a modem)", () => TownRules.FitSocket(s, cust.Id))
+                ? ($"Fit the wall socket for {cust.Name} (uses a modem)", capped ? null : Job(() => TownRules.FitSocket(s, cust.Id)))
                 : ($"{cust.Name} is waiting for a socket. You have no modems (Sol's Electronics sells them)", null);
         if (cust is not null)
             return (cust.Installed ? $"{lot.Resident}: subscriber, satisfaction {cust.Satisfaction}%" : $"{lot.Resident}: socket fitted. Jumper their line at the switchboard", null);
@@ -646,6 +664,8 @@ public partial class GameRoot : Node3D
             return $"{(d.Day == s.Day ? "▶" : "  ")} {date:ddd d}{(d.Note.Length > 0 ? "   " + d.Note : "")}";
         });
         ShowSheet();
+        var st = Sim.State;
+        _ads.Show($"Running: {BookingRules.Ads[st.AdLevel].Name}{(st.AdLevel > 0 ? $" (${BookingRules.Ads[st.AdLevel].WeeklyCost}/wk)" : "")}\nBooked: {BookingRules.Booked(st, _content)}   Can do: {BookingRules.WeeklyCapacity(st)} a week\nReputation {BookingRules.Reputation(st)}");
         _calendar.Show($"{today:MMMM yyyy}".ToUpperInvariant() + $"        {Clock.Text(s)}\n\n" + string.Join("\n", lines));
 
         foreach (var m in s.StaffMembers.Where(m => m.Does.Count > 0))
@@ -1297,6 +1317,15 @@ public partial class GameRoot : Node3D
         cam.GlobalTransform = _rail.GlobalTransform * new Transform3D(new Basis(Vector3.Up, 0.12f), new Vector3(0.62f, 0.02f, 1.75f));
         await Frames(12);
         GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-wall.png"));
+        // the ad board and the timesheet: plan tomorrow, put up leaflets
+        BookingRules.SetAds(Sim.State, _content, 1);
+        Telo.Sim.Plan.PlanRules.AutoPlan(Sim.State, _content, _planet, Sim.State.Day); SyncPaper();
+        cam.GlobalTransform = _ads.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0, 0, 1.1f));
+        await Frames(12);
+        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-ads.png"));
+        cam.GlobalTransform = _sheet.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0, 0, 1.0f));
+        await Frames(12);
+        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-timesheet.png"));
         // Jory waiting at your door for a ticket
         if (_figures.TryGetValue("install", out var jory))
         {

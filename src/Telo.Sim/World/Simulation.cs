@@ -65,7 +65,7 @@ public sealed class Simulation
         BoardRules.ApplyEvening(s, Content, s.Day - 1);   // last night at the Board
         BoardService.EndOfDay(s, s.Day - 1);
         BoardService.CoSysopDay(s, Content);
-        if (s.Day % 7 == 0) { BoardService.Week(s, Content, _rng); Nez.NezRules.Week(s, Content); }
+        if (s.Day % 7 == 0) { BoardService.Week(s, Content, _rng); Nez.NezRules.Week(s, Content); BookingRules.Week(s); }
         TownRules.Tick(s, Content, _rng);
         OrderRules.Tick(s, Content);
         SwitchRules.Tidy(s);
@@ -73,8 +73,7 @@ public sealed class Simulation
         SurfaceDefects();
         DriftSatisfaction();
         // Word of mouth: happy subscribers bring enquiries.
-        int happy = s.Customers.Count(c => c.Live && c.Installed && c.Satisfaction >= 60);
-        if (Onboarding.PhoneRings(s, Content) && s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, 250 + 40 * happy + 8 * BoardService.Appeal(s)))) s.MessagesWaiting++;
+        BookingRules.Day(s, Content, _rng);   // word of mouth and ads bring bookings; long waits go to NezTel
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
         Phone.PhoneRules.Morning(s, Content);   // one text in, every morning

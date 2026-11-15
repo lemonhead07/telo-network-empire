@@ -79,6 +79,8 @@ public static class Bot
         }
         if (hits.FirstOrDefault() is { } hit)
         {
+            // three jobs done today: the rest keeps till tomorrow
+            if (hit.Blocked == BookingRules.CapReason) return (a.Place == Places.Room ? "sleep" : Go(Places.Room), $"{text} (done for today)");
             // nobody in and it's evening: go home to bed rather than wait on the step all night
             if (Clock.Hour(s) >= 17.5 || Clock.Hour(s) < 6) return (a.Place == Places.Room ? "sleep" : Go(Places.Room), $"{text} ({hit.Blocked}): home to bed");
             return ("wait", $"{text} ({hit.Blocked})");
@@ -122,6 +124,7 @@ public static class Bot
             : text.Contains("switchboard") || text.Contains("Wire") ? new[] { "switch:read:", "switch:test:", "switch:jumper:", "switch:throw" }
             : text.Contains("ticket") ? new[] { "ticket:" }
             : text.Contains("Hire") ? new[] { "invest:install" }
+            : text.Contains("Put up an ad") ? new[] { "ads:up" }
             : text.Contains("terminal") || text.Contains("uploads") ? new[] { "board:letin:", "board:mail", "board:file:" }
             : text.Contains("recall") ? new[] { "recall:" }
             : new[] { "sleep" };

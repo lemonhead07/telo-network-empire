@@ -187,7 +187,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 12;
+    public const int CurrentVersion = 13;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -211,6 +211,10 @@ public sealed class GameState
     public HashSet<string> NezLots { get; set; } = new();
     public bool NezNoticed { get; set; }
     public bool NezCompeting { get; set; }
+    /// <summary>Which ad you're paying for (index into BookingRules.Ads), and jobs you've started today (v13).</summary>
+    public int AdLevel { get; set; }
+    public int PlayerJobsDay { get; set; }
+    public int PlayerJobsToday { get; set; }
 
     // Money is whole period dollars.
     public long Cash { get; set; }

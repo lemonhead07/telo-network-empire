@@ -44,7 +44,7 @@ public static class StaffRules
 
     /// <summary>Can this person be handed this ticket? Only the kinds of work they do, and only a day's worth at a time.</summary>
     public static bool CanTake(GameState s, ContentDb c, StaffMember m, Ticket t) =>
-        t.AssignedTo is null && m.Does.Contains(t.Kind) && Queue(s, c, m) < m.JobsPerDay;
+        t.AssignedTo is null && m.Does.Contains(t.Kind) && Queue(s, c, m) < Math.Min(m.JobsPerDay, BookingRules.MaxCap);
 
     public static bool Assign(GameState s, ContentDb c, string ticketKey, string staffId)
     {

@@ -101,6 +101,9 @@ public static class Guidance
         // this chapter's work is done and the world hasn't caught up: remember the next one early
         if (ActRules.EarlyStartEntry(s, c) is { } page && s.Archive >= page.ArchiveCost)
             return ($"Get ahead: recall \"{page.Title}\" in PIP's Almanac ({page.ArchiveCost} Archive).", null);
+        // bookings are thin and you can afford it: one lever
+        if (s.AdLevel < BookingRules.MaxAdLevel(s, c) && s.Cash >= 200 && BookingRules.Booked(s, c) * 3 < BookingRules.WeeklyCapacity(s))
+            return ($"Bookings are thin. Put up an ad: {BookingRules.Ads[s.AdLevel + 1].Name} (${BookingRules.Ads[s.AdLevel + 1].WeeklyCost} a week), on the board in your room.", null);
         var prospect = TownRules.Prospects(s, c).FirstOrDefault(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay);
         if (prospect is not null) return ($"Knock on doors to find customers. Try {prospect.Resident}'s.", prospect.Id);
         if (BestJob(s, c) is { } any) return ($"Odd job: {any.Title.ToLowerInvariant()} at {Who(c, any)}'s (${any.Pay}).", any.LotId);

@@ -36,6 +36,7 @@ public static class SaveCodec
         if (s.Version < 10) s.Plans ??= new(); // v10: the day planner
         if (s.Version < 11) s.NezLots ??= new(); // v11: Nez takes territory
         if (s.Version < 12) { s.SleepDebt = 0; s.LastSleep = Town.SleepRules.Need; } // v12: sleep debt; older saves wake rested
+        // v13: ads and the daily job cap (new fields default to zero: no ads, nothing done today)
         s.Version = GameState.CurrentVersion;
         return s;
     }

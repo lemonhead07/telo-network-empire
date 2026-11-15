@@ -157,6 +157,12 @@ public static class Actions
         if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s))
             list.Add(new("switch:panel", $"Bolt on another panel (${SwitchRules.PanelPrice})", 20, SwitchRules.CanAddPanel(s) ? null : "not enough cash", () => SwitchRules.AddPanel(s)));
 
+        // the ad board: one lever
+        if (s.AdLevel < BookingRules.MaxAdLevel(s, c))
+            list.Add(new("ads:up", $"Advertise: {BookingRules.Ads[s.AdLevel + 1].Name} (${BookingRules.Ads[s.AdLevel + 1].WeeklyCost} a week)", 2, null, () => BookingRules.SetAds(s, c, s.AdLevel + 1)));
+        if (s.AdLevel > 0)
+            list.Add(new("ads:down", $"Cancel {BookingRules.Ads[s.AdLevel].Name}", 2, null, () => BookingRules.SetAds(s, c, s.AdLevel - 1)));
+
         list.Add(new("sleep", Guidance.IsQuiet(s, c) ? "Sleep until something needs you" : "Sleep until morning", 0, null, () =>
         {
             if (Guidance.IsQuiet(s, c)) sim.RestUntilNeeded(); else sim.Sleep();
@@ -191,30 +197,31 @@ public static class Actions
 
         // nobody answers when nobody is in
         string? away = a.IgnoreHours ? null : HomeRules.WhyNot(s, c, lot);
+        string? capped = BookingRules.CanStartJob(s, c) ? null : BookingRules.CapReason;
 
         if (TownRules.FaultAt(s, lot.Id) is { } fault)
         {
             list.Add(new($"repair:{fault.Id}", $"Fix the line: {fault.Text}", TownRules.RepairMinutes,
-                away ?? ((onSite & TownRules.RepairNeeds) == TownRules.RepairNeeds ? null : "bring the toolbox from the van"),
-                () => TownRules.Repair(s, fault.Id, onSite)));
+                away ?? capped ?? ((onSite & TownRules.RepairNeeds) == TownRules.RepairNeeds ? null : "bring the toolbox from the van"),
+                () => { if (TownRules.Repair(s, fault.Id, onSite)) BookingRules.CountJob(s); }));
             return;
         }
         if (house && OrderRules.OrderAt(s, lot.Id) is { } order && c.Products.TryGetValue(order.ProductId, out var product))
-            list.Add(new($"order:{order.Id}", $"Fit the {product.Name.ToLowerInvariant()} they ordered", 1, away,
-                () => sim.Benches[lot.Id] = new Bench(OrderRules.NewTask(c, order), "order", order.Id)));
+            list.Add(new($"order:{order.Id}", $"Fit the {product.Name.ToLowerInvariant()} they ordered", 1, away ?? capped,
+                () => { sim.Benches[lot.Id] = new Bench(OrderRules.NewTask(c, order), "order", order.Id); BookingRules.CountJob(s); }));
         if (TownRules.JobAt(s, lot.Id) is { } odd)
             list.Add(house
-                ? new($"oddjob:{odd.Id}", $"{odd.Title} (+${odd.Pay}): they let you in", 1, away,
-                    () => { if (sim.NewOddJobTask(odd.Id) is { } t) sim.Benches[lot.Id] = new Bench(t, "job", odd.Id); })
-                : new($"oddjob:{odd.Id}", $"{odd.Title} (+${odd.Pay})", odd.Hours * 60, away, () => TownRules.CompleteJob(s, c, odd.Id)));
+                ? new($"oddjob:{odd.Id}", $"{odd.Title} (+${odd.Pay}): they let you in", 1, away ?? capped,
+                    () => { if (sim.NewOddJobTask(odd.Id) is { } t) { sim.Benches[lot.Id] = new Bench(t, "job", odd.Id); BookingRules.CountJob(s); } })
+                : new($"oddjob:{odd.Id}", $"{odd.Title} (+${odd.Pay})", odd.Hours * 60, away ?? capped, () => { TownRules.CompleteJob(s, c, odd.Id); BookingRules.CountJob(s); }));
 
         var cust = TownRules.CustomerAt(s, lot.Id);
         if (cust is { SocketFitted: false })
         {
-            string? why = away ?? (s.Modems <= 0 ? "you have no modems (Sol's Electronics sells them)" : null);
+            string? why = away ?? capped ?? (s.Modems <= 0 ? "you have no modems (Sol's Electronics sells them)" : null);
             if (house) list.Add(new($"install:{cust.Id}", $"Start {cust.Name}'s install", 1, why,
-                () => { if (sim.NewInstallJob(cust.Id) is { } j) sim.Installs[lot.Id] = j; }));
-            else list.Add(new($"socket:{cust.Id}", $"Fit the wall socket for {cust.Name}", 30, why, () => TownRules.FitSocket(s, cust.Id)));
+                () => { if (sim.NewInstallJob(cust.Id) is { } j) { sim.Installs[lot.Id] = j; BookingRules.CountJob(s); } }));
+            else list.Add(new($"socket:{cust.Id}", $"Fit the wall socket for {cust.Name}", 30, why, () => { if (TownRules.FitSocket(s, cust.Id)) BookingRules.CountJob(s); }));
         }
         if (cust is null && lot.Premise is null && lot.Kind != LotKind.Shop)
         {

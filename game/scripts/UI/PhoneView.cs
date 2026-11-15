@@ -42,6 +42,8 @@ public partial class PhoneView : ModalView
             + (s.Faults.Count > 0 ? $"   {s.Faults.Count} fault{(s.Faults.Count == 1 ? "" : "s")}" : "")
             + (Telo.Sim.Town.SleepRules.Describe(s) is { } tired ? $"   [{tired}]" : "");
         Text(Body, counters, 54);
+        if (step >= OnboardingStep.Free)
+            Text(Body, $"Booked {BookingRules.Booked(s, c)}   can do {BookingRules.WeeklyCapacity(s)}/wk   {(BookingRules.JobsToday(s) >= BookingRules.PlayerCap ? "done for today" : $"{BookingRules.PlayerCap - BookingRules.JobsToday(s)} jobs left today")}", 40);
         if (_next.Length > 0) Text(Body, _next, 54);
         // working on an install: your time against Nez's by-the-book par
         if (Sim.Installs.Values.FirstOrDefault(j => j.ElapsedMinutes > 0) is { } job)

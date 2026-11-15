@@ -179,3 +179,48 @@ public class NezTests
         Assert.Equal(s.NezLots, back.NezLots);
     }
 }
+
+public class BookingTests
+{
+    private static Simulation PastFirstHour(ulong seed)
+    {
+        var sim = Simulation.NewGame(TestContent.Db, seed);
+        sim.AddCustomer("Ada Firth", "family", 30); sim.AddCustomer("Bo Wren", "family", 30);
+        return sim;
+    }
+
+    [Fact]
+    public void A_day_holds_three_jobs_and_a_long_wait_goes_to_NezTel()
+    {
+        var sim = PastFirstHour(5);
+        var s = sim.State;
+        for (int i = 0; i < BookingRules.PlayerCap; i++) { Assert.True(BookingRules.CanStartJob(s, sim.Content)); BookingRules.CountJob(s); }
+        Assert.False(BookingRules.CanStartJob(s, sim.Content));          // the fourth waits
+        sim.AdvanceDay();
+        Assert.True(BookingRules.CanStartJob(s, sim.Content));           // a new day
+
+        s.MessagesWaiting = 1; s.Modems = 0;
+        var waiting = sim.TakeEnquiry()!;
+        sim.AdvanceDays(BookingRules.GiveUpDays + 2);
+        Assert.False(waiting.Live);
+        Assert.Contains(waiting.LotId!, s.NezLots);
+    }
+
+    [Fact]
+    public void Ads_bring_more_bookings_and_cost_money_every_week()
+    {
+        int Bookings(int ads, out long cash)
+        {
+            var sim = PastFirstHour(9);
+            Assert.True(BookingRules.SetAds(sim.State, sim.Content, ads));
+            int got = 0;
+            for (int d = 0; d < 56; d++) { int before = sim.State.MessagesWaiting; sim.AdvanceDay(); got += Math.Max(0, sim.State.MessagesWaiting - before); sim.State.MessagesWaiting = 0; }
+            cash = sim.State.Cash;
+            return got;
+        }
+        int none = Bookings(0, out long cashNone), leaflets = Bookings(1, out long cashAds);
+        Assert.True(leaflets > none, $"leaflets {leaflets} vs none {none}");
+        Assert.True(cashAds < cashNone);
+        Assert.False(BookingRules.SetAds(PastFirstHour(9).State, TestContent.Db, 3));   // radio isn't for sale yet
+    }
+}
