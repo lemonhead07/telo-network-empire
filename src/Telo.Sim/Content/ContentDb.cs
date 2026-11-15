@@ -97,7 +97,11 @@ public sealed class ContentDb
         {
             if (w.Stages.Count == 0) e.Add($"work {w.Id}: no stages");
             foreach (var s in w.Stages)
+            {
                 if (s.RequiresEntry is { } r && !Almanac.ContainsKey(r)) e.Add($"work {w.Id}: unknown entry '{r}'");
+                // D37: one to five jobs a day, nobody more
+                if (s.Hire is { } h && (h.JobsPerDay < 1 || h.JobsPerDay > Town.BookingRules.MaxJobsPerDay)) e.Add($"work {w.Id}: {h.Name} does {h.JobsPerDay} jobs a day (1 to {Town.BookingRules.MaxJobsPerDay})");
+            }
         }
         foreach (var p in Products.Values)
         {

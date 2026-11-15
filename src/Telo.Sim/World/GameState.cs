@@ -187,7 +187,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 11;
+    public const int CurrentVersion = 12;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -207,6 +207,12 @@ public sealed class GameState
     public HashSet<string> NezLots { get; set; } = new();
     public bool NezNoticed { get; set; }
     public bool NezCompeting { get; set; }
+    /// <summary>The calendar: every new line and order, with the day the customer wants it, by ticket key (v12).</summary>
+    public Dictionary<string, Town.Booking> Bookings { get; set; } = new();
+    /// <summary>Leaflets pinned up on the ad board: each brings calls and costs a little every week.</summary>
+    public int Leaflets { get; set; }
+    /// <summary>Jobs the player has finished by hand today (three is a full day).</summary>
+    public int HandJobsToday { get; set; }
 
     // Money is whole period dollars.
     public long Cash { get; set; }

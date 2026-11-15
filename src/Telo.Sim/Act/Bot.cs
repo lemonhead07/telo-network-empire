@@ -112,6 +112,7 @@ public static class Bot
             : text.Contains("switchboard") || text.Contains("Wire") ? new[] { "switch:read:", "switch:test:", "switch:jumper:", "switch:throw" }
             : text.Contains("ticket") ? new[] { "ticket:" }
             : text.Contains("Hire") ? new[] { "invest:install" }
+            : text.Contains("leaflet") ? new[] { "ads:up" }
             : text.Contains("terminal") || text.Contains("uploads") ? new[] { "board:letin:", "board:mail", "board:file:" }
             : text.Contains("recall") ? new[] { "recall:" }
             : new[] { "sleep" };

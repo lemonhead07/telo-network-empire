@@ -1,8 +1,20 @@
 # Next Session — start here
 
-*Left off: 2026-11-15. Branch: `feature/gameplay-rapid`. Everything is pushed. 70 sim tests and the smoke test pass. Saves are at v11.*
+*Left off: 2026-11-15. Branches: `feature/gameplay-rapid` has everything up to the bookings design; `claude/zen-keller-e0i2s3` = that plus the bookings build below (merge it into `feature/gameplay-rapid` when the owner is happy). `master`/`main` are behind both. 72 sim tests and the smoke test pass. Saves are at v12.*
 
-## What just happened: the spine, first slice of all eight steps
+## Latest: bookings and the calendar (D37, Up next item 1) is built
+
+- **Every new line and catalogue order is a booking** with the day the customer wants it (1–4 days out, seeded). Ticket slips on the rail show "wanted Sat 8" or "LATE".
+- **Three jobs a day by hand** (installs, orders, odd jobs; repairs are never refused). A fourth door says "That's a full day"; the "next" line says text PIP goodnight. Staff do their `jobsPerDay` (content check: 1 to 5).
+- **The calendar can overflow.** `BookingRules.Late` counts bookings that won't be done by their day. Three days past it, the customer signs with the national phone monopoly and the house is theirs (not a Promise Ledger home, not a job already started or handed to Jory).
+- **Ads: the ad board by the front door** (`room.ad-board`, brief in `docs/props/room.json`). E pins a leaflet ($6 a week, up to 4), R takes one down. Each brings more calls. Word of mouth now scales with reputation (average satisfaction).
+- **The loop works on the bot:** the script player pins leaflets when the calendar has room, then hires Jory *because* the calendar overflows (the test checks the reason). The "next" line no longer says hire just because you can afford it.
+- **The phone** shows "This week: N booked, room for M" and "jobs today 1/3". PIP has new lines (`leaflet`, `fullday`, `late`).
+- Measured: with no leaflets, one person keeps up with the whole 15-lot town, so the hire only comes once leaflets push the calls up. Leaflet strength (450‰ a day each) is a first guess.
+
+**Next:** `BUILD_PLAN.md` → Up next item 2, *Service in nines and VIP jobs* (D38, D39). Ask the owner B1–B3 in `BOOKINGS_AND_NEZTEL.md` §6 when convenient (B1 was taken as "reputation on top of satisfaction").
+
+## Before that: the spine, first slice of all eight steps
 
 | Step | What exists now | Where |
 |---|---|---|

@@ -41,6 +41,13 @@ public partial class PhoneView : ModalView
             + (step >= OnboardingStep.Install ? $"   {s.PendingInstalls} waiting   {s.Modems} modem{(s.Modems == 1 ? "" : "s")}" : "")
             + (s.Faults.Count > 0 ? $"   {s.Faults.Count} fault{(s.Faults.Count == 1 ? "" : "s")}" : "");
         Text(Body, counters, 54);
+        // the bookings loop (D37): two numbers, one lever (the ad board)
+        if (step == OnboardingStep.Free)
+        {
+            var (booked, room) = BookingRules.Week(s);
+            int late = BookingRules.Late(s);
+            Text(Body, $"This week: {booked} booked, room for {room}{(late > 0 ? $"   {late} won't fit" : "")}   jobs today {s.HandJobsToday}/{BookingRules.PlayerJobsPerDay}", 44);
+        }
         if (_next.Length > 0) Text(Body, _next, 54);
         // working on an install: your time against Nez's by-the-book par
         if (Sim.Installs.Values.FirstOrDefault(j => j.ElapsedMinutes > 0) is { } job)

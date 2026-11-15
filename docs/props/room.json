@@ -1,0 +1,54 @@
+{
+ "_about": "Props for the room beyond the switchboard. Same form as switchboard.json; a dev session copies 'props' into game/content/props.json when props-by-name lands.",
+ "props": [
+  {
+   "id": "room.ad-board",
+   "name": "The ad board",
+   "what": "A cork board on the wall right of the front door, inside. Leaflets for your own service pinned in a row; the weekly cost and this week's bookings pencilled underneath. E pins one up, R takes one down (D37).",
+   "size": [
+    0.8,
+    0.6,
+    0.03
+   ],
+   "pivot": "centre of the back face",
+   "tris": 200,
+   "colours": [
+    "cork",
+    "frame-wood",
+    "leaflet-yellow",
+    "leaflet-pink",
+    "leaflet-blue",
+    "leaflet-green"
+   ],
+   "charm": "The first leaflet is hand-lettered with a phone number crossed out and rewritten; the later ones are photocopies, slightly crooked.",
+   "anchors": {
+    "leaflet-row": [
+     -0.28,
+     0.07,
+     0.02
+    ],
+    "leaflet-step": [
+     0.187,
+     0,
+     0
+    ],
+    "pencil-note": [
+     0,
+     -0.2,
+     0.03
+    ]
+   },
+   "states": [
+    "empty",
+    "1-4 leaflets",
+    "full"
+   ],
+   "takes": [
+    "plain cork",
+    "old: sun-faded leaflets, curled corners",
+    "bodge: one leaflet held by tape instead of a pin"
+   ],
+   "status": "box"
+  }
+ ]
+}

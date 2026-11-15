@@ -131,3 +131,46 @@ public partial class Timesheet : Node3D
 
     public void Show(string text) => _text.Text = text;
 }
+
+/// <summary>
+/// The ad board by the door (prop `room.ad-board`, D37): leaflets pinned up for the town. Each brings in more calls and costs a little
+/// every week. E pins one up, R takes one down. The board only shows the sim's count. Placeholder: cork and paper.
+/// </summary>
+public partial class AdBoard : Node3D
+{
+    private readonly MeshInstance3D[] _leaflets = new MeshInstance3D[Telo.Sim.Town.BookingRules.MaxLeaflets];
+    private readonly Label3D _text;
+    public Interactable Hot { get; }
+
+    public AdBoard()
+    {
+        Name = "AdBoard";
+        AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.8f, 0.6f, 0.03f), new Color(0.72f, 0.55f, 0.36f))
+            .Box(new Vector3(0, 0.33f, 0.005f), new Vector3(0.84f, 0.05f, 0.04f), new Color(0.4f, 0.28f, 0.16f)).Instance());
+        AddChild(new Label3D { Text = "ADS", Position = new Vector3(0, 0.33f, 0.03f), FontSize = 32, PixelSize = 0.0014f, Modulate = new Color(0.95f, 0.9f, 0.8f), OutlineSize = 0 });
+        var colours = new[] { new Color(0.97f, 0.95f, 0.6f), new Color(0.95f, 0.75f, 0.7f), new Color(0.75f, 0.88f, 0.95f), new Color(0.82f, 0.95f, 0.75f) };
+        for (int i = 0; i < _leaflets.Length; i++)
+        {
+            var leaf = new MeshInstance3D
+            {
+                Position = new Vector3(-0.28f + i * 0.187f, 0.07f, 0.02f), RotationDegrees = new Vector3(0, 0, (i % 2 == 0 ? 4 : -5)),
+                Mesh = new BoxMesh { Size = new Vector3(0.15f, 0.21f, 0.004f) },
+                MaterialOverride = new StandardMaterial3D { AlbedoColor = colours[i % colours.Length], Roughness = 0.9f }, Visible = false,
+            };
+            leaf.AddChild(new Label3D { Text = "PHONE\nLINES\nFITTED", Position = new Vector3(0, 0.02f, 0.004f), FontSize = 24, PixelSize = 0.0009f, Modulate = new Color(0.15f, 0.1f, 0.1f), OutlineSize = 0 });
+            AddChild(leaf);
+            _leaflets[i] = leaf;
+        }
+        _text = new Label3D { Position = new Vector3(0, -0.2f, 0.03f), FontSize = 28, PixelSize = 0.0011f, Modulate = new Color(0.15f, 0.1f, 0.06f), OutlineSize = 0, Width = 680, AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        AddChild(_text);
+        Hot = new Interactable { CollisionLayer = 2, CollisionMask = 0 };
+        Hot.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(0.8f, 0.6f, 0.1f) } });
+        AddChild(Hot);
+    }
+
+    public void Show(int leaflets, string line)
+    {
+        for (int i = 0; i < _leaflets.Length; i++) _leaflets[i].Visible = i < leaflets;
+        _text.Text = line;
+    }
+}

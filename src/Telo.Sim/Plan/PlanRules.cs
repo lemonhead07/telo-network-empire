@@ -66,9 +66,12 @@ public static class PlanRules
     {
         var plan = PlanFor(s, day);
         plan.Slots.Clear();
+        // three jobs is a full day (D37); a repair is never turned away
+        int room = BookingRules.PlayerJobsPerDay - (day == s.Day ? s.HandJobsToday : 0);
         foreach (var t in StaffRules.Tickets(s, c).Where(t => t.AssignedTo is null && t.LotId is not null)
-                     .OrderByDescending(t => t.Kind == TicketKind.Repair).ThenByDescending(t => t.WaitingDays))
+                     .OrderByDescending(t => t.Kind == TicketKind.Repair).ThenBy(t => BookingRules.Of(s, t.Key)?.WantedDay ?? int.MaxValue).ThenByDescending(t => t.WaitingDays))
         {
+            if (t.Kind != TicketKind.Repair && plan.Slots.Count(x => !x.TicketKey.StartsWith("repair:")) >= room) continue;
             plan.Slots.Add(new PlanSlot { TicketKey = t.Key });
             Lay(s, c, gen, plan);
             var last = plan.Slots[^1];

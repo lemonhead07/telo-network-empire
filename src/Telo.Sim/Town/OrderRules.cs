@@ -56,6 +56,8 @@ public static class OrderRules
         cust.MonthlyFee += p.MonthlyExtra;
         cust.Products.Add(p.Id);
         s.OrdersDone++;
+        BookingRules.HandJobDone(s);
+        s.Bookings.Remove($"order:{order.Id}");
         if (bodged)
             s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + rng.Range(5, 30), Source = "order", CustomerId = cust.Id, Text = p.BodgeDefect });
         else cust.Satisfaction = Math.Min(100, cust.Satisfaction + 5);
@@ -65,7 +67,8 @@ public static class OrderRules
 
     public static void Tick(GameState s, ContentDb c)
     {
-        foreach (var o in s.Orders.Where(o => s.Day - o.PlacedDay > ExpiresAfterDays).ToList())
+        // a booked order waits as long as its booking says (BookingRules.NewDay); this is the backstop for any that never got one
+        foreach (var o in s.Orders.Where(o => !s.Bookings.ContainsKey($"order:{o.Id}") && s.Day - o.PlacedDay > ExpiresAfterDays).ToList())
         {
             s.Orders.Remove(o);
             if (s.Customers.FirstOrDefault(x => x.Id == o.CustomerId) is not { } cust) continue;

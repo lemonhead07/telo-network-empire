@@ -41,8 +41,10 @@ public static class Guidance
         if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s))
             return (SwitchRules.CanAddPanel(s) ? $"The switchboard is full. Bolt on another panel (${SwitchRules.PanelPrice})." : $"The switchboard is full. Another panel is ${SwitchRules.PanelPrice}.", null);
 
+        // three jobs done by hand: nothing new today (faults are never refused, above)
+        bool full = BookingRules.DayFull(s) is not null;
         // someone is waiting for something they ordered
-        if (s.Orders.FirstOrDefault() is { } order && s.Customers.FirstOrDefault(x => x.Id == order.CustomerId) is { } buyer && c.Products.TryGetValue(order.ProductId, out var wanted))
+        if (!full && s.Orders.FirstOrDefault() is { } order && s.Customers.FirstOrDefault(x => x.Id == order.CustomerId) is { } buyer && c.Products.TryGetValue(order.ProductId, out var wanted))
             return ($"Order: fit {wanted.Name.ToLowerInvariant()} at {buyer.Name}'s (${wanted.Price}).", buyer.LotId);
 
         // the sysop's terminal: callers to let in, uploads to look through, tonight's mail
@@ -66,8 +68,13 @@ public static class Guidance
         }
 
         bool tech = c.Work.ContainsKey("install") && WorkRules.Current(s, c, "install").Mode != WorkMode.Manual;
-        if (!tech && c.Work.ContainsKey("install") && WorkRules.CanUpgrade(s, c, "install") == UpgradeResult.Ok)
-            return ($"You can afford a technician (${WorkRules.Next(s, c, "install")!.Cost}). Hire them in the company notebook in your room.", null);
+        // the bookings loop (D37): more on the calendar than you can do means hire; room to spare means advertise
+        int late = BookingRules.Late(s);
+        if (!tech && late > 0 && c.Work.ContainsKey("install") && WorkRules.CanUpgrade(s, c, "install") == UpgradeResult.Ok)
+            return ($"The calendar is overflowing: {late} booking{(late == 1 ? "" : "s")} won't be done by the day they want. Hire a technician (${WorkRules.Next(s, c, "install")!.Cost}) in the company notebook in your room.", null);
+        if (late == 0 && Onboarding.Reached(s, c, OnboardingStep.Free) && s.Leaflets < BookingRules.MaxLeaflets && s.Cash >= 100 && s.LiveSubscribers >= 2
+            && Clock.Hour(s) < 17)
+            return ($"The calendar has room. Pin a leaflet on the ad board by the door (${BookingRules.LeafletPerWeek} a week) to bring in more calls.", null);
         // paper and people: a technician only works on tickets they have been handed (until there is a depot)
         if (!s.HasDepot && Clock.IsWorkingDay(s.Day) && Clock.Hour(s) < Clock.WorkEndsHour
             && s.StaffMembers.FirstOrDefault(m => StaffRules.Tickets(s, c).Any(t => StaffRules.CanTake(s, c, m, t))) is { } idle)
@@ -77,7 +84,7 @@ public static class Guidance
                 ? ("Your technician is out of modems. Buy some at the electronics shop.", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id)
                 : ("Your technician is out of modems and you can't afford one. Earn some cash.", BestJob(s, c)?.LotId);
 
-        var needSocket = tech ? null : s.Customers.FirstOrDefault(x => x.Live && !x.Installed && !x.SocketFitted);
+        var needSocket = tech || full ? null : s.Customers.FirstOrDefault(x => x.Live && !x.Installed && !x.SocketFitted);
         if (needSocket is not null)
             return s.Modems > 0
                 ? ($"Install the line at {needSocket.Name}'s house.", needSocket.LotId)
@@ -88,7 +95,7 @@ public static class Guidance
 
         if (!tech && s.ReadyForFrame > 0) return ($"Wire {s.ReadyForFrame} new line(s) at the switchboard in your room.", null);
         if (s.MessagesWaiting > 0) return ($"Play the answering machine in your room ({s.MessagesWaiting} waiting).", null);
-        if (BestJob(s, c) is { } job && (s.Cash < 150 || !TownRules.Prospects(s, c).Any(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay)))
+        if (!full && BestJob(s, c) is { } job && (s.Cash < 150 || !TownRules.Prospects(s, c).Any(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay)))
             return ($"Odd job: {job.Title.ToLowerInvariant()} at {Who(c, job)}'s (${job.Pay}).", job.LotId);
         // hands free: time to build something
         if (tech && c.Premises.Values.FirstOrDefault(p => p.PoleLine is not null && p.Act <= s.ActIndex + 1 && Ledger.LedgerRules.StatusOf(s, p.Id) != PromiseStatus.Served) is { } far)
@@ -101,9 +108,10 @@ public static class Guidance
         // this chapter's work is done and the world hasn't caught up: remember the next one early
         if (ActRules.EarlyStartEntry(s, c) is { } page && s.Archive >= page.ArchiveCost)
             return ($"Get ahead: recall \"{page.Title}\" in PIP's Almanac ({page.ArchiveCost} Archive).", null);
+        if (full && (s.Bookings.Count > 0 || s.Jobs.Count > 0)) return (BookingRules.FullDay + " Text PIP goodnight.", null);
         var prospect = TownRules.Prospects(s, c).FirstOrDefault(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay);
         if (prospect is not null) return ($"Knock on doors to find customers. Try {prospect.Resident}'s.", prospect.Id);
-        if (BestJob(s, c) is { } any) return ($"Odd job: {any.Title.ToLowerInvariant()} at {Who(c, any)}'s (${any.Pay}).", any.LotId);
+        if (!full && BestJob(s, c) is { } any) return ($"Odd job: {any.Title.ToLowerInvariant()} at {Who(c, any)}'s (${any.Pay}).", any.LotId);
         return (QuietText, null);
     }
 

@@ -68,13 +68,19 @@ public sealed class Simulation
         if (s.Day % 7 == 0) { BoardService.Week(s, Content, _rng); Nez.NezRules.Week(s, Content); }
         TownRules.Tick(s, Content, _rng);
         OrderRules.Tick(s, Content);
+        BookingRules.NewDay(s, Content);
         SwitchRules.Tidy(s);
         StaffRules.EndOfDay(s, Content, _rng, s.Day - 1);
         SurfaceDefects();
         DriftSatisfaction();
-        // Word of mouth: happy subscribers bring enquiries.
+        // Word of mouth: happy subscribers bring enquiries, more when the town thinks well of you; leaflets bring more (D37).
         int happy = s.Customers.Count(c => c.Live && c.Installed && c.Satisfaction >= 60);
-        if (Onboarding.PhoneRings(s, Content) && s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, 250 + 40 * happy + 8 * BoardService.Appeal(s)))) s.MessagesWaiting++;
+        if (Onboarding.PhoneRings(s, Content))
+        {
+            int word = (250 + 40 * happy + 8 * BoardService.Appeal(s)) * BookingRules.Reputation(s) / 70;
+            if (s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, word))) s.MessagesWaiting++;
+            s.MessagesWaiting = Math.Min(9, s.MessagesWaiting + BookingRules.LeafletCalls(s, _rng));
+        }
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
         Phone.PhoneRules.Morning(s, Content);   // one text in, every morning
@@ -161,6 +167,7 @@ public sealed class Simulation
     public Order? OfferOrder()
     {
         var order = OrderRules.Offer(State, Content, _rng);
+        BookingRules.Sync(State);
         State.RngState = _rng.State;
         return order;
     }
@@ -313,6 +320,7 @@ public sealed class Simulation
         }
         else if (TownRules.OfferJob(State, Content, _rng) is { } job)
             State.Emit(EventKind.Info, $"Message: \"{job.Title}\" — ${job.Pay} if you can come by.", job.LotId);
+        BookingRules.Sync(State);
         State.RngState = _rng.State;
         return c;
     }
@@ -328,6 +336,7 @@ public sealed class Simulation
     public KnockResult Knock(string lotId)
     {
         var r = TownRules.Knock(State, Content, _rng, lotId);
+        BookingRules.Sync(State);
         State.RngState = _rng.State;
         return r;
     }
@@ -356,6 +365,8 @@ public sealed class Simulation
         // mistakes compound: every extra bodge on the same line brings all of them to the surface sooner
         foreach (var text in o.Defects)
             s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + Math.Max(3, _rng.Range(10, 45) / o.Defects.Count), Source = "install", CustomerId = o.CustomerId, Text = text });
+        BookingRules.HandJobDone(s);
+        BookingRules.Sync(s);
         if (o.OvertimeMinutes > 0 && s.Customers.FirstOrDefault(c => c.Id == o.CustomerId) is { } cust)
             cust.Satisfaction = Math.Clamp(cust.Satisfaction - Math.Min(5, 1 + o.OvertimeMinutes / 30), 0, 100);
         s.RngState = _rng.State;

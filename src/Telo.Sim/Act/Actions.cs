@@ -154,6 +154,13 @@ public static class Actions
         foreach (var e in c.Almanac.Values.Where(e => s.Entries.GetValueOrDefault(e.Id) == EntryStatus.Readable))
             list.Add(new($"recall:{e.Id}", $"Recall \"{e.Title}\" ({e.ArchiveCost} Archive)", 5, s.Archive >= e.ArchiveCost ? null : "not enough Archive",
                 () => Almanac.AlmanacRules.Recall(s, c, e.Id)));
+        // the ad board by the door: leaflets bring calls, and cost a little every week
+        if (Onboarding.Reached(s, c, OnboardingStep.Free))
+        {
+            list.Add(new("ads:up", $"Pin up a leaflet (${BookingRules.LeafletPerWeek} a week; {s.Leaflets} up)", 3,
+                s.Leaflets >= BookingRules.MaxLeaflets ? "the board is full" : null, () => BookingRules.Pin(s, c)));
+            if (s.Leaflets > 0) list.Add(new("ads:down", "Take a leaflet down", 1, null, () => BookingRules.Unpin(s)));
+        }
         if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s))
             list.Add(new("switch:panel", $"Bolt on another panel (${SwitchRules.PanelPrice})", 20, SwitchRules.CanAddPanel(s) ? null : "not enough cash", () => SwitchRules.AddPanel(s)));
 
@@ -199,6 +206,8 @@ public static class Actions
                 () => TownRules.Repair(s, fault.Id, onSite)));
             return;
         }
+        // three jobs is a full day: nothing new is started (work under way carries on, above)
+        away ??= BookingRules.DayFull(s);
         if (house && OrderRules.OrderAt(s, lot.Id) is { } order && c.Products.TryGetValue(order.ProductId, out var product))
             list.Add(new($"order:{order.Id}", $"Fit the {product.Name.ToLowerInvariant()} they ordered", 1, away,
                 () => sim.Benches[lot.Id] = new Bench(OrderRules.NewTask(c, order), "order", order.Id)));
@@ -209,6 +218,7 @@ public static class Actions
                 : new($"oddjob:{odd.Id}", $"{odd.Title} (+${odd.Pay})", odd.Hours * 60, away, () => TownRules.CompleteJob(s, c, odd.Id)));
 
         var cust = TownRules.CustomerAt(s, lot.Id);
+        string? door = a.IgnoreHours ? null : HomeRules.WhyNot(s, c, lot);
         if (cust is { SocketFitted: false })
         {
             string? why = away ?? (s.Modems <= 0 ? "you have no modems (Sol's Electronics sells them)" : null);
@@ -221,7 +231,7 @@ public static class Actions
             var h = TownRules.HouseholdOf(s, lot.Id);
             string? why = s.NezLots.Contains(lot.Id) ? "they signed with the national phone monopoly"
                 : !Onboarding.CanKnock(s, c) ? "not yet: see one customer through first"
-                : s.Day < h.RetryDay ? (h.Status == HouseholdStatus.Declined ? "they said no; try again later" : "nobody home; try tomorrow") : away;
+                : s.Day < h.RetryDay ? (h.Status == HouseholdStatus.Declined ? "they said no; try again later" : "nobody home; try tomorrow") : door;
             list.Add(new($"knock:{lot.Id}", $"Knock on {lot.Resident}'s door", 5, why, () => sim.Knock(lot.Id)));
         }
     }

@@ -50,6 +50,7 @@ public partial class GameRoot : Node3D
     private TicketRail _rail = null!;
     private WallCalendar _calendar = null!;
     private Timesheet _sheet = null!;
+    private AdBoard _ads = null!;
     private readonly HashSet<string> _clipboard = new();
     private readonly Dictionary<string, StaffFigure> _figures = new();
     /// <summary>Automated checks ignore who is home and whether the shop is open.</summary>
@@ -136,7 +137,7 @@ public partial class GameRoot : Node3D
         _lastStep = Onboarding.Current(Sim.State, _content);
         if (_lastStep == OnboardingStep.Enquiry) _pip.Once("hello");
         if (_lastStep == OnboardingStep.Free) _pip.Skip("customer", "van", "carry", "install", "step", "modem", "dial", "signed", "frame", "oddjob", "knock", "free");
-        if (Sim.State.Staff > 0) _pip.Skip("canhire", "hired");
+        if (Sim.State.Staff > 0) _pip.Skip("canhire", "late", "hired");
         _cargo.PickedUp += _ => _pip.Once("carry");
         // a save made in the middle of a house install comes back with the door open and the job where it was
         foreach (var id in Sim.State.Installs.Keys.ToList())
@@ -322,6 +323,16 @@ public partial class GameRoot : Node3D
         _sheet.Hot.AltPrompt = () => "Clear the sheet";
         _sheet.Hot.OnAlt = () => { Telo.Sim.Plan.PlanRules.PlanFor(Sim.State, PlanDay()).Slots.Clear(); SyncPaper(); };
 
+        // the ad board, on the wall beside the door (D37): leaflets bring calls
+        _ads = new AdBoard { Position = new Vector3(RoomBuilder.DoorX + 1.25f, 1.55f, RoomBuilder.D / 2 - 0.08f), RotationDegrees = new Vector3(0, 180, 0) };
+        room.AddChild(_ads);
+        _ads.Hot.Prompt = () => !Onboarding.Reached(Sim.State, _content, OnboardingStep.Free) ? "The ad board. (For when you know what you're selling.)"
+            : Sim.State.Leaflets >= BookingRules.MaxLeaflets ? "The ad board is full of your leaflets" : $"Pin up a leaflet: more calls, ${BookingRules.LeafletPerWeek} a week";
+        _ads.Hot.CanUse = () => Onboarding.Reached(Sim.State, _content, OnboardingStep.Free) && Sim.State.Leaflets < BookingRules.MaxLeaflets;
+        _ads.Hot.OnUse = () => { if (BookingRules.Pin(Sim.State, _content)) { _pip.Once("leaflet"); SyncPaper(); } };
+        _ads.Hot.AltPrompt = () => Sim.State.Leaflets > 0 ? "Take a leaflet down" : "";
+        _ads.Hot.OnAlt = () => { if (BookingRules.Unpin(Sim.State)) SyncPaper(); };
+
         // Camp bed. Sleeping is how days pass quickly.
         RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
             () => Guidance.IsQuiet(Sim.State, _content) ? "Sleep until something needs you (days may pass)" : "Sleep until morning",
@@ -427,6 +438,13 @@ public partial class GameRoot : Node3D
             return missing == Tools.None
                 ? ($"Fix {broken.Name}'s line: {fault.Text}", () => TownRules.Repair(s, fault.Id, KitOnSite()))
                 : ($"{broken.Name} has a fault: {fault.Text}. You need {Cargo.Names(missing)} from the van", null);
+        }
+        // three jobs is a full day (D37): nothing new is started, work under way carries on
+        if (BookingRules.DayFull(s) is { } full && !_installs.ContainsKey(lot.Id) && !_oddJobs.ContainsKey(lot.Id)
+            && (OrderRules.OrderAt(s, lot.Id) is not null || TownRules.JobAt(s, lot.Id) is not null || TownRules.CustomerAt(s, lot.Id) is { SocketFitted: false }))
+        {
+            _pip.Once("fullday");
+            return ($"{lot.Resident}: {full}", null);
         }
         if (OrderRules.OrderAt(s, lot.Id) is { } order && _content.Products.TryGetValue(order.ProductId, out var product)
             && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } orderHome)
@@ -612,7 +630,8 @@ public partial class GameRoot : Node3D
     private string TicketLine(Ticket t)
     {
         string who = t.AssignedTo is { } id && StaffRules.Member(Sim.State, id) is { } m ? $"with {m.Name.Split(' ')[0].ToUpperInvariant()}" : _clipboard.Contains(t.Key) ? "ON YOUR CLIPBOARD" : "";
-        return $"{t.Kind.ToString().ToUpperInvariant()}  {(t.WaitingDays > 0 ? $"day {t.WaitingDays + 1}" : "new")}\n{t.Title}\n{who}";
+        string wanted = BookingRules.Of(Sim.State, t.Key) is { } b ? $"  wanted {(b.WantedDay < Sim.State.Day ? "LATE" : new Telo.Sim.Core.GameDate(b.WantedDay).ToDate().ToString("ddd d"))}" : "";
+        return $"{t.Kind.ToString().ToUpperInvariant()}  {(t.WaitingDays > 0 ? $"day {t.WaitingDays + 1}" : "new")}{wanted}\n{t.Title}\n{who}";
     }
 
     /// <summary>The rail, the calendar and where each member of staff is standing all follow the sim.</summary>
@@ -630,6 +649,9 @@ public partial class GameRoot : Node3D
             return $"{(d.Day == s.Day ? "▶" : "  ")} {date:ddd d}{(d.Note.Length > 0 ? "   " + d.Note : "")}";
         });
         ShowSheet();
+        var (booked, roomFor) = BookingRules.Week(s);
+        int late = BookingRules.Late(s);
+        _ads.Show(s.Leaflets, s.Leaflets == 0 ? "no leaflets up" : $"{s.Leaflets} up: ${s.Leaflets * BookingRules.LeafletPerWeek} a week\nthis week {booked} booked, room for {roomFor}{(late > 0 ? $", {late} late" : "")}");
         _calendar.Show($"{today:MMMM yyyy}".ToUpperInvariant() + $"        {Clock.Text(s)}\n\n" + string.Join("\n", lines));
 
         foreach (var m in s.StaffMembers.Where(m => m.Does.Count > 0))
@@ -716,7 +738,7 @@ public partial class GameRoot : Node3D
             if (step == OnboardingStep.Free) _pip.Once("free");
         }
         if (step >= OnboardingStep.Install && s.Modems == 0 && s.Customers.Any(c => c.Live && !c.SocketFitted)) _pip.Once("nomodem");
-        if (s.Staff == 0 && WorkRules.CanUpgrade(s, _content, "install") == UpgradeResult.Ok) _pip.Once("canhire");
+        if (s.Staff == 0 && WorkRules.CanUpgrade(s, _content, "install") == UpgradeResult.Ok && BookingRules.Late(s) > 0) _pip.Once("late");
         if (s.StaffMembers.Any(m => m.Does.Count > 0)) _pip.Once("hired");
         if (StaffRules.CanLeaseDepot(s)) _pip.Once("tolet");
         if (s.StaffMembers.Count > 0 && Clock.Weekday(s.Day) == DayOfWeek.Friday) _pip.Once("payday");
@@ -1259,6 +1281,12 @@ public partial class GameRoot : Node3D
         cam.GlobalTransform = _rail.GlobalTransform * new Transform3D(new Basis(Vector3.Up, 0.12f), new Vector3(0.62f, 0.02f, 1.75f));
         await Frames(12);
         GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-wall.png"));
+        // the ad board by the door, with two leaflets up (D37)
+        BookingRules.Pin(Sim.State, _content); BookingRules.Pin(Sim.State, _content);
+        SyncPaper();
+        cam.GlobalTransform = _ads.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0, 0.02f, 1.1f));
+        await Frames(12);
+        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-ads.png"));
         // Jory waiting at your door for a ticket
         if (_figures.TryGetValue("install", out var jory))
         {

@@ -30,9 +30,10 @@ public class ScriptPlayerTests
         var (sim, me, gen) = NewGame();
         var log = new List<string>();
         var money = new SortedDictionary<int, string>();
+        var hiredBecause = new List<string>();
         var chapters = new List<int> { Plot.Index(sim.State, sim.Content) };
         var taken = Bot.Play(sim, me, gen, () => FarmServed(sim) || sim.State.Day > Simulation.StartDate.Day + 1100, 120000,
-            (id, why) => { log.Add($"{sim.State.Date} {Clock.Text(sim.State)} {id}  ({why})"); if (Plot.Index(sim.State, sim.Content) != chapters[^1]) chapters.Add(Plot.Index(sim.State, sim.Content)); if (sim.State.Day % 45 == 0 && !money.ContainsKey(sim.State.Day)) money[sim.State.Day] = $"{sim.State.Date}: ${sim.State.Cash} subs={sim.State.LiveSubscribers} staff={sim.State.StaffMembers.Count} act={sim.State.ActIndex} mailbill={sim.State.MailBillCents}"; });
+            (id, why) => { if (id == "invest:install") hiredBecause.Add(why); log.Add($"{sim.State.Date} {Clock.Text(sim.State)} {id}  ({why})"); if (Plot.Index(sim.State, sim.Content) != chapters[^1]) chapters.Add(Plot.Index(sim.State, sim.Content)); if (sim.State.Day % 45 == 0 && !money.ContainsKey(sim.State.Day)) money[sim.State.Day] = $"{sim.State.Date}: ${sim.State.Cash} subs={sim.State.LiveSubscribers} staff={sim.State.StaffMembers.Count} act={sim.State.ActIndex} mailbill={sim.State.MailBillCents}"; });
 
         Assert.True(FarmServed(sim), $"farm line not built. at={me.Place} van={me.VanAt} holding={me.Holding} kit={string.Join(",", me.Kit.Select(k => k.Key + "@" + k.Value))} lines={string.Join(",", sim.State.Lines.Select(l => l.Key + ":" + l.Value.Planted + "/" + l.Value.Strung))}\nacts: {string.Join(" | ", Actions.For(sim, me, gen).Where(x => !x.Id.StartsWith("go:lot")).Select(x => x.Id + (x.Ready ? "" : "[" + x.Blocked + "]")))}\nmoney:\n{string.Join("\n", money.Values)}\nLast actions:\n" + string.Join("\n", log.TakeLast(6)));
         Assert.Equal(OnboardingStep.Free, Onboarding.Current(sim.State, sim.Content));
@@ -42,6 +43,9 @@ public class ScriptPlayerTests
         Assert.Contains(taken, id => id.StartsWith("knock:"));
         Assert.Contains(taken, id => id == "pole:plant");
         Assert.True(sim.State.LiveSubscribers >= 4);
+        // D37: the bot hires because the calendar overflows, not merely because it can afford to
+        Assert.Contains(hiredBecause, why => why.StartsWith("The calendar is overflowing"));
+        Assert.Contains(taken, id => id == "ads:up");
         // one plot line, no overlap: every chapter, in order, never going back
         Assert.Equal(Enumerable.Range(0, sim.Content.Plot.Count), chapters);
     }

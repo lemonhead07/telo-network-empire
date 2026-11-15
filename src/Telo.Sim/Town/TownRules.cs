@@ -149,6 +149,7 @@ public static class TownRules
         if (job is null) return null;
         s.Jobs.Remove(job);
         s.Cash += job.Pay; s.JobsDone++;
+        BookingRules.HandJobDone(s);
         var home = HouseholdOf(s, job.LotId);
         home.Goodwill = bodged ? Math.Max(-300, home.Goodwill - 150) : Math.Min(300, home.Goodwill + 150);
         string who = c.Lots.TryGetValue(job.LotId, out var lot) ? lot.Resident : "the customer";
