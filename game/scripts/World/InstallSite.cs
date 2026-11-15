@@ -33,6 +33,11 @@ public partial class InstallSite : Node3D
     /// <summary>Real seconds of holding for a step of this many game minutes. Set by the game.</summary>
     public static Func<int, float> HoldFor { get; set; } = minutes => minutes * 0.33f;
 
+    /// <summary>Where the player works on a step (for the walking player and automated checks).</summary>
+    public Interactable? SpotFor(InstallStep step) => _spots.FirstOrDefault(x => x.Step == step)?.Hotspot;
+    public Interactable Phone => _phone;
+    public Interactable Sheet => _sheet;
+
     /// <summary>The install here is finished: wire, socket and modem are part of the house now.</summary>
     public bool Fitted { get; private set; }
     public bool Active => _job is not null;

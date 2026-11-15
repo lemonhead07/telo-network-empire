@@ -10,6 +10,12 @@ namespace Telo.Sim.Act;
 public sealed class ActorState
 {
     public string Id { get; set; } = "player";
+    /// <summary>Whose side they are on: "player", "nez", a rival or a co-op (AGES.md §6). Assets they build carry it.</summary>
+    public string Owner { get; set; } = "player";
+    /// <summary>The region they work in (a site id). A manager can later be handed a whole region.</summary>
+    public string Region { get; set; } = "town-start";
+    /// <summary>The vehicle they drive (an id in <see cref="Vehicles"/>).</summary>
+    public string Vehicle { get; set; } = "van";
     /// <summary>A place id (see <see cref="Places"/>): "room", a lot id, or "pole:&lt;premise&gt;:&lt;n&gt;".</summary>
     public string Place { get; set; } = Places.Room;
     /// <summary>Where the van is parked.</summary>

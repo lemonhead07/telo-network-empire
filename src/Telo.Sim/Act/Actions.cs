@@ -15,10 +15,13 @@ namespace Telo.Sim.Act;
 /// One thing an actor could do now. <see cref="Blocked"/> says, in plain words, what is stopping it (null when it can be done).
 /// <see cref="Minutes"/> is how long it takes the player; staff and Nez scale it.
 /// </summary>
-public sealed record GameAction(string Id, string Label, int Minutes, string? Blocked, Action Run)
+public sealed record GameAction(string Id, string Label, int Minutes, string? Blocked, Action Run, ActionScale Scale = ActionScale.Task)
 {
     public bool Ready => Blocked is null;
 }
+
+/// <summary>How big an action is: a two-minute clip, a half-day job, or a weeks-long project a crew holds (AGES.md §6).</summary>
+public enum ActionScale { Task, Job, Project }
 
 /// <summary>
 /// The one question every player, test, member of staff and opponent asks: "what can this actor do now, and what is stopping the rest?"
@@ -39,7 +42,7 @@ public static class Actions
             if (place == here) continue;
             double m = Places.DistanceM(gen, c, here, place);
             bool drive = a.Holding == Tools.None && a.VanAt == here && m > Places.DriveOverM;
-            int min = drive ? Places.DriveMinutes(m) : Places.WalkMinutes(m);
+            int min = drive ? Places.DriveMinutes(m, a.Vehicle) : Places.WalkMinutes(m);
             list.Add(new($"go:{place}", $"{(drive ? "Drive" : "Walk")} to {Name(c, place)}", min, null, () =>
             {
                 if (drive) a.VanAt = place;

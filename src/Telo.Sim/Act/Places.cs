@@ -14,7 +14,8 @@ public static class Places
     public const string Room = "room";
     /// <summary>Game minutes per real second (1440 minutes in 480 seconds).</summary>
     public const double MinutesPerSecond = 3;
-    public const double WalkMps = 2.8, DriveMps = 15;
+    public const double WalkMps = 2.8;
+    public static double DriveMps => Vehicles.All["van"].SpeedMps;
     /// <summary>Further than this, an actor with empty hands takes the van.</summary>
     public const double DriveOverM = 25;
 
@@ -57,5 +58,20 @@ public static class Places
 
     public static int WalkMinutes(double metres) => Math.Max(1, (int)Math.Ceiling(metres / WalkMps * MinutesPerSecond));
     /// <summary>Driving, plus a minute to get in and out.</summary>
-    public static int DriveMinutes(double metres) => 1 + Math.Max(1, (int)Math.Ceiling(metres / DriveMps * MinutesPerSecond));
+    public static int DriveMinutes(double metres, string vehicle = "van") =>
+        1 + Math.Max(1, (int)Math.Ceiling(metres / Vehicles.All[vehicle].SpeedMps * MinutesPerSecond));
 }
+
+/// <summary>Ways across the planet, as data (AGES.md §6). Only the van exists yet; the rest are named so nothing assumes a van.</summary>
+public sealed record VehicleDef(string Id, string Name, double SpeedMps, bool Road, bool Water, bool Air);
+
+public static class Vehicles
+{
+    public static readonly IReadOnlyDictionary<string, VehicleDef> All = new Dictionary<string, VehicleDef>
+    {
+        ["van"] = new("van", "service van", 15, Road: true, Water: false, Air: false),
+    };
+}
+
+/// <summary>What a link is made of. Unused values cost nothing now and save a rewrite later (AGES.md §6).</summary>
+public enum LinkMedium { Copper, PoleCable, Radio, Microwave, Fibre, SeaCable, Cell, Satellite }

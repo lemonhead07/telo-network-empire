@@ -72,7 +72,7 @@ public partial class GameRoot : Node3D
     private Transform3D _cameraHome;
     private Tween? _lean;
     /// <summary>House installs under way, by lot. Not saved: a half-done job is simply started again.</summary>
-    private readonly Dictionary<string, InstallJob> _installs = new();
+    private Dictionary<string, InstallJob> _installs => Sim.Installs;   // the sim keeps the jobs; the houses show them
 
     private float Hour => (6f + _dayClock / DayLengthSeconds * 24f) % 24f;
     private bool AnyScreenOpen => _switch.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen;
@@ -136,6 +136,8 @@ public partial class GameRoot : Node3D
 
         RefreshIdleScreens();
         if (args.Contains("--smoke")) _ = RunSmoke();
+        if (args.FirstOrDefault(a => a == "--autoplay" || a.StartsWith("--autoplay=")) is { } auto)
+            _ = RunAutoplay(auto.Contains('=') ? auto[(auto.IndexOf('=') + 1)..] : null, args);
         if (args.FirstOrDefault(a => a.StartsWith("--shot=")) is { } shot) _ = TakeScreenshot(shot["--shot=".Length..]);
     }
 
@@ -517,16 +519,16 @@ public partial class GameRoot : Node3D
 
     // ---- odd jobs by hand: the thing to fix sits on the rug in their front room ------------------
     private void StartOddJob(LotView view, OddJob job) =>
-        StartBenchJob(view, Sim.NewOddJobTask(job.Id), new Color(0.22f, 0.2f, 0.18f), $"Hand it back to {view.Lot.Resident} (+${job.Pay})",
+        StartBenchJob(view, Sim.NewOddJobTask(job.Id), "job", job.Id, new Color(0.22f, 0.2f, 0.18f), $"Hand it back to {view.Lot.Resident} (+${job.Pay})",
             bodged => TownRules.CompleteJob(Sim.State, _content, job.Id, bodged), () => TownRules.JobAt(Sim.State, view.Lot.Id)?.Id == job.Id, "oddstart");
 
     /// <summary>Something from the catalogue, fitted in the customer's front room.</summary>
     private void StartOrder(LotView view, Order order, ProductDef product) =>
-        StartBenchJob(view, OrderRules.NewTask(_content, order), new Color(0.78f, 0.72f, 0.58f), $"Show {view.Lot.Resident} how it works (+${product.Price})",
+        StartBenchJob(view, OrderRules.NewTask(_content, order), "order", order.Id, new Color(0.78f, 0.72f, 0.58f), $"Show {view.Lot.Resident} how it works (+${product.Price})",
             bodged => Sim.CompleteOrder(order.Id, bodged), () => Sim.State.Orders.Any(o => o.Id == order.Id), "order");
 
     /// <summary>A small job done by hand indoors: the thing sits on the rug, E works through its steps, R thumps it.</summary>
-    private void StartBenchJob(LotView view, OddJobTask? task, Color colour, string handBack, Action<bool> complete, Func<bool> wanted, string pipKey)
+    private void StartBenchJob(LotView view, OddJobTask? task, string kind, string refId, Color colour, string handBack, Action<bool> complete, Func<bool> wanted, string pipKey)
     {
         if (task is null) return;
         var bench = new Interactable { Position = new Vector3(1.5f, TownBuilder.HouseFloor + 0.17f, -0.9f), CollisionLayer = 2, CollisionMask = 0 };
@@ -555,12 +557,14 @@ public partial class GameRoot : Node3D
         bench.OnAlt = () => { if (task.Bodge()) _pip.Once("thump"); };
         view.Body.AddChild(bench);
         _oddJobs[view.Lot.Id] = (task, bench, wanted);
+        Sim.Benches[view.Lot.Id] = new Telo.Sim.Act.Bench(task, kind, refId);
         OpenDoor(view, true);
         _pip.Once(pipKey);
     }
 
     private void EndOddJob(string lotId)
     {
+        Sim.Benches.Remove(lotId);
         if (!_oddJobs.Remove(lotId, out var doing)) return;
         doing.Bench.QueueFree();
     }
