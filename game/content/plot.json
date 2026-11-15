@@ -27,7 +27,19 @@
     "text": "Ruth Adeyemi has asked politely twice. No fee buys a line out there. You'll have to build it.",
     "doneWhen": [ { "kind": "ledgerServed", "value": 1 } ] },
 
-  { "id": "ch-open", "title": "The town is yours", "step": "free", "teaches": "",
-    "text": "The farm has dial tone. The whole town has heard who built it. The rest of the planet hasn't.",
+  { "id": "ch-lane", "title": "Behind Main Street", "step": "free", "teaches": "knock:",
+    "text": "The farm has dial tone and the whole town heard who built it. Behind Main Street, Church Lane has never had a phone that worked on a Sunday. Father Roe says the Lord can wait. The parish council can't.",
+    "doneWhen": [ { "kind": "subscribers", "value": 14 } ] },
+
+  { "id": "ch-eastgate", "title": "The valley road", "step": "free", "teaches": "knock:",
+    "text": "Eastgate is a short drive down the valley road. NezTel calls it 'scheduled for the next phase'. The Post Office has been in the next phase since 1971.",
+    "doneWhen": [ { "kind": "subscribers", "value": 20 } ] },
+
+  { "id": "ch-nines", "title": "Ninety-nine percent", "step": "free", "teaches": "repair:",
+    "text": "NezTel's leaflet promises 99%. Doc Ferreira did the sum on the back of it: three and a half days a year with no line. Do better than that and people notice. Fix faults the day they show, and don't keep anyone waiting.",
+    "doneWhen": [ { "kind": "serviceNines", "value": 3 }, { "kind": "subscribers", "value": 24 } ] },
+
+  { "id": "ch-open", "title": "The valley is yours", "step": "free", "teaches": "",
+    "text": "Two villages, one switchboard, and service NezTel can't match. Their customers have started ringing you. The rest of the planet hasn't heard of you yet.",
     "doneWhen": [] }
 ]

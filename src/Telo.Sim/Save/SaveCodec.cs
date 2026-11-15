@@ -39,6 +39,13 @@ public static class SaveCodec
         // v13: ads and the daily job cap (new fields default to zero: no ads, nothing done today)
         if (s.Version < 14) s.Appointments ??= new(); // v14: appointments and the job clock
         // v15: service level (line-days up, counted from now on) and VIP bookings (none yet): new fields default to zero/null
+        if (s.Version < 16 && s.Switch is { } board)   // v16: the board grows to 32; the two spare ports move from 16-17 to 40-41
+        {
+            int Move(int port) => port is 16 or 17 ? port - 16 + Net.SwitchRules.SpareBase : port;
+            foreach (var p in board.Positions) p.Jumper = p.Jumper >= 0 ? Move(p.Jumper) : p.Jumper;
+            board.TestedPorts = board.TestedPorts.Select(Move).ToList();
+            board.FaultyPorts = board.FaultyPorts.Select(Move).ToList();
+        }
         s.Version = GameState.CurrentVersion;
         return s;
     }

@@ -105,36 +105,68 @@ public static class TownBuilder
             };
             i++;
             // how far the street's pole line is from this front door (the drop wire comes from there)
-            float poleDist = Mathf.Abs((float)lot.South - PoleLineSouth);
-            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist, palette[(i + 2) % palette.Length], site == gen.Town));
+            var street = StreetOf(lot);
+            float poleDist = Mathf.Abs((float)lot.South - (street is null ? PoleLineSouth : street.PoleLine));
+            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist, palette[(i + 2) % palette.Length], street));
         }
 
-        // --- Main Street ---------------------------------------------------------------------
+        // --- the streets: Main Street, Church Lane and Mill Row in town, the High Street in Eastgate -----------
         var road = new LowPoly().Box(Vector3.Zero, new Vector3(6.3f, 0.08f, StreetHalfWidth * 2), new Color(0.27f, 0.27f, 0.29f))
             .Box(new Vector3(0, 0.045f, 0), new Vector3(2.2f, 0.01f, 0.16f), new Color(0.85f, 0.8f, 0.6f)).Build();
-        for (float x = -StreetEnd; x <= StreetEnd; x += 6)
-            root.AddChild(new MeshInstance3D { Mesh = road, Transform = Place(gen, x, StreetSouth, 0, 0.05f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
-
-        // --- telephone poles: the incumbent's network, already here before you -------------------
         var pole = PoleMesh();
-        foreach (float x in TownPoles())
-            root.AddChild(new MeshInstance3D { Mesh = pole, Transform = Place(gen, x, PoleLineSouth) });
+        foreach (var st in Streets)
+        {
+            if (gen.SiteById(st.Site) is not { } site) continue;
+            for (float x = st.From; x <= st.To + 0.01f; x += 6)
+                root.AddChild(new MeshInstance3D
+                {
+                    Mesh = road, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                    Transform = st.NorthSouth ? Place(gen, site, st.At, x, 90, 0.05f) : Place(gen, site, x, st.At, 0, 0.05f),
+                });
+            // telephone poles: the incumbent's network, already here before you
+            if (!st.NorthSouth)
+                foreach (float x in st.Poles())
+                    root.AddChild(new MeshInstance3D { Mesh = pole, Transform = Place(gen, site, x, st.PoleLine) });
+        }
 
         return town;
     }
 
+    /// <summary>
+    /// A street: east-west (at a distance south of its site's centre) or north-south (at a distance east), between two
+    /// offsets. East-west streets have the incumbent's pole line along their north side and houses either side.
+    /// </summary>
+    public sealed record Street(string Site, bool NorthSouth, float At, float From, float To, string Name)
+    {
+        public float PoleLine => At - 5f;
+        public IEnumerable<float> Poles() { for (float x = Mathf.Ceil(From / 30f) * 30f; x <= To; x += 30) yield return x; }
+    }
+
     /// <summary>Main Street: its centre line is this far south of the town centre, it is this wide, and runs this far east and west.</summary>
     public const float StreetSouth = 16.5f, StreetHalfWidth = 3.25f, StreetEnd = 96f;
+
+    public static readonly Street[] Streets =
+    {
+        new("town-start", false, StreetSouth, -StreetEnd, StreetEnd, "Main Street"),
+        new("town-start", false, -30f, -72f, 60f, "Church Lane"),
+        new("town-start", true, -72f, -30f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
+        new("eastgate", false, 8f, -48f, 48f, "Eastgate High Street"),
+    };
+
+    /// <summary>The east-west street a building fronts on: the nearest one on its site that runs past it. Null for the farm.</summary>
+    public static Street? StreetOf(LotDef lot) =>
+        lot.Kind == LotKind.Farm ? null : Streets.Where(s => !s.NorthSouth && s.Site == lot.Site && lot.East >= s.From - 10 && lot.East <= s.To + 10)
+            .OrderBy(s => Mathf.Abs(s.At - (float)lot.South)).FirstOrDefault();
+
     private const float HqDriveEast = 8f, DriveOffset = 5.7f;
     private static readonly Color Concrete = new(0.52f, 0.51f, 0.48f);
-    private static IEnumerable<float> TownPoles() { for (float x = -90; x <= 90; x += 30) yield return x; }
 
     /// <summary>Which side of a house its driveway goes: the right (+1) unless that would run through a street pole.</summary>
-    private static int DriveSide(LotDef lot, bool facingSouth)
+    private static int DriveSide(LotDef lot, bool facingSouth, Street street)
     {
         if (!facingSouth) return 1; // the pole line is on the north side of the street only
         float east = (float)lot.East + DriveOffset;
-        return TownPoles().Any(p => Mathf.Abs(p - east) < 3f) ? -1 : 1;
+        return street.Poles().Any(p => Mathf.Abs(p - east) < 3f) ? -1 : 1;
     }
 
     private static Mesh? _pole;
@@ -152,7 +184,7 @@ public static class TownBuilder
     /// <summary>Height of a house's floor above its lot origin (keeps the lawn from poking through the carpet).</summary>
     public const float HouseFloor = 0.15f;
 
-    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist, Color carColour, bool onMainStreet)
+    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist, Color carColour, Street? street)
     {
         bool shop = lot.Kind == LotKind.Shop, house = lot.Kind == LotKind.House;
         float w = shop ? 10 : 8, d = shop ? 8 : 7, front = d / 2;
@@ -166,11 +198,11 @@ public static class TownBuilder
         // Houses get one beside the house; the shop a forecourt; the depot one up to its roller door. The farm has a yard.
         Vector3? park = null, entry = null;
         float driveX = 0;
-        if (onMainStreet)
+        if (street is not null)
         {
             bool facingSouth = Mathf.Abs(Mathf.Wrap((float)lot.Yaw, -180f, 180f)) < 90;
-            float zStreet = facingSouth ? StreetSouth - (float)lot.South : (float)lot.South - StreetSouth;
-            driveX = lot.Kind switch { LotKind.Shop => -3f, LotKind.Depot => -1.9f, _ => DriveSide(lot, facingSouth) * DriveOffset };
+            float zStreet = facingSouth ? street.At - (float)lot.South : (float)lot.South - street.At;
+            driveX = lot.Kind switch { LotKind.Shop => -3f, LotKind.Depot => -1.9f, _ => DriveSide(lot, facingSouth, street) * DriveOffset };
             float start = house ? -2.6f : front, end = zStreet - StreetHalfWidth;
             if (end > start + 2)
             {

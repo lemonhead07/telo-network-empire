@@ -42,8 +42,9 @@ public class ScriptPlayerTests
         Assert.Contains(taken, id => id.StartsWith("knock:"));
         Assert.Contains(taken, id => id == "pole:plant");
         Assert.True(sim.State.LiveSubscribers >= 4);
-        // one plot line, no overlap: every chapter, in order, never going back
-        Assert.Equal(Enumerable.Range(0, sim.Content.Plot.Count), chapters);
+        // one plot line, no overlap: every chapter, in order, never going back, at least as far as the one after the farm line
+        Assert.Equal(Enumerable.Range(0, chapters.Count), chapters);
+        Assert.True(chapters[^1] > sim.Content.Plot.ToList().FindIndex(ch => ch.Id == "ch-farm"));
     }
 
     [Fact]

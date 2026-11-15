@@ -301,7 +301,7 @@ public partial class SwitchboardStation : Node3D
             case Spot.Hook: return _hand == Hand.Wire ? "Hang the jumper back up" : "Take a jumper wire";
             case Spot.DirtyHook: return _hand == Hand.Dirty ? "Hang it back up" : "Take an old dirty jumper (hot-wire: fast, works today, trouble later)";
             case Spot.Switch: return SwitchRules.Pending(s).Any(p => p.Jumper >= 0) ? "Throw the test switch: try every new line" : "The test switch (nothing new is jumpered)";
-            case Spot.Panel: return SwitchRules.CanAddPanel(s) ? $"Bolt on a second panel: ${SwitchRules.PanelPrice}, room for {16} subscribers" : $"A second panel is ${SwitchRules.PanelPrice}. You have ${s.Cash}";
+            case Spot.Panel: return SwitchRules.CanAddPanel(s) ? $"Bolt on another panel: ${SwitchRules.PanelPrice}, room for {SwitchRules.Size(s.Switch) + 8} subscribers" : $"Another panel is ${SwitchRules.PanelPrice}. You have ${s.Cash}";
             case Spot.Terminal:
                 if (hot.Index >= B.Positions.Count) return "An empty terminal";
                 var p = B.Positions[hot.Index];

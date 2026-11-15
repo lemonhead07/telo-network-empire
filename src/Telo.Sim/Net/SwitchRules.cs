@@ -18,12 +18,13 @@ public enum ThrowResult { Live, Dead, Crossed }
 /// </summary>
 public static class SwitchRules
 {
-    public const int Spares = 2, MaxStage = 1;
+    public const int Spares = 2, MaxStage = 3;
     public const long PanelPrice = 120;
 
-    public static int Size(BoardState b) => b.Stage == 0 ? 8 : 16;
+    /// <summary>Eight subscribers a panel; up to four panels (32) before the next act's equipment takes over.</summary>
+    public static int Size(BoardState b) => 8 * (b.Stage + 1);
     /// <summary>The two spare ports keep the same numbers however big the board grows, so a wire on one never has to move.</summary>
-    public const int SpareBase = 16;
+    public const int SpareBase = 40;   // past the biggest board (32), so a wire on a spare never has to move (saves before v16 used 16)
     public static IEnumerable<int> SparePorts => Enumerable.Range(SpareBase, Spares);
     /// <summary>Every port on the board: one per subscriber terminal, then the spares.</summary>
     public static List<int> PortList(BoardState b) => Enumerable.Range(0, Size(b)).Concat(SparePorts).ToList();
@@ -187,7 +188,7 @@ public static class SwitchRules
         if (!CanAddPanel(s)) return false;
         s.Cash -= PanelPrice; s.Switch.Stage++;
         SeatWaiting(s);
-        s.Emit(EventKind.Money, $"A second panel for the switchboard: ${PanelPrice}. Room for {Size(s.Switch)} subscribers.");
+        s.Emit(EventKind.Money, $"Another panel bolted on to the switchboard: ${PanelPrice}. Room for {Size(s.Switch)} subscribers.");
         return true;
     }
 

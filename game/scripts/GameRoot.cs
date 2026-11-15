@@ -483,7 +483,7 @@ public partial class GameRoot : Node3D
         if (cust is { SocketFitted: false } && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } view)
         {
             if (_installs.TryGetValue(lot.Id, out var running))
-                return ($"{cust.Name}'s install: {(running.NextStep is { } n ? InstallJob.Def(n).Verb.ToLowerInvariant() + (InstallJob.Def(n).Outside ? " (outside wall, left of the window)" : " (indoors)") : "test the line, then sign the job sheet indoors")}", null);
+                return ($"{cust.Name}'s install: {(running.NextStep is { } n ? running.VerbFor(n).ToLowerInvariant() +(InstallJob.Def(n).Outside ? " (outside wall, left of the window)" : " (indoors)") : "test the line, then sign the job sheet indoors")}", null);
             return s.Modems > 0
                 ? (WorkRules.Current(s, _content, "install").Mode != WorkMode.Manual
                     ? $"{cust.Name} is booked in with your technician. Or do the install yourself now"

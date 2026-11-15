@@ -25,11 +25,26 @@ public sealed class RoadNet
         _space = space; _ignore = ignore;
         float R = (float)gen.RadiusM;
 
-        // Main Street, a point every 6 m
+        // every street, a point every 6 m; a street that ends on another joins it there
         var street = new List<int>();
-        for (float x = -TownBuilder.StreetEnd; x <= TownBuilder.StreetEnd + 0.01f; x += 6)
-            street.Add(Add(TownBuilder.Place(gen, x, TownBuilder.StreetSouth, 0, 0.3f).Origin, hub: true));
-        for (int i = 1; i < street.Count; i++) Link(street[i - 1], street[i]);
+        var ends = new List<(int Node, TownBuilder.Street Of)>();
+        var of = new Dictionary<int, TownBuilder.Street>();
+        foreach (var st in TownBuilder.Streets)
+        {
+            if (gen.SiteById(st.Site) is not { } site) continue;
+            var ids = new List<int>();
+            for (float x = st.From; x <= st.To + 0.01f; x += 6)
+            {
+                var p = (st.NorthSouth ? TownBuilder.Place(gen, site, st.At, x, 0, 0.3f) : TownBuilder.Place(gen, site, x, st.At, 0, 0.3f)).Origin;
+                int id = Add(p, hub: true); ids.Add(id); of[id] = st;
+            }
+            for (int i = 1; i < ids.Count; i++) Link(ids[i - 1], ids[i]);
+            street.AddRange(ids);
+            if (ids.Count > 0) { ends.Add((ids[0], st)); ends.Add((ids[^1], st)); }
+        }
+        foreach (var (end, st) in ends)
+            if (street.Where(n => of[n] != st).OrderBy(n => _nodes[n].DistanceSquaredTo(_nodes[end])).FirstOrDefault(-1) is var j and >= 0
+                && _nodes[j].DistanceTo(_nodes[end]) < 9) Link(end, j);
 
         // every driveway joins the street at the two street points either side of it
         void Driveway(Vector3 entry, Vector3 park)

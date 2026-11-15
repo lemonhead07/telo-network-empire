@@ -12,7 +12,15 @@ namespace Telo.Game.World;
 public partial class InstallSite : Node3D
 {
     private sealed record Piece(InstallStep Step, int Index, Node3D Node);
-    private sealed record Spot(InstallStep Step, int First, int Last, Interactable Hotspot, Node3D Ghost);
+    private sealed record Spot(InstallStep Step, int First, int Last, Interactable Hotspot, Node3D Ghost, bool Twist = false);
+
+    /// <summary>Where a twist on each stage shows up (and is dealt with): beside the stage's first point.</summary>
+    private readonly Dictionary<InstallStep, Vector3> _twistAt = new();
+    private Spot? _twistSpot;
+    private Node3D? _twistProp;
+
+    /// <summary>A stage's progress as its ordinary points count it: the twist's action (if it's on this stage) comes first and isn't theirs.</summary>
+    private int Done(Spot s) => _job is not { } j ? 0 : s.Twist ? j.Progress(s.Step) : j.Progress(s.Step) - j.TwistOffset(s.Step);
 
     private static readonly Color Black = new(0.06f, 0.06f, 0.07f), Grey = new(0.62f, 0.64f, 0.66f), Cream = new(0.9f, 0.88f, 0.8f),
         Beige = new(0.78f, 0.74f, 0.62f), Steel = new(0.75f, 0.77f, 0.8f);
@@ -36,12 +44,9 @@ public partial class InstallSite : Node3D
     /// <summary>Where the player works on a step (for the walking player and automated checks).</summary>
     /// A stage with several clicks (three clips along the drop wire, three staples along the skirting) has a point for each:
     /// this is the one for the next click, not always the first.
-    public Interactable? SpotFor(InstallStep step)
-    {
-        int done = _job?.Progress(step) ?? 0;
-        return (_spots.FirstOrDefault(x => x.Step == step && done >= x.First && done <= x.Last)
-                ?? _spots.FirstOrDefault(x => x.Step == step))?.Hotspot;
-    }
+    public Interactable? SpotFor(InstallStep step) =>
+        (_spots.FirstOrDefault(x => x.Step == step && Done(x) >= x.First && Done(x) <= x.Last)
+         ?? _spots.FirstOrDefault(x => x.Step == step && !x.Twist))?.Hotspot;
     public Interactable Phone => _phone;
     public Interactable Sheet => _sheet;
 
@@ -81,6 +86,10 @@ public partial class InstallSite : Node3D
         AddPiece(InstallStep.Modem, 0, Box(modem, new Vector3(0.3f, 0.07f, 0.22f), Beige), Wire(socket, modem + new Vector3(-0.1f, 0, 0.1f)),
             Box(modem + new Vector3(-0.1f, 0.04f, 0.06f), new Vector3(0.02f, 0.012f, 0.02f), new Color(0.9f, 0.2f, 0.15f)));
         Point(InstallStep.Modem, 0, 0, modem);
+        _twistAt[InstallStep.DropWire] = new Vector3(x + 0.9f, 0.6f, z + 0.9f);       // ivy at the foot of the wall, the dog in the garden
+        _twistAt[InstallStep.JunctionBox] = jb + new Vector3(0.4f, 0.1f, 0.12f);       // the old box, the wasps
+        _twistAt[InstallStep.Socket] = socket + new Vector3(0.35f, 0.25f, 0);          // the kettle
+        _twistAt[InstallStep.Cable] = s1 + new Vector3(0.3f, 0.35f, 0);                // the new wallpaper
 
         // the customer's own telephone: always there; during a job it is how you test
         AddChild(Box(phone, new Vector3(0.2f, 0.1f, 0.22f), new Color(0.5f, 0.12f, 0.1f)));
@@ -111,7 +120,24 @@ public partial class InstallSite : Node3D
     public void Begin(InstallJob job, Action<InstallStep, bool> act, Action signOff, Func<Tools> onSite, Func<Tools, string> kitNames)
     {
         _job = job; _act = act; _signOff = signOff; _onSite = onSite; _kitNames = kitNames; _testNote = "";
+        ClearTwist();
+        if (job.Twist is { } t && _twistAt.TryGetValue(t.Stage, out var at))
+        {
+            // the twist as a labelled placeholder box (models later), with its own point to deal with it
+            _twistProp = new Node3D();
+            _twistProp.AddChild(Box(at, new Vector3(0.45f, 0.45f, 0.3f), new Color(0.35f, 0.55f, 0.25f)));
+            _twistProp.AddChild(new Label3D { Text = t.Title, Position = at + new Vector3(0, 0.45f, 0), FontSize = 40, PixelSize = 0.003f, Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, Modulate = new Color(1f, 0.95f, 0.8f), OutlineSize = 8 });
+            AddChild(_twistProp);
+            Point(t.Stage, 0, 0, at + new Vector3(0, 0.3f, 0.2f), twist: true);
+            _twistSpot = _spots[^1];
+        }
         Sync();
+    }
+
+    private void ClearTwist()
+    {
+        _twistProp?.QueueFree(); _twistProp = null;
+        if (_twistSpot is { } old) { _spots.Remove(old); old.Hotspot.QueueFree(); old.Ghost.QueueFree(); _twistSpot = null; }
     }
 
     /// <summary>Job signed off (or the house already had its line when the game loaded).</summary>
@@ -119,6 +145,7 @@ public partial class InstallSite : Node3D
     {
         if (_job is { } done) foreach (var d in InstallJob.Steps.Where(d => done.IsRushed(d.Step))) _crooked.Add(d.Step);   // a bodge stays visible
         _job = null; Fitted = true;
+        ClearTwist();
         Sync();
     }
 
@@ -129,7 +156,7 @@ public partial class InstallSite : Node3D
     {
         foreach (var p in _pieces)
         {
-            p.Node.Visible = Fitted || (_job is not null && _job.Progress(p.Step) > p.Index);
+            p.Node.Visible = Fitted || (_job is not null && _job.Progress(p.Step) - _job.TwistOffset(p.Step) > p.Index);
             // mistakes show: a bodged stage hangs crooked
             bool crooked = _job?.IsRushed(p.Step) ?? _crooked.Contains(p.Step);
             foreach (var child in p.Node.GetChildren().OfType<Node3D>())
@@ -138,9 +165,11 @@ public partial class InstallSite : Node3D
         }
         foreach (var s in _spots)
         {
-            s.Ghost.Visible = _job is not null && _job.Progress(s.Step) <= s.Last;
+            s.Ghost.Visible = _job is not null && Done(s) <= s.Last;
             s.Hotspot.CollisionLayer = _job is not null ? 2u : 0u;
         }
+        // the twist goes once it's been dealt with (or bodged past)
+        if (_twistProp is not null && _job?.Twist is { } t) _twistProp.Visible = _job.Progress(t.Stage) == 0;
         _phone.CollisionLayer = _sheet.CollisionLayer = _job is not null ? 2u : 0u;
         _sheetMesh.Visible = _job is not null;
     }
@@ -159,17 +188,17 @@ public partial class InstallSite : Node3D
     {
         if (_job is not { } j) return "";
         var d = InstallJob.Def(s.Step);
-        int done = j.Progress(s.Step);
-        if (done > s.Last) return $"{d.Title}: done{(j.IsRushed(s.Step) ? " (bodged)" : "")}";
+        int done = Done(s);
+        if (done > s.Last) return s.Twist ? $"{j.Twist!.Title}: dealt with" : $"{d.Title}: done{(j.IsRushed(s.Step) ? " (bodged)" : "")}";
         if (j.CanDo(s.Step) && done >= s.First && j.Missing(s.Step, _onSite()) is var missing && missing != Tools.None)
-            return $"{d.Verb}: you need {_kitNames(missing)} here (from the van)";
+            return $"{j.VerbFor(s.Step)}: you need {_kitNames(missing)} here (from the van)";
         if (j.CanDo(s.Step) && done >= s.First)
-            return $"{(j.KnownFault == s.Step ? "Redo: " : "")}{d.Verb} ({done + 1} of {d.Clicks})";
+            return $"{(j.KnownFault == s.Step ? "Redo: " : "")}{j.VerbFor(s.Step)} ({j.Progress(s.Step) + 1} of {j.Clicks(s.Step)})";
         var first = j.NextStep is { } n ? InstallJob.Def(n) : d;
         return first.Step == s.Step ? $"{d.Title}: do the one before this first" : $"First: {first.Verb.ToLowerInvariant()} ({(first.Outside ? "outside" : "inside")})";
     }
 
-    private bool SpotTurn(Spot s) => _job is { } j && j.CanDo(s.Step) && j.Progress(s.Step) >= s.First && j.Progress(s.Step) <= s.Last;
+    private bool SpotTurn(Spot s) => _job is { } j && j.CanDo(s.Step) && Done(s) >= s.First && Done(s) <= s.Last;
     private bool SpotReady(Spot s) => SpotTurn(s) && _job!.Missing(s.Step, _onSite()) == Tools.None;
     private bool SpotRushable(Spot s) => SpotTurn(s) && InstallJob.Def(s.Step).CanRush && _job!.Missing(s.Step, _onSite(), rush: true) == Tools.None;
 
@@ -196,7 +225,7 @@ public partial class InstallSite : Node3D
         _pieces.Add(new Piece(step, index, group));
     }
 
-    private void Point(InstallStep step, int first, int last, Vector3 pos)
+    private void Point(InstallStep step, int first, int last, Vector3 pos, bool twist = false)
     {
         var ghost = new MeshInstance3D
         {
@@ -206,11 +235,11 @@ public partial class InstallSite : Node3D
         };
         AddChild(ghost);
         var hot = Hotspot(pos, Vector3.One * 0.36f);
-        var spot = new Spot(step, first, last, hot, ghost);
+        var spot = new Spot(step, first, last, hot, ghost, twist);
         hot.Prompt = () => SpotPrompt(spot);
         hot.CanUse = () => SpotReady(spot);
         hot.OnUse = () => { if (SpotReady(spot)) _act?.Invoke(step, false); };
-        hot.HoldSeconds = () => SpotReady(spot) ? HoldFor(InstallJob.Def(step).MinutesPerClick) : 0f;
+        hot.HoldSeconds = () => SpotReady(spot) ? HoldFor(_job!.MinutesFor(step)) : 0f;
         hot.AltPrompt = () => SpotRushable(spot) ? "Bodge it" : null;
         hot.OnAlt = () => { if (SpotRushable(spot)) _act?.Invoke(step, true); };
         _spots.Add(spot);

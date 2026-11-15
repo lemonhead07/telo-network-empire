@@ -8,7 +8,7 @@ public enum WorkMode { Manual, Delegated, Automated }
 /// <summary>How the player *sees* a kind of work. The UI literally changes as this climbs.</summary>
 public enum InterfaceTier { Paper, Terminal, Database, Dashboard }
 
-public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries, Customers, SocketsFitted, JobsDone, Knocked }
+public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries, Customers, SocketsFitted, JobsDone, Knocked, ServiceNines }
 
 public sealed record Condition(ConditionKind Kind, long Value);
 
@@ -201,4 +201,6 @@ public sealed record LotDef
     public long Fee { get; init; } = 8;
     /// <summary>Set when this household is a Last Mile case: too far or too costly to sign up by knocking.</summary>
     public string? Premise { get; init; }
+    /// <summary>Paying subscribers you need before this household has heard of you (0: from the start). How new streets and villages open up.</summary>
+    public int OpensAt { get; init; }
 }

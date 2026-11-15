@@ -393,7 +393,9 @@ public sealed class Simulation
     {
         var cust = State.Customers.FirstOrDefault(c => c.Id == customerId && c.Live);
         if (cust is null || cust.SocketFitted || State.Modems <= 0) return null;
-        var job = InstallJob.Generate(DetRng.Derive(State.Seed, $"install:{cust.Id}"), cust.Id, cust.Name);
+        // twists (ivy, wasps, an old box...) once the first-hour installs are behind you: the first one you ever do is plain
+        bool twists = Onboarding.Reached(State, Content, OnboardingStep.Free);
+        var job = InstallJob.Generate(DetRng.Derive(State.Seed, $"install:{cust.Id}"), cust.Id, cust.Name, twists: twists);
         return State.Installs.TryGetValue(cust.Id, out var saved) ? job.Restore(saved) : job;
     }
 

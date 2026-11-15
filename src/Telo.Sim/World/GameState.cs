@@ -189,7 +189,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 15;
+    public const int CurrentVersion = 16;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }

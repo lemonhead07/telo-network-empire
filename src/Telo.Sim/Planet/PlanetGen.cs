@@ -39,6 +39,56 @@ public sealed class PlanetGen
             _sites.Add(farm);
             _roads.Add(BuildRoad("road-town-farm", Town, farm));
         }
+        // Eastgate: the next village down the valley (after the farm road, so the farm and its road are unchanged)
+        if (FindVillageSite(_sites.FirstOrDefault(s => s.Id == "farm-hollow")) is { } village)
+        {
+            _sites.Add(village);
+            _roads.Add(BuildRoad("road-town-eastgate", Town, village));
+        }
+    }
+
+    /// <summary>
+    /// A village a short drive from town, away from the farm road: gentle dry ground with an overland route back that
+    /// crosses no sea and no cliff. Deterministic for a seed.
+    /// </summary>
+    private Site? FindVillageSite(Site? avoid)
+    {
+        var rng = new DetRng(DetRng.Derive(Seed, "eastgate-site"));
+        var town = Town.Dir;
+        var east = new V3(0, 1, 0).Cross(town).Normalized();
+        var north = town.Cross(east);
+        V3? best = null; double bestScore = double.MinValue;
+        for (int i = 0; i < 1500; i++)
+        {
+            double dx = rng.Next(2001) / 1000.0 - 1, dz = rng.Next(2001) / 1000.0 - 1;
+            double len = Math.Sqrt(dx * dx + dz * dz);
+            if (len is < 0.2 or > 1) continue;
+            double dist = 480 + rng.Next(300);
+            var heading = east * (dx / len) + north * (dz / len);
+            var c = (town + heading * (dist / RadiusM)).Normalized();
+            double h = RawHeight(c);
+            if (h is < 4 or > 45) continue;
+            if (avoid is not null)
+            {
+                // well away from the farm, and not out along the farm road
+                if ((c - avoid.Dir).Length * RadiusM < 500) continue;
+                if ((avoid.Dir - town).Normalized().Dot((c - town).Normalized()) > 0.5) continue;
+            }
+            double worst = 0, low = double.MaxValue, prev = Town.HeightM, rough = 0;
+            int steps = (int)(dist / 25);
+            for (int k = 1; k <= steps; k++)
+            {
+                double hk = RawHeight((town + (c - town) * ((double)k / steps)).Normalized());
+                low = Math.Min(low, hk);
+                worst = Math.Max(worst, Math.Abs(hk - prev));
+                prev = hk;
+            }
+            foreach (var (rx, rz) in Ring) rough = Math.Max(rough, Math.Abs(RawHeight((c + east * (rx * 60 / RadiusM) + north * (rz * 60 / RadiusM)).Normalized()) - h));
+            if (low < 3 || worst > 9) continue;
+            double score = -worst * 3 - rough * 2 - Math.Abs(h - 15) / 10;
+            if (score > bestScore) { bestScore = score; best = c; }
+        }
+        return best is { } b ? new Site("eastgate", b, 70, RawHeight(b)) : null;
     }
 
     public Site Town => _sites[0];

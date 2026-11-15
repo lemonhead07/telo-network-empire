@@ -18,7 +18,8 @@ public static class ActRules
         ConditionKind.Customers => s.Customers.Count,
         ConditionKind.SocketsFitted => s.Customers.Count(c => c.Live && c.SocketFitted),
         ConditionKind.JobsDone => s.JobsDone,
-        ConditionKind.Knocked => s.Customers.Count >= 2 || s.Households.Values.Any(h => h.RetryDay > 0) ? 1 : 0,
+        ConditionKind.ServiceNines => Town.ServiceRules.Nines(Town.ServiceRules.Ppm(s)),
+        ConditionKind.Knocked =>s.Customers.Count >= 2 || s.Households.Values.Any(h => h.RetryDay > 0) ? 1 : 0,
         _ => 0,
     };
 

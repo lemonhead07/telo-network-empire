@@ -26,6 +26,7 @@ public static class ServiceRules
     /// <summary>"99.4%", "99.95%": as many decimals as the nines need.</summary>
     public static string Percent(int ppm)
     {
+        if (ppm >= 1_000_000) return "100%";
         int decimals = Math.Clamp(Nines(ppm) - 1, 1, 4);
         return (ppm / 10_000.0).ToString("F" + decimals, System.Globalization.CultureInfo.InvariantCulture) + "%";
     }

@@ -333,7 +333,18 @@ public partial class GameRoot
         if (InRoom(target) && !InRoom(from))
             route.AddRange(new[] { room.ToGlobal(new Vector3(RoomBuilder.DoorX, 0.2f, RoomBuilder.D / 2 + 1.6f)), room.ToGlobal(new Vector3(RoomBuilder.DoorX, 0.2f, RoomBuilder.D / 2 - 0.8f)) });
         route.Add(target);
-        foreach (var p in route) await WalkStraight(p, p == target ? within : 0.45f);
+        foreach (var p in route)
+        {
+            // outdoors, with a house in the way (Church Lane backs on to Main Street): round by the street, not through the wall
+            var start = _player.GlobalPosition;
+            if ((p - start).Length() > 6 && !InRoom(start) && HouseOf(start) is null && !InRoom(p) && HouseOf(p) is null)
+            {
+                _roadNet ??= new RoadNet(_planet, _town, GetWorld3D().DirectSpaceState, new Godot.Collections.Array<Rid> { _van.GetRid(), _player.GetRid() });
+                if (!_roadNet.Clear(start, p))
+                    foreach (var q in _roadNet.Route(start, p).SkipLast(1)) await WalkStraight(q, 1.5f);
+            }
+            await WalkStraight(p, p == target ? within : 0.45f);
+        }
     }
 
     private async Task WalkStraight(Vector3 target, float within)

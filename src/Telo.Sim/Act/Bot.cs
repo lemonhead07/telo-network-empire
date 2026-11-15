@@ -40,6 +40,13 @@ public static class Bot
             var there = job == a.Place ? acts : Actions.For(sim, new ActorState { Id = a.Id, Place = job, VanAt = a.VanAt, Holding = a.Holding, Kit = a.Kit, IgnoreHours = a.IgnoreHours }, gen);
             var work = there.FirstOrDefault(x => x.Id.StartsWith("install:do:") || x.Id == "install:test" || x.Id == "install:sign"
                                                  || x.Id.StartsWith("bench:do") || x.Id == "bench:handback" || x.Id.StartsWith("repair:"));
+            // the job needs a modem and there are none left (the technician used them): to the shop first
+            if (work is not null && NeededKit(work.Blocked) == Tools.ModemBox && s.Modems <= 0
+                && c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop) is { } shop && s.Cash >= TownRules.ModemPrice)
+            {
+                if (a.Place != shop.Id) return (a.Holding != Tools.None && a.VanAt == a.Place ? $"stow:{a.Holding}" : Go(shop.Id), "out of modems: to the shop");
+                if (acts.FirstOrDefault(x => x.Id == "buy:modem") is { } buy) return (buy.Ready ? buy.Id : "wait", buy.Ready ? "buy a modem" : $"buy a modem ({buy.Blocked})");
+            }
             if (work is not null && NeededKit(work.Blocked) is { } need) return (Fetch(sim, a, gen, job, need, FullNeeds(sim, a, gen, job, work.Id)), $"fetch the {Actions.Cargo(need)}");
             if (job != a.Place)
             {
