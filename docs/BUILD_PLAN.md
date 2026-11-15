@@ -2,6 +2,23 @@
 
 Each milestone ends playable, with green tests and `SMOKE OK`. Week counts assume one part-time developer working with AI help.
 
+## Up next
+*Dev sessions take the top item (see `docs/SESSIONS.md`). Idea sessions add items here, written to the Definition of Ready.*
+
+1. **Enterable houses.** *Goal:* walk through a house door into a placeholder interior. *Where:* `TownBuilder`, one reusable house template. *Done when:* `--shot` from inside a house; all 12 houses use it. *Not in scope:* furniture detail, the install job.
+2. **TT1 Tree schema + loader.** *Goal:* tech-tree content loads from `game/content/tree/*.json`, with today's 4 work kinds migrated as tasks. *Where:* `Content/ContentDefs.cs` (BranchDef, TechNodeDef, TaskDef), `ContentDb` + `Validate()`, `SaveCodec` migration, callers of `WorkRules` using old ids. Spec: `TECH_TREE.md` §2. *Done when:* the game plays exactly as before; one test loads every branch file and validates it. *Not in scope:* unlock rules, new tasks.
+3. **Install as `lines.drop` tasks (manual rung).** *Goal:* the drop wire, socket and dial-tone test are three hands-on steps with soft clocks; skipping a step leaves a latent defect. *Where:* a pure `InstallJob` in `Telo.Sim/Minigames`, tasks in `tree/lines.json`, interactions at the house. Spec: `TECH_TREE.md` A0 + `NEXT_SESSION.md`. *Done when:* a full install playable start to finish; screenshot of each step. *Not in scope:* hiring, carrying cargo.
+4. **TT2 Tree rules.** *Goal:* nodes unlock from recalls, conditions and required nodes; grants apply; automated stages wear without upkeep. *Where:* `Tree/TreeRules.cs`, `Work/TaskRules.cs`. *Done when:* two tests (unlock gating; wear drops a stage). *Not in scope:* UI.
+5. **First hand-off: the installer.** *Goal:* hire an installer, hand them `lines.drop` via a paper job sheet, and take over mid-job with E. *Where:* `people.hire`, `lines.drop` stages, a job-sheet `WorldScreen` on the desk. Spec: `TECH_TREE.md` §4 items 2–4. *Done when:* the installer does a job at 85% while you're elsewhere; take-over finishes faster and raises their accuracy. *Not in scope:* staff stress and quitting.
+
+### Tech tree track (after Up next; one branch per session or two)
+- [ ] TT3 Tree in the world: tech nodes as pages in PIP's Almanac, people/money nodes in the notebook; backlog props (job-sheet pile, blinking machine).
+- [ ] TT4 Field `field.van` + `field.parts` (matches the cargo backlog item below).
+- [ ] TT5 Customers `customers.door` + `customers.machine`; Money `money.tin` + `money.bookkeeper`.
+- [ ] TT6 Sight `sight.notebook` + `sight.pager`; People `people.showme`.
+- [ ] TT7 Room `room.bbs` + `room.modem2400`; Community `community.ledger` + `community.files`.
+- [ ] TT8 Tier 2 of every branch (Act 1–2 content), then tune numbers in a balancing pass.
+
 ## M0 — Scaffold ✅ (done 2026-11-11)
 Pure sim + tests; Godot room; answering machine → Frame install → billing; Almanac; Notebook (automation + Promise Ledger); save/load; smoke test.
 

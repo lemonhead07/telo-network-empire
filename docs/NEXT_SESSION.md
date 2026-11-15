@@ -19,7 +19,11 @@
 4. **Odd jobs as hands-on tasks** using the same verbs (open a casing, swap a part, test).
 5. Keep everything placeholder (boxes with labels). Polish later.
 
-### Rules to keep
+### New since this was written (2026-11-15)
+- Sessions are now split: **idea** vs **dev**, see `docs/SESSIONS.md`. Start with `/dev`.
+- The tech tree is designed in `docs/TECH_TREE.md`. The install job above is the tree's `lines.drop` node (drop wire, socket, dial tone). The order to build is in `BUILD_PLAN.md` → **Up next**: houses, then the tree schema (TT1), then the install as `lines.drop` tasks.
+
+## Rules to keep
 - Outcomes and defects are decided in `src/Telo.Sim` (add an `InstallJob` there with steps, like `FramePuzzle`); Godot only shows and drives it.
 - No overlay menus: any reading/clicking surface is a `WorldScreen` on an object.
 - Develop lots, test little: compile + screenshot; full tests only before a commit that changes sim rules.
