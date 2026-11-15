@@ -150,6 +150,8 @@ Within a branch, each tier requires the tier above it. Cross-branch links are wr
 | **G Sight** | The Notebook *(A0, Start)* | Pager *(A1, Milestone: first outage)* | Monitoring *(A1, Recall alm-monitoring)* | The NOC *(A3, Needs Monitoring, 20 sites)* | AI ops · Digital twin · The dashboard that lies |
 | **H Community** | Promise Ledger *(A0, Start)* | Tobi's File Area *(A0, Recall alm-bbs)* | Library Terminal *(A2, Recall alm-web)* | Promise Meeting *(A3, Milestone: 3 promises kept)* | Lifeline tariff · Clinic lines · Satellite to the islands |
 
+The "Later" column is filled out age by age in `docs/AGES.md` §4.
+
 Gates: **Start** = open from day one. **Recall alm-x** = an Almanac entry (`alm-2400`, `alm-bbs`, `alm-hunt`, `alm-billing`, `alm-monitoring`, `alm-14k`, `alm-web`, `alm-radius`, `alm-adsl` already exist). **Milestone** = a Condition. **Needs X** = a required node.
 
 ## 4. In-world gameplay (what makes hand-off fun)
