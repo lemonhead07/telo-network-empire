@@ -80,3 +80,48 @@ public class PhoneTests
         Assert.Single(sim.State.Texts, t => t.Out);
     }
 }
+
+public class PlannerTests
+{
+    private readonly Xunit.Abstractions.ITestOutputHelper _out;
+    public PlannerTests(Xunit.Abstractions.ITestOutputHelper output) => _out = output;
+
+    [Fact]
+    public void A_day_is_what_fits_with_travel_between_and_grey_where_nobody_is_home()
+    {
+        var sim = Simulation.NewGame(TestContent.Db, 11);
+        var gen = new PlanetGen(11);
+        var s = sim.State;
+        s.Modems = 20;
+        sim.AddCustomer("Ada Firth", "family", 30); sim.AddCustomer("Bo Wren", "family", 30);   // past the first hour: people keep hours now
+        for (int i = 0; i < 12; i++) { s.MessagesWaiting = 1; sim.TakeEnquiry(); }
+        for (int i = 0; i < 6; i++) sim.OfferJob();
+        int tomorrow = s.Day + 1;
+        while (Clock.IsWeekend(tomorrow)) tomorrow++;
+        var plan = Telo.Sim.Plan.PlanRules.AutoPlan(s, sim.Content, gen, tomorrow);
+
+        Assert.NotEmpty(plan.Slots);
+        int end = Telo.Sim.Plan.PlanRules.DayStarts;
+        foreach (var slot in plan.Slots)
+        {
+            Assert.True(slot.Start >= end + slot.TravelMinutes - 1, "slots overlap or skip the travel");
+            Assert.Null(slot.Grey);
+            end = slot.Start + slot.Minutes;
+        }
+        Assert.True(end <= Telo.Sim.Plan.PlanRules.DayEnds);
+        _out.WriteLine($"Jobs that fit in one day, alone: {plan.Slots.Count} " +
+                       string.Join(", ", plan.Slots.Select(x => $"{Telo.Sim.Plan.PlanRules.Clock(x.Start)} {x.Title} ({x.Minutes}m, {x.TravelMinutes}m travel)")));
+
+        // a family that's out at work: pinned for eleven on a weekday, it shows grey
+        var away = Telo.Sim.Work.StaffRules.Tickets(s, sim.Content).FirstOrDefault(t => t.LotId is { } l && sim.Content.Lots[l].Archetype == "family");
+        if (away is not null)
+        {
+            var sheet = Telo.Sim.Plan.PlanRules.PlanFor(s, tomorrow);
+            sheet.Slots.Clear();
+            sheet.Slots.Add(new Telo.Sim.Plan.PlanSlot { TicketKey = away.Key });
+            Telo.Sim.Plan.PlanRules.Lay(s, sim.Content, gen, sheet);
+            sheet.Slots[0].Start = 5 * 60;   // 11:00
+            Assert.NotNull(Telo.Sim.Plan.PlanRules.AwayAt(s, sim.Content, sim.Content.Lots[away.LotId!], tomorrow, 5 * 60));
+        }
+    }
+}

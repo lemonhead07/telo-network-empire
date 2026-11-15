@@ -33,6 +33,7 @@ public static class SaveCodec
         if (s.Version < 7) { s.Switch ??= new(); Net.SwitchRules.Rebuild(s, content); } // v7: the switchboard is a persistent object
         if (s.Version < 8) s.Actors ??= new(); // v8: actors (place, hands, kit, van) live in the simulation
         if (s.Version < 9) s.Texts ??= new(); // v9: texts on PIP's phone
+        if (s.Version < 10) s.Plans ??= new(); // v10: the day planner
         s.Version = GameState.CurrentVersion;
         return s;
     }

@@ -187,7 +187,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 9;
+    public const int CurrentVersion = 10;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -201,6 +201,8 @@ public sealed class GameState
     public List<Phone.TextMessage> Texts { get; set; } = new();
     /// <summary>The plot chapter whose opening text has been sent, so each is texted once.</summary>
     public string? ChapterTexted { get; set; }
+    /// <summary>Timesheets: who does which ticket at what hour, by day (v10).</summary>
+    public List<Plan.DayPlan> Plans { get; set; } = new();
 
     // Money is whole period dollars.
     public long Cash { get; set; }

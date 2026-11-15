@@ -106,3 +106,28 @@ public partial class StaffFigure : Node3D
         AddChild(Hot);
     }
 }
+
+/// <summary>
+/// The timesheet between the calendar and the bed (spine step 5): tomorrow, hour by hour. E fills it with what fits (a suggestion,
+/// never a lock); R clears it. Jobs where nobody will be in show greyed with the reason. Placeholder: a printed sheet.
+/// </summary>
+public partial class Timesheet : Node3D
+{
+    private readonly Label3D _text;
+    public Interactable Hot { get; }
+
+    public Timesheet()
+    {
+        Name = "Timesheet";
+        AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.62f, 0.86f, 0.02f), new Color(0.93f, 0.95f, 0.9f))
+            .Box(new Vector3(0, 0.37f, 0.012f), new Vector3(0.62f, 0.1f, 0.01f), new Color(0.16f, 0.2f, 0.36f)).Instance());
+        AddChild(new Label3D { Text = "TIMESHEET", Position = new Vector3(0, 0.37f, 0.02f), FontSize = 32, PixelSize = 0.0014f, Modulate = new Color(0.93f, 0.95f, 0.9f), OutlineSize = 0 });
+        _text = new Label3D { Position = new Vector3(0, -0.06f, 0.014f), FontSize = 32, PixelSize = 0.0011f, Modulate = new Color(0.1f, 0.1f, 0.18f), OutlineSize = 0, Width = 540, AutowrapMode = TextServer.AutowrapMode.WordSmart, HorizontalAlignment = HorizontalAlignment.Left };
+        AddChild(_text);
+        Hot = new Interactable { CollisionLayer = 2, CollisionMask = 0 };
+        Hot.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(0.62f, 0.86f, 0.1f) } });
+        AddChild(Hot);
+    }
+
+    public void Show(string text) => _text.Text = text;
+}

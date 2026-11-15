@@ -45,6 +45,7 @@ public partial class PhoneView : ModalView
         // what PIP is saying right now, else today's text
         if (_saying is not null) Text(Body, $"» {_saying}", 46);
         else if (PhoneRules.Recent(s, 1).FirstOrDefault() is { } t) Text(Body, $"{(t.Out ? "you" : t.From)}: {t.Body}", 46);
-        if (c.Plot.Count > 0) Text(Body, $"Ch {Plot.Index(s, c) + 1}: {Plot.Current(s, c).Title}", 40);
+        if (Telo.Sim.Plan.PlanRules.Next(s) is { } plan) Text(Body, $"Plan: {Telo.Sim.Plan.PlanRules.Clock(plan.Start)} {plan.Title}", 40);
+        else if (c.Plot.Count > 0) Text(Body, $"Ch {Plot.Index(s, c) + 1}: {Plot.Current(s, c).Title}", 40);
     }
 }

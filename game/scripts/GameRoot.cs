@@ -49,6 +49,7 @@ public partial class GameRoot : Node3D
     private static float Hold(float minutes) => Mathf.Clamp(minutes * DayLengthSeconds / Clock.MinutesPerDay, 0.8f, 6f);
     private TicketRail _rail = null!;
     private WallCalendar _calendar = null!;
+    private Timesheet _sheet = null!;
     private readonly HashSet<string> _clipboard = new();
     private readonly Dictionary<string, StaffFigure> _figures = new();
     /// <summary>Automated checks ignore who is home and whether the shop is open.</summary>
@@ -312,6 +313,13 @@ public partial class GameRoot : Node3D
         _rail.Use = t => { if (!_clipboard.Remove(t.Key)) { _clipboard.Add(t.Key); _pip.Once("ticket"); } SyncPaper(); };
         _calendar = new WallCalendar { Position = new Vector3(-RoomBuilder.W / 2 + 0.07f, 1.5f, 0.2f), RotationDegrees = new Vector3(0, 90, 0) };
         room.AddChild(_calendar);
+        // the timesheet: tomorrow, hour by hour (spine step 5)
+        _sheet = new Timesheet { Position = new Vector3(-RoomBuilder.W / 2 + 0.07f, 1.5f, 1.0f), RotationDegrees = new Vector3(0, 90, 0) };
+        room.AddChild(_sheet);
+        _sheet.Hot.Prompt = () => $"Plan tomorrow: fill the timesheet with what fits";
+        _sheet.Hot.OnUse = () => { Telo.Sim.Plan.PlanRules.AutoPlan(Sim.State, _content, _planet, PlanDay()); SyncPaper(); };
+        _sheet.Hot.AltPrompt = () => "Clear the sheet";
+        _sheet.Hot.OnAlt = () => { Telo.Sim.Plan.PlanRules.PlanFor(Sim.State, PlanDay()).Slots.Clear(); SyncPaper(); };
 
         // Camp bed. Sleeping is how days pass quickly.
         RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
@@ -619,6 +627,7 @@ public partial class GameRoot : Node3D
             var date = new Telo.Sim.Core.GameDate(d.Day).ToDate();
             return $"{(d.Day == s.Day ? "▶" : "  ")} {date:ddd d}{(d.Note.Length > 0 ? "   " + d.Note : "")}";
         });
+        ShowSheet();
         _calendar.Show($"{today:MMMM yyyy}".ToUpperInvariant() + $"        {Clock.Text(s)}\n\n" + string.Join("\n", lines));
 
         foreach (var m in s.StaffMembers.Where(m => m.Does.Count > 0))
@@ -650,6 +659,20 @@ public partial class GameRoot : Node3D
                     : _town.Hq.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(RoomBuilder.DoorX + 2.4f, -0.1f, RoomBuilder.D / 2 + 1.1f));
             fig.GlobalTransform = at;
         }
+    }
+
+    /// <summary>The day the sheet is for: today until mid-afternoon, then tomorrow (evening is for planning).</summary>
+    private int PlanDay() => Clock.Hour(Sim.State) >= 15 ? Sim.State.Day + 1 : Sim.State.Day;
+
+    private void ShowSheet()
+    {
+        var s = Sim.State; int day = PlanDay();
+        var plan = s.Plans.FirstOrDefault(p => p.Day == day && p.Who == "player");
+        if (plan is not null) Telo.Sim.Plan.PlanRules.Lay(s, _content, _planet, plan);
+        var head = $"{(day == s.Day ? "TODAY" : "TOMORROW")}, {new Telo.Sim.Core.GameDate(day).ToDate():ddd d MMM}\n\n";
+        var rows = plan is null || plan.Slots.Count == 0 ? new[] { "(nothing planned: E fills it with what fits)" }
+            : plan.Slots.Select(x => $"{(x.Grey is null ? "" : "▒ ")}{Telo.Sim.Plan.PlanRules.Clock(x.Start)}  {x.Title}  {x.Minutes / 60}h{x.Minutes % 60:00}{(x.Grey is null ? "" : $"  ({x.Grey})")}");
+        _sheet.Show(head + string.Join("\n", rows));
     }
 
     private Ticket? TicketToGive(StaffMember m)

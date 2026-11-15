@@ -100,7 +100,16 @@ public partial class GameRoot
                 break;
             case "stow": await Use(_van.Door); break;
             case "messages": await Use(RoomProp("AnsweringMachine")); break;
-            case "sleep": await Use(RoomProp("Bed")); break;
+            case "sleep":
+                // evening is for planning tomorrow: fill the timesheet before bed (once the first hour is over)
+                if (Onboarding.Current(Sim.State, _content) == OnboardingStep.Free && !Sim.State.Plans.Any(p => p.Day == Sim.State.Day + 1 && p.Slots.Count > 0)
+                    && Clock.Hour(Sim.State) >= 15)
+                {
+                    await Use(_sheet.Hot);
+                    await Snap("timesheet", force: true);
+                }
+                await Use(RoomProp("Bed"));
+                break;
             case "wait": await Seconds(10); break;
             case "install" when parts[1] == "do" && lot?.Install?.SpotFor(Enum.Parse<InstallStep>(parts[2])) is { } spot: await Use(spot); break;
             case "install" when parts[1] == "bodge" && lot?.Install?.SpotFor(Enum.Parse<InstallStep>(parts[2])) is { } bspot: await Use(bspot, alt: true); break;
