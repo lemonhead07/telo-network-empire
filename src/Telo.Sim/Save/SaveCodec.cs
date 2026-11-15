@@ -39,6 +39,12 @@ public static class SaveCodec
         // v13: ads and the daily job cap (new fields default to zero: no ads, nothing done today)
         if (s.Version < 14) s.Appointments ??= new(); // v14: appointments and the job clock
         // v15: service level (line-days up, counted from now on) and VIP bookings (none yet): new fields default to zero/null
+        if (s.Version < 17)   // v17: projects. A save already past a project's gate gets it as built, so nobody loses a street they had
+        {
+            s.Projects ??= new(); s.ProjectsDone ??= new(); s.RegionSigned ??= new();
+            foreach (var lot in (content?.Lots.Values ?? Enumerable.Empty<Content.LotDef>()).Where(l => l.NeedsProject is not null))
+                if (s.Households.TryGetValue(lot.Id, out var h) && h.Status == HouseholdStatus.Signed) s.ProjectsDone.Add(lot.NeedsProject!);
+        }
         if (s.Version < 16 && s.Switch is { } board)   // v16: the board grows to 32; the two spare ports move from 16-17 to 40-41
         {
             int Move(int port) => port is 16 or 17 ? port - 16 + Net.SwitchRules.SpareBase : port;

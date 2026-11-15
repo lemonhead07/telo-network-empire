@@ -64,6 +64,14 @@ public sealed class LatentDefect
 }
 
 /// <summary>A defect that has surfaced: the customer has a bad line until someone goes and fixes it.</summary>
+public sealed class ProjectProgress
+{
+    public int Step { get; set; }
+    public int Click { get; set; }
+    /// <summary>The day the current step can start (after a wait), or 0.</summary>
+    public int WaitUntil { get; set; }
+}
+
 public sealed class Fault
 {
     public required string Id { get; set; }
@@ -189,7 +197,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 16;
+    public const int CurrentVersion = 17;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -211,6 +219,11 @@ public sealed class GameState
     public List<Plan.DayPlan> Plans { get; set; } = new();
     /// <summary>Times customers have been asked, or agreed, to be in for a job (v14, see Plan/AppointmentRules).</summary>
     public List<Plan.Appointment> Appointments { get; set; } = new();
+    /// <summary>Projects under way (v17, see Build/ProjectRules): which step, how many of its actions done, and when a wait ends.</summary>
+    public Dictionary<string, ProjectProgress> Projects { get; set; } = new();
+    public HashSet<string> ProjectsDone { get; set; } = new();
+    /// <summary>Subscribers signed so far in each region a project opened (by project id): towns counted as a block (v17).</summary>
+    public Dictionary<string, int> RegionSigned { get; set; } = new();
     /// <summary>Line-days up and line-days counted over a rolling month, in thousandths (v15, see Town/ServiceRules).</summary>
     public long ServiceUp { get; set; }
     public long ServiceTotal { get; set; }
@@ -299,6 +312,9 @@ public sealed class GameState
     public GameDate Date => new(Day);
     public int Archive => (int)(ArchiveMilli / 1000);
     public int LiveSubscribers => Customers.Count(c => c.Live && c.Installed);
+    /// <summary>Everyone on your network: the people you connected one by one, and the towns your projects opened.</summary>
+    public int RegionSubscribers => RegionSigned.Values.Sum();
+    public int TotalSubscribers => LiveSubscribers + RegionSubscribers;
     public int PendingInstalls => Customers.Count(c => c.Live && !c.Installed);
     public int ReadyForFrame => Customers.Count(c => c.Live && !c.Installed && c.SocketFitted);
     public int LedgerServed => Ledger.Values.Count(p => p.Status == PromiseStatus.Served);

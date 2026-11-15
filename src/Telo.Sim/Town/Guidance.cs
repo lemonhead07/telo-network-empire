@@ -109,6 +109,18 @@ public static class Guidance
                 ? $"Pole line to {far.Name}: string the span back from the newest pole (cable drum and ladder)."
                 : $"Pole line to {far.Name}: plant pole {line.Planted + 1} along the farm road (poles are on the van, ${far.PoleLine!.PoleCost} each).", null);
         }
+        // the next thing to build: each project opens the next part of the game (a lane, a village, the dial-up years)
+        if (Build.ProjectRules.Next(s, c) is { } proj && Build.ProjectRules.Step(s, proj) is { } pst
+            && Build.ProjectRules.ProgressOf(s, proj.Id).WaitUntil <= s.Day && (Build.ProjectRules.Started(s, proj.Id) || s.Cash >= proj.Cost))
+            return ($"Project: {proj.Name}: {pst.Verb.ToLowerInvariant()}{(Build.ProjectRules.Started(s, proj.Id) ? "" : $" (${proj.Cost} to start)")}.", Act.Places.Project(proj.Id));
+        // the next project is waiting on something you can do: remember a page, lease the depot
+        if (Build.ProjectRules.Waiting(s, c) is { } wait)
+        {
+            if (Build.ProjectRules.PageToRecall(s, c, wait) is { } pg && s.Archive >= pg.ArchiveCost)
+                return ($"For {wait.Name}: recall \"{pg.Title}\" in PIP's Almanac ({pg.ArchiveCost} Archive).", null);
+            if (wait.RequiresDepot && !s.HasDepot && Work.StaffRules.CanLeaseDepot(s))
+                return ($"For {wait.Name}: lease the depot at 1 Main Street (${Work.StaffRules.DepotDeposit} down).", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Depot)?.Id);
+        }
         // this chapter's work is done and the world hasn't caught up: remember the next one early
         if (ActRules.EarlyStartEntry(s, c) is { } page && s.Archive >= page.ArchiveCost)
             return ($"Get ahead: recall \"{page.Title}\" in PIP's Almanac ({page.ArchiveCost} Archive).", null);

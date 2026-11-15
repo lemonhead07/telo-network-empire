@@ -90,7 +90,7 @@ public static class TownRules
 
     /// <summary>Lots that could still become customers by ordinary means.</summary>
     public static IEnumerable<LotDef> Prospects(GameState s, ContentDb c) =>
-        c.Lots.Values.Where(l => l.Kind is LotKind.House or LotKind.Shop && l.Premise is null && s.LiveSubscribers >= l.OpensAt
+        c.Lots.Values.Where(l => l.Kind is LotKind.House or LotKind.Shop && l.Premise is null && s.LiveSubscribers >= l.OpensAt && (l.NeedsProject is null || s.ProjectsDone.Contains(l.NeedsProject))
                                  && HouseholdOf(s, l.Id).Status != HouseholdStatus.Signed && !s.NezLots.Contains(l.Id)).OrderBy(l => l.Id);
 
     // ---- installing ------------------------------------------------------------------------------

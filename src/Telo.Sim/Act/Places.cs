@@ -20,6 +20,12 @@ public static class Places
     public const double DriveOverM = 25;
 
     public static string Pole(string premiseId, int index) => $"pole:{premiseId}:{index}";
+    public static string Project(string projectId) => $"proj:{projectId}";
+    public static bool IsProject(string place, out string projectId)
+    {
+        projectId = place.StartsWith("proj:") ? place[5..] : "";
+        return projectId.Length > 0;
+    }
 
     public static bool IsPole(string place, out string premiseId, out int index)
     {
@@ -40,6 +46,7 @@ public static class Places
             var sites = LineRules.PoleSites(gen, p);
             if (sites.Count > 0) return sites[Math.Clamp(k, 0, sites.Count - 1)].Normalized();
         }
+        if (IsProject(place, out var proj) && c.Project(proj) is { } pd) return Offset(gen, gen.SiteById(pd.Site) ?? gen.Town, pd.East, pd.South);
         return gen.Town.Dir;
     }
 

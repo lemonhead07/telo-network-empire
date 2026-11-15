@@ -74,7 +74,18 @@ public static class Actions
         if (here == Places.Room) Room(sim, a, list, onSite);
         else if (c.Lots.TryGetValue(here, out var lot)) Lot(sim, a, lot, list, onSite);
         else if (Places.IsPole(here, out var pid, out int k) && c.Premises.TryGetValue(pid, out var premise)) Pole(sim, gen, premise, k, list, onSite, a);
+        else if (Places.IsProject(here, out var projId) && c.Project(projId) is { } project) Project(sim, project, list, onSite);
         return list;
+    }
+
+    // ---- a project site ------------------------------------------------------------------------
+    private static void Project(Simulation sim, ProjectDef p, List<GameAction> list, Tools onSite)
+    {
+        var s = sim.State;
+        if (ProjectRules.Step(s, p) is not { } st) return;
+        var prog = ProjectRules.ProgressOf(s, p.Id);
+        list.Add(new("project:do", $"{st.Verb} ({prog.Click + 1} of {st.Clicks})", st.Minutes, ProjectRules.Blocked(s, sim.Content, p, onSite),
+            () => ProjectRules.Do(s, sim.Content, p, onSite)));
     }
 
     /// <summary>Do it, if nothing is stopping it. The clock moves by the action's minutes unless the presentation lives the time itself.</summary>
@@ -307,6 +318,7 @@ public static class Actions
             if (line.Planted < n) yield return Places.Pole(p.Id, line.Planted);
             if (LineRules.CanString(sim.State, gen, p)) yield return Places.Pole(p.Id, LineRules.StringSite(line.Strung, n));
         }
+        foreach (var p in sim.Content.Projects.Where(p => ProjectRules.Available(sim.State, sim.Content, p))) yield return Places.Project(p.Id);
     }
 
     /// <summary>The boxed modem and line cards are only on the van while there is stock for them.</summary>
@@ -318,7 +330,8 @@ public static class Actions
     };
 
     public static string Name(ContentDb c, string place) =>
-        place == Places.Room ? "your room" : c.Lots.TryGetValue(place, out var l) ? $"{l.Resident}'s" : Places.IsPole(place, out var pid, out int k) ? $"pole site {k + 1}" : place;
+        place == Places.Room ? "your room" : c.Lots.TryGetValue(place, out var l) ? $"{l.Resident}'s" : Places.IsPole(place, out var pid, out int k) ? $"pole site {k + 1}"
+        : Places.IsProject(place, out var proj) && c.Project(proj) is { } pd ? pd.Name : place;
 
     public static string Cargo(Tools t) => t switch
     {

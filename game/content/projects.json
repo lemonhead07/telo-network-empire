@@ -1,0 +1,173 @@
+[
+  { "id": "proj-church-poles", "name": "Poles up Church Lane", "act": 0, "site": "town-start", "east": -77, "south": -20, "cost": 60,
+    "requires": [ { "kind": "ledgerServed", "value": 1 }, { "kind": "subscribers", "value": 6 } ],
+    "story": "Church Lane has no poles of its own: NezTel ran the lane off a junction that rotted in 1977. Plant two along Mill Row and string them up the lane.",
+    "doneText": "Church Lane has wire. Father Roe rang the bell for it, which nobody asked him to do.",
+    "steps": [
+      { "verb": "Plant a pole along Mill Row", "clicks": 2, "minutes": 30, "needs": ["pole"] },
+      { "verb": "String the wire up Church Lane", "clicks": 2, "minutes": 15, "needs": ["cableDrum", "ladder"] },
+      { "verb": "Fit the lane's terminal box", "clicks": 1, "minutes": 20, "needs": ["toolbox"] }
+    ] },
+
+  { "id": "proj-eastgate-cabinet", "name": "Eastgate street cabinet", "act": 1, "site": "eastgate", "east": 55, "south": 3, "cost": 250,
+    "requiresProjects": ["proj-church-poles"], "requires": [ { "kind": "subscribers", "value": 12 } ],
+    "story": "Eastgate's lines all run back to one NezTel box that floods every winter. Stand your own cabinet at the end of the High Street and run pairs back to town.",
+    "doneText": "A green cabinet at the end of Eastgate High Street, humming. The post office has already put a notice on it.",
+    "steps": [
+      { "verb": "Dig the cabinet's base", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Stand the cabinet", "clicks": 1, "minutes": 25, "needs": ["toolbox"] },
+      { "verb": "Run trunk pairs back towards town", "clicks": 3, "minutes": 15, "needs": ["cableDrum"] },
+      { "verb": "Wire the cabinet", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Test every pair", "clicks": 1, "minutes": 10 }
+    ] },
+
+  { "id": "proj-modem-bank", "name": "Rack the modem bank", "act": 2, "site": "town-start", "east": 56, "south": 27, "cost": 400,
+    "requiresEntry": "alm-14k", "requiresDepot": true,
+    "story": "The dial-up years: one modem per caller won't do. A rack of them in the depot, answering in turn, is what the Almanac page describes.",
+    "doneText": "Eight modems in a rack at the depot, lamps blinking in a row. The Board answers eight more calls at once.",
+    "reward": { "linesIn": 8 },
+    "steps": [
+      { "verb": "Carry the rack into the depot", "clicks": 1, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Bolt in the modems", "clicks": 4, "minutes": 10, "needs": ["toolbox"] },
+      { "verb": "Cable it to the hunt group", "clicks": 2, "minutes": 15, "needs": ["cableDrum"] },
+      { "verb": "Watch the lamps come up", "clicks": 1, "minutes": 10 }
+    ] },
+
+  { "id": "proj-leased-line", "name": "Leased line from NezTel", "act": 2, "site": "town-start", "east": -9, "south": 9, "cost": 50,
+    "requiresProjects": ["proj-modem-bank"],
+    "story": "The web is out there and the only road to it is NezTel's trunk. Ask for a leased line: a form, a waiting list, an engineer who comes when he comes.",
+    "doneText": "The leased line is live. Your subscribers can dial in to the web for $5 a month more. NezTel will bill you $120 a month for the privilege.",
+    "reward": { "perSubscriber": 5, "monthlyCost": 120 },
+    "steps": [
+      { "verb": "Fill in NezTel's leased-line form at their box", "clicks": 1, "minutes": 20 },
+      { "verb": "Test the line at handover", "clicks": 1, "minutes": 15, "waitDays": 10, "waitText": "NezTel's engineer is booked" }
+    ] },
+
+  { "id": "proj-microwave", "name": "Microwave hop over the ridge", "act": 2, "site": "farm-hollow", "east": 22, "south": 26, "cost": 600,
+    "requiresProjects": ["proj-leased-line"],
+    "story": "Every month NezTel's bill for the leased line, and every order slow-walked. A mast on the ridge by Hollow Farm and a dish aimed over the hills gives you your own way out.",
+    "doneText": "The dish peaks, the link holds, and you cancel NezTel's leased line by letter. It is the most satisfying letter you have ever written.",
+    "reward": { "cancels": "proj-leased-line" },
+    "steps": [
+      { "verb": "Carry the mast sections up", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Climb and bolt on the dish", "clicks": 2, "minutes": 20, "needs": ["ladder", "toolbox"] },
+      { "verb": "Aim it until the signal peaks", "clicks": 3, "minutes": 10 },
+      { "verb": "Test the hop end to end", "clicks": 1, "minutes": 10 }
+    ] },
+
+  { "id": "proj-millbrook", "name": "Millbrook exchange", "act": 2, "site": "farm-hollow", "east": -30, "south": -30, "cost": 1200,
+    "requiresProjects": ["proj-microwave"],
+    "story": "Millbrook, the market town over the hills, has one NezTel exchange and a waiting list longer than the high street. A relay hut on the hill past the farm puts it within your reach.",
+    "doneText": "The Millbrook relay is up. The town's waiting list is about to become your customer list.",
+    "reward": { "region": 150, "regionName": "Millbrook", "regionFee": 15 },
+    "steps": [
+      { "verb": "Survey the route over the hill", "clicks": 1, "minutes": 20 },
+      { "verb": "Raise the relay hut's mast", "clicks": 2, "minutes": 25, "needs": ["ladder", "toolbox"] },
+      { "verb": "Fit the exchange racks in the hut", "clicks": 3, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Cut Millbrook's lines over", "clicks": 2, "minutes": 20, "needs": ["cableDrum"] }
+    ] },
+
+  { "id": "proj-cold-store", "name": "Fit out the old cold store", "act": 3, "site": "eastgate", "east": -56, "south": 4, "cost": 1500,
+    "requiresProjects": ["proj-microwave"],
+    "story": "The boom: everybody wants a web page and somewhere to keep it. Eastgate's old cold store is cold, has power, and nobody wants it. A datacentre, then.",
+    "doneText": "Racks hum in the old cold store. Hosting pays $400 a month, and the first customer is Sol, who wants his shop on the web.",
+    "reward": { "monthlyRevenue": 400 },
+    "steps": [
+      { "verb": "Clear out the old cold room", "clicks": 2, "minutes": 30 },
+      { "verb": "Rack the servers", "clicks": 3, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Run power and cooling", "clicks": 2, "minutes": 25, "needs": ["cableDrum", "toolbox"] },
+      { "verb": "Pull the mains to test the generator", "clicks": 1, "minutes": 15 }
+    ] },
+
+  { "id": "proj-landing", "name": "Kestrel Point landing station", "act": 3, "site": "eastgate", "east": 0, "south": 62, "cost": 2000,
+    "requiresProjects": ["proj-cold-store"],
+    "story": "NezTel owns the only ocean cable and charges you by the byte to use it. A landing station on the shore below Eastgate is where your own will come ashore. NezTel has objected to the planning permission, twice.",
+    "doneText": "The landing station stands on the shore, empty, waiting for its cable.",
+    "steps": [
+      { "verb": "Pour the station's floor", "clicks": 2, "minutes": 25, "needs": ["toolbox"] },
+      { "verb": "Wait for the concrete (and the council)", "clicks": 1, "minutes": 10, "waitDays": 5, "waitText": "the concrete is setting and the council is meeting" },
+      { "verb": "Fit out the power and the racks", "clicks": 2, "minutes": 25, "needs": ["cableDrum", "toolbox"] }
+    ] },
+
+  { "id": "proj-ocean-cable", "name": "Ocean cable to Farland", "act": 3, "site": "eastgate", "east": 18, "south": 64, "cost": 4000,
+    "requiresProjects": ["proj-landing"],
+    "story": "A chartered ship lays your cable across to Farland's near coast. The last splice is on the beach, by hand, as the tide comes in.",
+    "doneText": "The last fibre is spliced on the beach. Farland's coast towns are on your network, and NezTel's ocean bill is the past.",
+    "reward": { "region": 260, "regionName": "the Farland coast", "regionFee": 18 },
+    "steps": [
+      { "verb": "Load the drums onto the cable ship", "clicks": 2, "minutes": 20, "needs": ["cableDrum"] },
+      { "verb": "Wait for the ship to lay the cable", "clicks": 1, "minutes": 10, "waitDays": 7, "waitText": "the cable ship is at sea" },
+      { "verb": "Splice the last fibre on the beach", "clicks": 3, "minutes": 15, "needs": ["toolbox"] },
+      { "verb": "Light it up end to end", "clicks": 1, "minutes": 10 }
+    ] },
+
+  { "id": "proj-dslam", "name": "Broadband in the exchange", "act": 4, "site": "town-start", "east": 66, "south": -22, "cost": 3000,
+    "requiresEntry": "alm-adsl", "requiresProjects": ["proj-ocean-cable"],
+    "story": "Always on, over the copper already in the ground. Racks of broadband kit in the exchange, and every line a short drive from it gets faster overnight.",
+    "doneText": "Broadband is on. Everybody's line is always on, and pays $10 a month more for it.",
+    "reward": { "perSubscriber": 10 },
+    "steps": [
+      { "verb": "Install the broadband racks", "clicks": 3, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Re-jumper the lines through them", "clicks": 3, "minutes": 15, "needs": ["cableDrum"] },
+      { "verb": "Test a line at every distance", "clicks": 2, "minutes": 10 }
+    ] },
+
+  { "id": "proj-fibre-ring", "name": "Fibre ring round the bay", "act": 4, "site": "eastgate", "east": -60, "south": -20, "cost": 6000,
+    "requiresProjects": ["proj-dslam"],
+    "story": "Easthaven and the bay towns want broadband too. A ring of fibre round the bay reaches all of them, and if any one bit is cut the light goes the other way round.",
+    "doneText": "The ring is closed. Easthaven and every town round the bay can sign up.",
+    "reward": { "region": 700, "regionName": "Easthaven and the bay", "regionFee": 20 },
+    "steps": [
+      { "verb": "Trench the ring's first leg", "clicks": 3, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Blow the fibre through the ducts", "clicks": 3, "minutes": 15, "needs": ["cableDrum"] },
+      { "verb": "Wait for the crews to finish the far side", "clicks": 1, "minutes": 10, "waitDays": 10, "waitText": "the crews are trenching round the bay" },
+      { "verb": "Splice the ring closed", "clicks": 2, "minutes": 15, "needs": ["toolbox"] }
+    ] },
+
+  { "id": "proj-farland-city", "name": "Farland city exchange", "act": 4, "site": "farm-hollow", "east": -25, "south": 30, "cost": 8000,
+    "requiresProjects": ["proj-fibre-ring"],
+    "story": "Farland's capital has broadband from NezTel at twice your price and half your speed. An exchange of your own there, fed by the ocean cable, settles it.",
+    "doneText": "Farland city is on your network. NezTel's local manager has asked to meet you for lunch.",
+    "reward": { "region": 1000, "regionName": "Farland city", "regionFee": 22 },
+    "steps": [
+      { "verb": "Ship the racks over", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Wait for the building to be fitted", "clicks": 1, "minutes": 10, "waitDays": 12, "waitText": "the Farland crew is fitting out the building" },
+      { "verb": "Commission the exchange", "clicks": 3, "minutes": 15, "needs": ["cableDrum", "toolbox"] }
+    ] },
+
+  { "id": "proj-first-mast", "name": "First cell mast on the ridge", "act": 5, "site": "farm-hollow", "east": 35, "south": -25, "cost": 10000,
+    "requiresEntry": "alm-smartphone", "requiresProjects": ["proj-farland-city"],
+    "story": "Everyone has a phone in their pocket now and it doesn't need a wall. A mast on the ridge by the farm is your first cell: the whole valley in one sweep.",
+    "doneText": "The first mast is live. Phones across the valley show your name in the corner of the screen.",
+    "reward": { "region": 1500, "regionName": "mobile subscribers in the valley", "regionFee": 25 },
+    "steps": [
+      { "verb": "Pour the mast's footing", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Climb and fit the antennas", "clicks": 3, "minutes": 20, "needs": ["ladder", "toolbox"] },
+      { "verb": "Wire the base station", "clicks": 2, "minutes": 20, "needs": ["cableDrum"] },
+      { "verb": "Make the first call on it", "clicks": 1, "minutes": 5 }
+    ] },
+
+  { "id": "proj-cell-sites", "name": "Cell sites along the coast", "act": 5, "site": "eastgate", "east": 50, "south": -40, "cost": 15000,
+    "requiresProjects": ["proj-first-mast"],
+    "story": "One mast was a start. Masts along the whole coast, on church towers, water tanks and the Plough's chimney, and everyone between here and Farland is covered.",
+    "doneText": "The coast is covered. The Plough charges you rent for the chimney in pints.",
+    "reward": { "region": 4000, "regionName": "mobile subscribers along the coast", "regionFee": 25 },
+    "steps": [
+      { "verb": "Agree the sites (church, tank, chimney)", "clicks": 2, "minutes": 15 },
+      { "verb": "Fit the first of the coast masts", "clicks": 3, "minutes": 20, "needs": ["ladder", "toolbox"] },
+      { "verb": "Wait for the crews to fit the rest", "clicks": 1, "minutes": 10, "waitDays": 14, "waitText": "the mast crews are working down the coast" },
+      { "verb": "Hand calls between the masts on a drive down the coast", "clicks": 2, "minutes": 15 }
+    ] },
+
+  { "id": "proj-backhaul", "name": "Fibre to every mast", "act": 5, "site": "town-start", "east": -90, "south": -40, "cost": 12000,
+    "requiresProjects": ["proj-cell-sites"],
+    "story": "The masts are only as fast as the line behind them, and half of them run on borrowed copper. Fibre to every mast, and the phones in people's pockets get fast.",
+    "doneText": "Every mast has fibre behind it. Data on the phones is fast enough that people stop noticing it, which is the point.",
+    "reward": { "perSubscriber": 3 },
+    "steps": [
+      { "verb": "Plan the backhaul routes", "clicks": 1, "minutes": 20 },
+      { "verb": "Blow fibre to the nearest masts", "clicks": 3, "minutes": 15, "needs": ["cableDrum"] },
+      { "verb": "Wait for the crews to reach the rest", "clicks": 1, "minutes": 10, "waitDays": 10, "waitText": "the crews are blowing fibre down the coast" },
+      { "verb": "Swap the copper out at the last mast", "clicks": 2, "minutes": 15, "needs": ["toolbox"] }
+    ] }
+]

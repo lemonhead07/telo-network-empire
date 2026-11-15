@@ -75,6 +75,7 @@ public sealed class Simulation
         // Word of mouth: happy subscribers bring enquiries.
         BookingRules.Day(s, Content, _rng);   // word of mouth and ads bring bookings; long waits go to NezTel
         ServiceRules.Day(s, Content, _rng);   // service in nines, people leaving NezTel, VIP bookings
+        Build.ProjectRules.Day(s, Content);   // towns your projects opened sign up
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
         Plan.AppointmentRules.Overnight(s, Content, _rng);   // missed windows remembered; today's requests answered
@@ -85,8 +86,8 @@ public sealed class Simulation
     private void MonthEnd()
     {
         var s = State;
-        long revenue = s.Customers.Where(c => c.Live && c.Installed).Sum(c => c.MonthlyFee);
-        long costs = RentPerMonth + (s.HasDepot ? StaffRules.DepotRentPerMonth : 0) + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s) + BoardService.TakeMonthlyBill(s);
+        long revenue = s.Customers.Where(c => c.Live && c.Installed).Sum(c => c.MonthlyFee) + Build.ProjectRules.MonthlyRevenue(s, Content);
+        long costs = Build.ProjectRules.MonthlyCost(s, Content) + RentPerMonth + (s.HasDepot ? StaffRules.DepotRentPerMonth : 0) + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s) + BoardService.TakeMonthlyBill(s);
         s.RevenueLastMonth = revenue;
         s.RevenueThisMonth = 0;
         s.Cash += revenue - costs;

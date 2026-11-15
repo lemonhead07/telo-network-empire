@@ -82,6 +82,10 @@ public static class Bot
         if (acts.FirstOrDefault(x => x.Id == "buy:modem" && x.Ready) is { } modem && s.Modems < Math.Min(4, s.PendingInstalls) && s.Cash >= 100)
             return (modem.Id, "stock up on modems while you're here");
 
+        // three jobs done today: an odd job or a knock keeps till tomorrow (don't walk to the door just to be told so)
+        if (!BookingRules.CanStartJob(s, c) && (text.StartsWith("Odd job") || text.StartsWith("Knock")) && sim.Installs.Count + sim.Benches.Count == 0)
+            return (a.Place == Places.Room ? "sleep" : Go(Places.Room), $"{text} (done for today)");
+
         // 4. Follow the line everyone reads.
         var (place, want) = Target(sim, gen, text, lotId);
         // nobody in over there and it's night: sleep instead of walking over to a dark door
@@ -140,7 +144,7 @@ public static class Bot
         if (lotId is not null)
             return (lotId, text.Contains("modem") && text.Contains("Buy") ? new[] { "buy:modem" }
                 : text.Contains("line card") ? new[] { "buy:card" }
-                : new[] { "repair:", "install:", "socket:", "order:", "oddjob:", "knock:", "lease" });
+                : new[] { "repair:", "install:", "socket:", "order:", "oddjob:", "knock:", "lease", "project:" });
         if (text.Contains("Pole line"))
         {
             var p = c.Premises.Values.First(p => p.PoleLine is not null && LedgerRules.StatusOf(s, p.Id) != PromiseStatus.Served && p.Act <= s.ActIndex + 1);
@@ -159,7 +163,7 @@ public static class Bot
             : text.Contains("Hire") ? new[] { "invest:install" }
             : text.Contains("Put up an ad") ? new[] { "ads:up" }
             : text.Contains("terminal") || text.Contains("uploads") ? new[] { "board:letin:", "board:mail", "board:file:" }
-            : text.Contains("recall") ? new[] { "recall:" }
+            : text.Contains("recall") ? new[] { c.Almanac.Values.FirstOrDefault(e => text.Contains($"\"{e.Title}\"")) is { } page ? $"recall:{page.Id}" : "recall:" }
             : new[] { "sleep" };
         return (Places.Room, room);
     }

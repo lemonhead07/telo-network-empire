@@ -17,6 +17,8 @@ public sealed class ContentDb
     public IReadOnlyList<ChapterDef> Plot { get; }
     /// <summary>Things as parts and fasteners, by id (assemblies.json).</summary>
     public IReadOnlyDictionary<string, AssemblyDef> Assemblies { get; }
+    /// <summary>Things you build that open the next part of the game, in the order they come (projects.json).</summary>
+    public IReadOnlyList<ProjectDef> Projects { get; }
 
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -30,8 +32,10 @@ public sealed class ContentDb
 
     public ContentDb(IEnumerable<ActDef> acts, IEnumerable<AnnouncementDef> announcements,
         IEnumerable<AlmanacEntryDef> almanac, IEnumerable<WorkKindDef> work, IEnumerable<PremiseDef> premises,
-        IEnumerable<LotDef>? lots = null, IEnumerable<ProductDef>? products = null, IEnumerable<ChapterDef>? plot = null, IEnumerable<AssemblyDef>? assemblies = null)
+        IEnumerable<LotDef>? lots = null, IEnumerable<ProductDef>? products = null, IEnumerable<ChapterDef>? plot = null, IEnumerable<AssemblyDef>? assemblies = null,
+        IEnumerable<ProjectDef>? projects = null)
     {
+        Projects = (projects ?? Array.Empty<ProjectDef>()).ToList();
         Acts = acts.OrderBy(a => a.Index).ToList();
         Announcements = announcements.ToDictionary(a => a.Id);
         Almanac = almanac.ToDictionary(a => a.Id);
@@ -54,10 +58,12 @@ public sealed class ContentDb
                 : throw new InvalidDataException($"Missing content file {name}.json");
 
         return new ContentDb(Load<ActDef>("acts"), Load<AnnouncementDef>("announcements"),
-            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"), Load<ProductDef>("products"), Load<ChapterDef>("plot"), Load<AssemblyDef>("assemblies"));
+            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"), Load<ProductDef>("products"), Load<ChapterDef>("plot"), Load<AssemblyDef>("assemblies"), Load<ProjectDef>("projects"));
     }
 
-    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json", "products.json", "plot.json", "assemblies.json" };
+    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json", "products.json", "plot.json", "assemblies.json", "projects.json" };
+
+    public ProjectDef? Project(string id) => Projects.FirstOrDefault(p => p.Id == id);
 
     public ActDef ActAt(int index) => Acts[Math.Clamp(index, 0, Acts.Count - 1)];
 
@@ -106,7 +112,27 @@ public sealed class ContentDb
             if (p.Cost > p.Price) e.Add($"product {p.Id}: costs more than it sells for");
         }
         foreach (var l in Lots.Values)
+        {
             if (l.Premise is { } pr && !Premises.ContainsKey(pr)) e.Add($"lot {l.Id}: unknown premise '{pr}'");
+            if (l.NeedsProject is { } np && Project(np) is null) e.Add($"lot {l.Id}: unknown project '{np}'");
+        }
+        // projects: unique, every requirement exists and comes earlier in the file, kit names are real, something to do
+        for (int i = 0; i < Projects.Count; i++)
+        {
+            var p = Projects[i];
+            if (Projects.Take(i).Any(x => x.Id == p.Id)) e.Add($"project {p.Id}: duplicate id");
+            if (p.Steps.Count == 0) e.Add($"project {p.Id}: no steps");
+            foreach (var r in p.RequiresProjects)
+                if (!Projects.Take(i).Any(x => x.Id == r)) e.Add($"project {p.Id}: requires '{r}', which must be an earlier project");
+            if (p.RequiresEntry is { } re && !Almanac.ContainsKey(re)) e.Add($"project {p.Id}: unknown entry '{re}'");
+            if (p.Reward.Cancels is { } cx && Project(cx) is null) e.Add($"project {p.Id}: cancels unknown '{cx}'");
+            if (p.Act >= Acts.Count && Acts.Count > 0) e.Add($"project {p.Id}: act {p.Act} doesn't exist");
+            foreach (var st in p.Steps)
+            {
+                if (st.Clicks < 1 || st.Minutes < 1) e.Add($"project {p.Id}: step '{st.Verb}' needs clicks and minutes");
+                foreach (var n in st.Needs) if (!Enum.TryParse<Town.Tools>(n, true, out _)) e.Add($"project {p.Id}: unknown kit '{n}'");
+            }
+        }
         return e;
     }
 }

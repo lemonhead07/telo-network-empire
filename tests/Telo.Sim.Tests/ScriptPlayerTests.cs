@@ -15,6 +15,9 @@ namespace Telo.Sim.Tests;
 /// </summary>
 public class ScriptPlayerTests
 {
+    private readonly Xunit.Abstractions.ITestOutputHelper _out;
+    public ScriptPlayerTests(Xunit.Abstractions.ITestOutputHelper output) => _out = output;
+
     private static (Simulation Sim, ActorState Me, PlanetGen Gen) NewGame()
     {
         var sim = Simulation.NewGame(TestContent.Db, 1983);
@@ -45,6 +48,32 @@ public class ScriptPlayerTests
         // one plot line, no overlap: every chapter, in order, never going back, at least as far as the one after the farm line
         Assert.Equal(Enumerable.Range(0, chapters.Count), chapters);
         Assert.True(chapters[^1] > sim.Content.Plot.ToList().FindIndex(ch => ch.Id == "ch-farm"));
+    }
+
+    /// <summary>
+    /// Early access is Acts 0 to 5: the bot plays from the first message into the mobile years by choosing actions, no cheats,
+    /// so every step is reachable from the one before (nothing gated behind something that never comes).
+    /// </summary>
+    [Fact]
+    public void The_bot_plays_from_the_first_message_into_act_5()
+    {
+        var (sim, me, gen) = NewGame();
+        var s = sim.State;
+        var log = new List<string>();
+        var acts = new List<string>();
+        var taken = Bot.Play(sim, me, gen, () => s.ActIndex >= 5 || s.Day > Simulation.StartDate.Day + 365 * 30, 400000,
+            (id, why) =>
+            {
+                log.Add($"{s.Date} {Clock.Text(s)} {id}  ({why})");
+                if (acts.Count == 0 || !acts[^1].StartsWith($"act {s.ActIndex}:"))
+                    acts.Add($"act {s.ActIndex}: {s.Date} subs={s.TotalSubscribers} cash={s.Cash} projects={s.ProjectsDone.Count}");
+            });
+        _out.WriteLine(string.Join("\n", acts));
+        Assert.True(s.ActIndex >= 5,
+            $"stuck in act {s.ActIndex} on {s.Date}: subs={s.TotalSubscribers} cash={s.Cash} archive={s.Archive} projects={string.Join(",", s.ProjectsDone)}\n" +
+            $"next: {Guidance.Next(s, sim.Content).Text}\n" + string.Join("\n", acts) + "\nLast actions:\n" + string.Join("\n", log.TakeLast(12)));
+        // and through the acts' own work, not around it
+        Assert.Contains("proj-first-mast", s.ProjectsDone.Concat(s.Projects.Keys).Append(Telo.Sim.Build.ProjectRules.Next(s, sim.Content)?.Id ?? ""));
     }
 
     [Fact]

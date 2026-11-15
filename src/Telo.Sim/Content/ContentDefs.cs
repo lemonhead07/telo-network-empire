@@ -8,7 +8,7 @@ public enum WorkMode { Manual, Delegated, Automated }
 /// <summary>How the player *sees* a kind of work. The UI literally changes as this climbs.</summary>
 public enum InterfaceTier { Paper, Terminal, Database, Dashboard }
 
-public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries, Customers, SocketsFitted, JobsDone, Knocked, ServiceNines }
+public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries, Customers, SocketsFitted, JobsDone, Knocked, ServiceNines, ProjectsDone }
 
 public sealed record Condition(ConditionKind Kind, long Value);
 
@@ -203,4 +203,62 @@ public sealed record LotDef
     public string? Premise { get; init; }
     /// <summary>Paying subscribers you need before this household has heard of you (0: from the start). How new streets and villages open up.</summary>
     public int OpensAt { get; init; }
+    /// <summary>A project that has to be built before this household can be connected (the poles up their lane, the village cabinet).</summary>
+    public string? NeedsProject { get; init; }
+}
+
+/// <summary>One step of a project: an action held for a while, a few times over, with the kit it needs here.</summary>
+public sealed record ProjectStepDef
+{
+    public required string Verb { get; init; }
+    public int Clicks { get; init; } = 1;
+    public int Minutes { get; init; } = 15;
+    public List<string> Needs { get; init; } = new();
+    /// <summary>Days to wait before this step can start (NezTel's engineer is booked; the concrete has to set).</summary>
+    public int WaitDays { get; init; }
+    /// <summary>What you're waiting for, in words.</summary>
+    public string WaitText { get; init; } = "";
+}
+
+/// <summary>What finishing a project changes.</summary>
+public sealed record ProjectRewardDef
+{
+    /// <summary>Extra lines in on the Board.</summary>
+    public int LinesIn { get; init; }
+    /// <summary>Added to every live subscriber's monthly bill (a new service on their line).</summary>
+    public long PerSubscriber { get; init; }
+    public long MonthlyRevenue { get; init; }
+    /// <summary>A monthly bill that comes with it (rent on a line, power).</summary>
+    public long MonthlyCost { get; init; }
+    /// <summary>Another project whose monthly cost this one ends (your own link replaces the leased one).</summary>
+    public string? Cancels { get; init; }
+    /// <summary>A whole town or region it opens: this many subscribers sign over the following weeks, counted and billed as a block.</summary>
+    public int Region { get; init; }
+    public string RegionName { get; init; } = "";
+    /// <summary>What each of them pays a month.</summary>
+    public long RegionFee { get; init; } = 15;
+}
+
+/// <summary>
+/// A project (projects.json): something built in the world, step by step, that opens the next part of the game. Every
+/// project is gated (act, earlier projects, an Almanac page, how big you are) so the game flows from one to the next.
+/// </summary>
+public sealed record ProjectDef
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public int Act { get; init; }
+    public required string Site { get; init; }
+    public double East { get; init; }
+    public double South { get; init; }
+    public long Cost { get; init; }
+    public List<string> RequiresProjects { get; init; } = new();
+    public string? RequiresEntry { get; init; }
+    public bool RequiresDepot { get; init; }
+    public List<Condition> Requires { get; init; } = new();
+    public List<ProjectStepDef> Steps { get; init; } = new();
+    public ProjectRewardDef Reward { get; init; } = new();
+    /// <summary>The one-line why, on the phone when it becomes available.</summary>
+    public string Story { get; init; } = "";
+    public string DoneText { get; init; } = "";
 }
