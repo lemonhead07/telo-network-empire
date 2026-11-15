@@ -69,6 +69,8 @@ public static class Actions
         }
 
         list.Add(new("wait", "Wait half an hour", 30, null, () => { }));
+        list.Add(new("phone:night", "Text PIP goodnight (ends the day)", 0, Clock.Hour(s) >= 17 || Clock.Hour(s) < 6 ? null : "it's still the working day",
+            () => Phone.PhoneRules.SendNight(sim)));
         if (here == Places.Room) Room(sim, a, list, onSite);
         else if (c.Lots.TryGetValue(here, out var lot)) Lot(sim, a, lot, list, onSite);
         else if (Places.IsPole(here, out var pid, out int k) && c.Premises.TryGetValue(pid, out var premise)) Pole(sim, gen, premise, k, list, onSite, a);

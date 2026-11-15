@@ -69,11 +69,13 @@ public sealed class PipTips
     /// <summary>Say this line if it hasn't been said yet.</summary>
     public void Once(string key)
     {
-        if (_said.Add(key) && Lines.TryGetValue(key, out var text)) _hud.Say(text);
+        if (_said.Add(key) && Lines.TryGetValue(key, out var text)) Say(text);
     }
 
     /// <summary>Say something that isn't a one-off tip.</summary>
-    public void Say(string text) => _hud.Say(text);
+    public void Say(string text) { if (Phone is { } p) p.Say(text); else _hud.Say(text); }
+    /// <summary>When set, PIP talks on the phone instead of in a bubble (spine step 4).</summary>
+    public PhoneView? Phone { get; set; }
 
     /// <summary>Mark lines as already known (a loaded save past the first hour shouldn't be talked through it).</summary>
     public void Skip(params string[] keys) { foreach (var k in keys) _said.Add(k); }

@@ -50,6 +50,7 @@ public sealed class Simulation
         foreach (var w in content.Work.Keys) s.WorkStage[w] = 0;
         s.Emit(EventKind.Info, "PIP: \"…signal. Low battery. Year reads 1983. That can't be right.\"");
         var sim = new Simulation(content, s);
+        Phone.PhoneRules.Morning(s, content);   // the first text: the first chapter
         return sim; // no odd jobs yet: a new player meets one thing at a time (see Town/Onboarding)
     }
 
@@ -76,6 +77,7 @@ public sealed class Simulation
         if (Onboarding.PhoneRings(s, Content) && s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, 250 + 40 * happy + 8 * BoardService.Appeal(s)))) s.MessagesWaiting++;
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
+        Phone.PhoneRules.Morning(s, Content);   // one text in, every morning
         s.RngState = _rng.State;
     }
 

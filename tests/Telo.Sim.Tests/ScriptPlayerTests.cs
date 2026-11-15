@@ -62,3 +62,21 @@ public class ScriptPlayerTests
         Assert.Equal(a2.VanAt, back.Actors["player"].VanAt);
     }
 }
+
+public class PhoneTests
+{
+    [Fact]
+    public void One_text_in_each_morning_and_the_night_text_ends_the_day()
+    {
+        var sim = Simulation.NewGame(TestContent.Db, 7);
+        Assert.Single(sim.State.Texts);
+        Assert.Equal(sim.Content.Plot[0].Text, sim.State.Texts[0].Body);
+        int day = sim.State.Day;
+        Telo.Sim.Phone.PhoneRules.SendNight(sim);
+        Assert.Equal(day + 1, sim.State.Day);
+        Assert.Equal(2, sim.State.Texts.Count(t => !t.Out));       // the next morning's text came in
+        sim.AdvanceDay();
+        Assert.Equal(3, sim.State.Texts.Count(t => !t.Out));
+        Assert.Single(sim.State.Texts, t => t.Out);
+    }
+}

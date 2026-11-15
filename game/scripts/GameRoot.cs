@@ -28,6 +28,8 @@ public partial class GameRoot : Node3D
     public Simulation Sim { get; private set; } = null!;
     private FirstPersonController _player = null!;
     private Hud _hud = null!;
+    private PhoneView _phoneView = null!;
+    private WorldScreen _phone = null!;
     private SwitchboardStation _switch = null!;
     private AlmanacView _almanac = null!;
     private NotebookView _notebook = null!;
@@ -123,7 +125,13 @@ public partial class GameRoot : Node3D
         AddChild(ui);
         _hud = new Hud(); ui.AddChild(_hud);
 
-        _pip = new PipTips(_hud);
+        // PIP in your hand: the phone replaces the status strip and the bubbles (spine step 4, D34)
+        _phoneView = new PhoneView { Sim = Sim };
+        _phone = WorldScreen.Create(_phoneView, 0.24f, glows: true, onTop: true);
+        _phone.Position = new Vector3(0.25f, -0.15f, -0.42f); _phone.RotationDegrees = new Vector3(6, -14, 0);
+        _player.Camera.AddChild(_phone);
+        _phoneView.Show(InterfaceTier.Terminal);
+        _pip = new PipTips(_hud) { Phone = _phoneView };
         _lastStep = Onboarding.Current(Sim.State, _content);
         if (_lastStep == OnboardingStep.Enquiry) _pip.Once("hello");
         if (_lastStep == OnboardingStep.Free) _pip.Skip("customer", "van", "carry", "install", "step", "modem", "dial", "signed", "frame", "oddjob", "knock", "free");
@@ -311,7 +319,9 @@ public partial class GameRoot : Node3D
             () =>
             {
                 int days = 1;
-                if (Guidance.IsQuiet(Sim.State, _content)) days = Sim.RestUntilNeeded(); else Sim.Sleep();
+                // the night text to PIP ends the day and saves (D34, N4); a quiet spell sleeps until something needs you
+                if (Guidance.IsQuiet(Sim.State, _content)) days = Sim.RestUntilNeeded(); else Telo.Sim.Phone.PhoneRules.SendNight(Sim);
+                if (!_ignoreHours) Save();
                 _minuteFrac = 0;
                 if (days > 1) _pip.Say($"{days} days went by. {Sim.State.Date}. Something needs you.");
                 RefreshIdleScreens();
@@ -766,6 +776,7 @@ public partial class GameRoot : Node3D
     {
         _player.SetActive(false);
         _van.SetDriven(true);
+        _phone.Reparent(_van.Camera, false);
         _pip.Once("van");
     }
 
@@ -773,6 +784,7 @@ public partial class GameRoot : Node3D
     {
         _van.SetDriven(false);
         _player.SetActive(true);
+        _phone.Reparent(_player.Camera, false);
         _player.PlaceAt(_van.GlobalPosition + _van.GlobalBasis.X * -2.4f + _van.Up * 0.6f, _van.Forward);
     }
 
@@ -788,7 +800,8 @@ public partial class GameRoot : Node3D
         }
         _sky.SetHour(Hour);
         _hud.SetCrosshair(!AnyScreenOpen && !_van.Driven);
-        _hud.SetReading(AnyScreenOpen);
+        _hud.SetReading(true);   // the phone carries the numbers now
+        _phone.Visible = !AnyScreenOpen;
 
         var (next, targetLot) = Guidance.Next(Sim.State, _content);
         SphereBody who = _van.Driven ? _van : _player;
@@ -806,6 +819,7 @@ public partial class GameRoot : Node3D
                 lot.Marker.Modulate = target ? new Color(1f, 0.85f, 0.2f) : new Color(0.6f, 0.95f, 0.6f);
             }
             if (!AnyScreenOpen) RefreshIdleScreens();
+            _phoneView.Rebuild();
             SyncHouses(_player.GlobalPosition);
             SyncPaper();
             // who is in: warm windows after dark, and the car on the drive
@@ -828,7 +842,8 @@ public partial class GameRoot : Node3D
             : _van.Driven ? "[E] Get out   [W/S] drive   [A/D] steer"
             : _player.Focus is { } f ? (!f.CanUse() ? "" : f.HoldSeconds() > 0 ? "[Hold E] " : "[E] ") + f.Prompt() + (f.AltPrompt() is { } alt ? $"   [R] {alt}" : "")
             : _cargo.Held is { } held ? $"Carrying the {held.Label}   [G] put it down" : null;
-        _hud.Refresh(Sim, prompt, Hour, where, AnyScreenOpen ? "" : "▶ " + next);
+        _hud.Refresh(Sim, prompt, Hour, where, "");
+        _phoneView.Tick((float)delta, Hour, AnyScreenOpen ? "" : "▶ " + next, where);
         _hud.SetHold(_van.Driven ? 0 : _player.HoldProgress);
     }
 

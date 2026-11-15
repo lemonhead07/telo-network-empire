@@ -16,7 +16,7 @@ public partial class WorldScreen : Node3D
     private SubViewport _vp = null!;
     private float _w, _h;
 
-    public static WorldScreen Create(ModalView view, float widthM, bool glows)
+    public static WorldScreen Create(ModalView view, float widthM, bool glows, bool onTop = false)
     {
         var s = new WorldScreen { View = view, _w = widthM, _h = widthM * PxH / PxW };
         s._vp = new SubViewport { Size = new Vector2I(PxW, PxH), RenderTargetUpdateMode = SubViewport.UpdateMode.Always, HandleInputLocally = true, GuiDisableInput = false, TransparentBg = false };
@@ -29,6 +29,7 @@ public partial class WorldScreen : Node3D
         // Unshaded keeps text crisp and readable in any light. (Later: paper that takes the room's lighting.)
         mat.ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded;
         if (!glows) mat.AlbedoColor = new Color(0.9f, 0.88f, 0.84f);
+        if (onTop) { mat.NoDepthTest = true; mat.RenderPriority = 10; }   // a thing in your hand is never behind a wall
         s.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(s._w, s._h) }, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         return s;
     }

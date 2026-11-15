@@ -187,7 +187,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 8;
+    public const int CurrentVersion = 9;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -197,6 +197,10 @@ public sealed class GameState
 
     /// <summary>Everyone who acts in the world, by id: where they are, what they hold, where their kit and van are (v8).</summary>
     public Dictionary<string, Act.ActorState> Actors { get; set; } = new();
+    /// <summary>PIP's phone: texts in and out, newest last (v9).</summary>
+    public List<Phone.TextMessage> Texts { get; set; } = new();
+    /// <summary>The plot chapter whose opening text has been sent, so each is texted once.</summary>
+    public string? ChapterTexted { get; set; }
 
     // Money is whole period dollars.
     public long Cash { get; set; }
