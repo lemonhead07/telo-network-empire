@@ -34,6 +34,10 @@ public static class Guidance
                 return ($"Knock on a door to find a customer. Try {firstDoor.Resident}'s.", firstDoor.Id);
         }
 
+        // a booked window, starting soon or on now: they're staying in for you
+        if (Plan.AppointmentRules.Today(s).FirstOrDefault(a => s.Minute >= a.Start - 45 && s.Minute < a.End) is { } appt)
+            return ($"Booked {Plan.PlanRules.Clock(appt.Start)}-{Plan.PlanRules.Clock(appt.End)}: {appt.Title}.", appt.LotId);
+
         if (s.Faults.FirstOrDefault() is { } fault && s.Customers.FirstOrDefault(x => x.Id == fault.CustomerId) is { } faulty)
             return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
 

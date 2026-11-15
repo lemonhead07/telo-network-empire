@@ -709,7 +709,7 @@ public partial class GameRoot : Node3D
         if (plan is not null) Telo.Sim.Plan.PlanRules.Lay(s, _content, _planet, plan);
         var head = $"{(day == s.Day ? "TODAY" : "TOMORROW")}, {new Telo.Sim.Core.GameDate(day).ToDate():ddd d MMM}\n\n";
         var rows = plan is null || plan.Slots.Count == 0 ? new[] { "(nothing planned: E fills it with what fits)" }
-            : plan.Slots.Select(x => $"{(x.Grey is null ? "" : "▒ ")}{Telo.Sim.Plan.PlanRules.Clock(x.Start)}  {x.Title}  {x.Minutes / 60}h{x.Minutes % 60:00}{(x.Grey is null ? "" : $"  ({x.Grey})")}");
+            : plan.Slots.Select(x => $"{(x.Grey is null ? "" : "▒ ")}{Telo.Sim.Plan.PlanRules.Clock(x.Start)}  {x.Title}  {x.Minutes / 60}h{x.Minutes % 60:00}{(x.Grey is null ? "" : $"  ({x.Grey})")}{(x.Booking is null ? "" : $"  [{x.Booking}]")}");
         _sheet.Show(head + string.Join("\n", rows));
     }
 
@@ -875,7 +875,11 @@ public partial class GameRoot : Node3D
         {
             // time passes only as it is lived: real seconds become game minutes, and nothing else moves the clock
             // the waking day (six till ten) lasts DayLengthSeconds; the night is slept, never lived
-            _minuteFrac += (float)delta * SleepRules.Bedtime / DayLengthSeconds;
+            // on a booked job the job clock runs instead: the two-hour window lasts four real minutes (Plan/AppointmentRules)
+            float perSecond = Telo.Sim.Plan.AppointmentRules.OnTheClock(Sim.State) is not null
+                ? (float)Telo.Sim.Plan.AppointmentRules.Window / Telo.Sim.Plan.AppointmentRules.JobRealSeconds
+                : (float)SleepRules.Bedtime / DayLengthSeconds;
+            _minuteFrac += (float)delta * perSecond;
             int whole = (int)_minuteFrac;
             if (whole > 0) { _minuteFrac -= whole; Sim.AdvanceMinutes(whole); }
         }
@@ -892,6 +896,8 @@ public partial class GameRoot : Node3D
         {
             _slowTick = 0.5f;
             if (SleepRules.PastBedtime(Sim.State)) _pip.Once("bedtime");
+            if (Sim.State.Appointments.Count > 0) _pip.Once("booked");
+            if (Telo.Sim.Plan.AppointmentRules.OnTheClock(Sim.State) is not null) _pip.Once("jobclock");
             if (SleepRules.Level(Sim.State) >= Tiredness.Tired) _pip.Once("tired");
             foreach (var lot in _town.Lots)
             {

@@ -19,6 +19,8 @@ public sealed class PlanSlot
     /// <summary>Why it won't work at that hour (nobody home, shop shut), or null. Shown grey on the sheet.</summary>
     public string? Grey { get; set; }
     public string Title { get; set; } = "";
+    /// <summary>The appointment for it, in words ("asked them to be in", "booked 10:00-12:00"), or null.</summary>
+    public string? Booking { get; set; }
 }
 
 /// <summary>A person's day on the timesheet. Saved (v10).</summary>
@@ -93,8 +95,12 @@ public static class PlanRules
             slot.Minutes = Duration(s, c, t);
             slot.Title = t.Title;
             slot.Grey = c.Lots.TryGetValue(place, out var lot) ? AwayAt(s, c, lot, plan.Day, slot.Start) : null;
+            slot.Booking = AppointmentRules.For(s, slot.TicketKey) is { } booked && booked.Day == plan.Day ? AppointmentRules.Label(booked) : null;
+            // planning ahead: someone out at work can be asked to be in (the appointment below), so it isn't grey
+            if (slot.Grey is not null && lot is not null && plan.Day > s.Day && AppointmentRules.CouldBeIn(s, c, lot, plan.Day, slot.Start)) slot.Grey = null;
             clock = slot.Start + slot.Minutes; at = place;
         }
+        AppointmentRules.Sync(s, c, plan, tickets);
     }
 
     /// <summary>The next thing on today's sheet, for the phone's notes.</summary>

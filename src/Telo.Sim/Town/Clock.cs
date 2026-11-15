@@ -52,7 +52,8 @@ public static class HomeRules
     {
         if (ShopShut(s, c, lot)) return Clock.Weekday(s.Day) == DayOfWeek.Sunday ? "shut on Sundays" : "shut. Open nine till half past five";
         if (Asleep(s, c, lot)) return "the lights are off. Come back in the morning";
-        if (OutAtWork(s, c, lot)) return "the car's gone. Back after five";
+        // a booked window: they stayed in for you, whatever their usual hours
+        if (OutAtWork(s, c, lot) && Plan.AppointmentRules.Booked(s, lot.Id) is null) return "the car's gone. Back after five";
         return null;
     }
 }

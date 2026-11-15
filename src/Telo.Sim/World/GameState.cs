@@ -187,7 +187,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 13;
+    public const int CurrentVersion = 14;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -207,6 +207,8 @@ public sealed class GameState
     public string? ChapterTexted { get; set; }
     /// <summary>Timesheets: who does which ticket at what hour, by day (v10).</summary>
     public List<Plan.DayPlan> Plans { get; set; } = new();
+    /// <summary>Times customers have been asked, or agreed, to be in for a job (v14, see Plan/AppointmentRules).</summary>
+    public List<Plan.Appointment> Appointments { get; set; } = new();
     /// <summary>Houses Nez (the monopoly) connected before you got there (v11).</summary>
     public HashSet<string> NezLots { get; set; } = new();
     public bool NezNoticed { get; set; }

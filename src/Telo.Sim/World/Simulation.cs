@@ -76,6 +76,7 @@ public sealed class Simulation
         BookingRules.Day(s, Content, _rng);   // word of mouth and ads bring bookings; long waits go to NezTel
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
+        Plan.AppointmentRules.Overnight(s, Content, _rng);   // missed windows remembered; today's requests answered
         Phone.PhoneRules.Morning(s, Content);   // one text in, every morning
         s.RngState = _rng.State;
     }
@@ -130,6 +131,7 @@ public sealed class Simulation
             if (State.Minute >= Clock.MinutesPerDay) { State.Minute = 0; AdvanceDay(); }
             else StaffRules.Clocked(State, Content, _rng);
         }
+        Plan.AppointmentRules.Tick(State, Content, Installs.Keys.Concat(Benches.Keys).ToHashSet());   // the job clock
         State.RngState = _rng.State;
     }
 

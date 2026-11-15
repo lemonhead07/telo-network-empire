@@ -51,6 +51,14 @@ public partial class PhoneView : ModalView
         // what PIP is saying right now, else today's text
         if (_saying is not null) Text(Body, $"» {_saying}", 46);
         else if (PhoneRules.Recent(s, 1).FirstOrDefault() is { } t) Text(Body, $"{(t.Out ? "you" : t.From)}: {t.Body}", 46);
+        if (Telo.Sim.Plan.AppointmentRules.OnTheClock(s) is { } onClock)
+        {
+            int sec = Telo.Sim.Plan.AppointmentRules.ClockSeconds(onClock, s.Minute);
+            bool tip = sec <= Telo.Sim.Plan.AppointmentRules.BonusRealSeconds;
+            Text(Body, $"Job clock {sec / 60}:{sec % 60:00} of {Telo.Sim.Plan.AppointmentRules.JobRealSeconds / 60}:00  {(tip ? $"tip if done by {Telo.Sim.Plan.AppointmentRules.BonusRealSeconds / 60}:00" : "no tip now, but finish")}", 46);
+        }
+        foreach (var a in Telo.Sim.Plan.AppointmentRules.Today(s).Where(a => a.End > s.Minute).Take(2))
+            Text(Body, $"Booked {Telo.Sim.Plan.PlanRules.Clock(a.Start)}-{Telo.Sim.Plan.PlanRules.Clock(a.End)} {a.Title}", 40);
         if (Telo.Sim.Plan.PlanRules.Next(s) is { } plan) Text(Body, $"Plan: {Telo.Sim.Plan.PlanRules.Clock(plan.Start)} {plan.Title}", 40);
         else if (c.Plot.Count > 0) Text(Body, $"Ch {Plot.Index(s, c) + 1}: {Plot.Current(s, c).Title}", 40);
     }
