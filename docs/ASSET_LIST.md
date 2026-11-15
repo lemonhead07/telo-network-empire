@@ -7,6 +7,8 @@ Written 2026-11-12 after the owner's first 10-minute playtest ("pacing good, mis
 
 **Style target.** Low-poly, flat-shaded, early-1980s small town: warm tungsten light indoors, sun-bleached paint outdoors, slightly toy-like proportions. A few colours per object, small readable details (a nameplate, a dial, a sticker) rather than fine geometry. Budget: props 50–400 triangles, buildings 500–2,000, characters about 1,000.
 
+**Model requests (D30, 2026-11-15).** Each asset becomes a named prop with a brief (size, anchors, three takes, a charm detail) in `game/content/props.json`; a model that keeps the brief's size, pivot and anchors drops in with no code change. How to write one: `MODELS_AND_VARIETY.md`. First batch: the switchboard (`docs/props/switchboard.json`).
+
 Priority: **A** = the demo needs it, **B** = the trailer needs it, **C** = later.
 
 ## 1. Characters

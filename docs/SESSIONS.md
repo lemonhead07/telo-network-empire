@@ -47,6 +47,7 @@ Every session is **one** of these two. Say which at the start (`/idea` or `/dev`
 - **Where:** the sim files / content files / scenes it touches, and the TECH_TREE ids involved.
 - **Done when:** what the screenshot or play-through shows, plus any rule a test should pin.
 - **Not in scope:** the tempting next thing, named so it stays out.
+- **Props:** every visible thing it adds, as a prop id with a brief (size, pivot, anchors, states, three takes, one charm detail), shipped as a labelled box. See `docs/MODELS_AND_VARIETY.md`.
 - **Size:** fits one session. If not, split it.
 
 ### Token-saving habits (both modes)

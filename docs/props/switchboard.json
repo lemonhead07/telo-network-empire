@@ -1,0 +1,614 @@
+{
+ "_about": "First model batch (switchboard), from the idea session of 2026-11-15. A dev session copies 'props' into game/content/props.json unchanged. Shapes: docs/MODELS_AND_VARIETY.md §1. Colour names are design-system tokens.",
+ "props": [
+  {
+   "id": "room.switchboard",
+   "name": "The switchboard",
+   "what": "Your hand-built distribution board on the room's back wall: subscriber terminals with paper tags down the left, Board ports with lamps down the right, a tool shelf along the bottom. The centrepiece of the room.",
+   "size": [
+    1.6,
+    1.36,
+    0.04
+   ],
+   "pivot": "centre of the back face",
+   "tris": 600,
+   "colours": [
+    "switch-ply",
+    "switch-ply-shelf",
+    "switch-brass",
+    "switch-label"
+   ],
+   "charm": "Pencilled names and crossings-out straight on the plywood beside the tags, and a coffee ring near the TEST switch.",
+   "anchors": {
+    "terminal-column": [
+     -0.4,
+     0,
+     0.06
+    ],
+    "port-column": [
+     0.3,
+     0,
+     0.06
+    ],
+    "lamp-column": [
+     0.49,
+     0,
+     0.06
+    ],
+    "tag-strip": [
+     -0.62,
+     0,
+     0.044
+    ],
+    "row-top": [
+     0,
+     0.5,
+     0.06
+    ],
+    "row-span": [
+     0,
+     -0.95,
+     0
+    ],
+    "shelf": [
+     0,
+     -0.64,
+     0.1
+    ],
+    "probe-rest": [
+     -0.64,
+     -0.58,
+     0.1
+    ],
+    "testset-rest": [
+     -0.38,
+     -0.58,
+     0.1
+    ],
+    "jumper-hook": [
+     -0.12,
+     -0.53,
+     0.06
+    ],
+    "old-wire-hook": [
+     0.06,
+     -0.53,
+     0.06
+    ],
+    "throw-switch": [
+     0.62,
+     -0.52,
+     0.06
+    ],
+    "panel-slot": [
+     0.64,
+     0.625,
+     0.045
+    ]
+   },
+   "states": [
+    "8 rows",
+    "16 rows (upgrade panel fitted)"
+   ],
+   "takes": {
+    "plain": "Varnished plywood, brass hardware screwed on by hand, a shelf from an offcut.",
+    "old": "What you started from: a telex repair shop's spare backboard, old screw holes and a faded stencil.",
+    "bodge": "The upgrade panel bolted on slightly crooked with odd screws; a strip of gaffer tape holding a tag strip."
+   },
+   "rules": "Rows are not fixed: row pitch is 0.95 / (rows + 1) down from row-top. Terminals, ports, tags and lamps are separate props placed per row, so the board model is the backing, shelf, stencils and hardware only.",
+   "replaces": "SwitchboardStation.cs BuildStatic (the Ply boxes and labels)",
+   "usedBy": [
+    "lines.frame",
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "switch.terminal",
+   "name": "Subscriber terminal",
+   "what": "Where a customer's pair arrives on the board. Two brass screw posts; a jumper's near end is wound on here.",
+   "size": [
+    0.045,
+    0.045,
+    0.03
+   ],
+   "pivot": "back-centre",
+   "tris": 60,
+   "colours": [
+    "switch-brass"
+   ],
+   "charm": "One screw head with a slot cut crooked.",
+   "anchors": {
+    "jumper": [
+     0,
+     0,
+     0.03
+    ]
+   },
+   "states": [
+    "empty",
+    "wired",
+    "loose (a jumper half off the post)"
+   ],
+   "takes": {
+    "plain": "Two polished brass posts on a small bakelite block.",
+    "old": "Green with verdigris, a post that turns forever.",
+    "bodge": "A bent nail with the wire twisted round it."
+   },
+   "replaces": "SwitchboardStation.cs TerminalAt boxes",
+   "usedBy": [
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "switch.port",
+   "name": "Board port",
+   "what": "A jack that leads to one of the Board's ports. A jumper's far end plugs in here. Spare ports (S1, S2) are nickel instead of brass.",
+   "size": [
+    0.045,
+    0.045,
+    0.03
+   ],
+   "pivot": "back-centre",
+   "tris": 60,
+   "colours": [
+    "switch-brass",
+    "switch-spare"
+   ],
+   "charm": "The number stamped into the collar, not printed.",
+   "anchors": {
+    "jack": [
+     0,
+     0,
+     0.03
+    ]
+   },
+   "states": [
+    "free",
+    "plugged",
+    "known faulty (scorch mark)",
+    "spare"
+   ],
+   "takes": {
+    "plain": "Brass jack in a round collar.",
+    "old": "A jack with a cracked collar and a scorch mark: the bad port.",
+    "bodge": "A jack held in with a blob of solder and hope."
+   },
+   "replaces": "SwitchboardStation.cs PortAt boxes",
+   "usedBy": [
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "switch.port-lamp",
+   "name": "Port lamp",
+   "what": "A small jewelled lamp beside each port. Burns while that subscriber is on the Board; shows test results.",
+   "size": [
+    0.045,
+    0.045,
+    0.03
+   ],
+   "pivot": "back-centre",
+   "tris": 40,
+   "colours": [
+    "lamp-live",
+    "lamp-good",
+    "lamp-bad",
+    "lamp-crossed"
+   ],
+   "charm": "A faceted glass jewel cap, like an old panel lamp.",
+   "anchors": {},
+   "states": [
+    "dark",
+    "live (dim)",
+    "on a call (bright)",
+    "tested good",
+    "tested bad",
+    "crossed (flashing)"
+   ],
+   "takes": {
+    "plain": "Clear faceted jewel over a bulb.",
+    "old": "Jewel yellowed with age, the colour slightly off.",
+    "bodge": "A bare bulb with no cap."
+   },
+   "rules": "The colour comes from the material at run time; the model is the cap and bezel only.",
+   "replaces": "SwitchboardStation.cs lamp MeshInstance3D",
+   "usedBy": [
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "switch.tag",
+   "name": "Paper tag",
+   "what": "A strip of card naming the subscriber on each terminal row. It can smudge until it needs a tone-probe.",
+   "size": [
+    0.34,
+    0.04,
+    0.008
+   ],
+   "pivot": "back-centre",
+   "tris": 20,
+   "colours": [
+    "switch-tag",
+    "switch-tag-ink"
+   ],
+   "charm": "Handwritten name, a drawing pin at the left end.",
+   "anchors": {
+    "text": [
+     0,
+     0,
+     0.008
+    ]
+   },
+   "states": [
+    "clean",
+    "smudged",
+    "rewritten (second hand)"
+   ],
+   "takes": {
+    "plain": "Fresh card, neat capitals.",
+    "old": "Water-stained, the ink run to ▒▒.",
+    "bodge": "A torn corner of an envelope, written on in pencil."
+   },
+   "rules": "Height follows the row pitch (at most 0.04). The text stays a Label3D on the text anchor.",
+   "replaces": "SwitchboardStation.cs Paper boxes",
+   "usedBy": [
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "switch.jumper-plug",
+   "name": "Jumper wire end",
+   "what": "The ends of a jumper wire. The wire itself stays drawn in code (it sags between any two points); only its ends and the coils on the hook are models.",
+   "size": [
+    0.03,
+    0.03,
+    0.03
+   ],
+   "pivot": "centre",
+   "tris": 40,
+   "colours": [
+    "wire-red",
+    "wire-blue",
+    "wire-yellow",
+    "wire-green",
+    "wire-white",
+    "wire-orange",
+    "wire-dirty"
+   ],
+   "charm": "A coloured sleeve on each end, slightly too long.",
+   "anchors": {
+    "wire": [
+     0,
+     0,
+     -0.015
+    ]
+   },
+   "states": [
+    "new (coloured)",
+    "old wire (grey cloth)",
+    "in the hand"
+   ],
+   "takes": {
+    "plain": "Moulded plug with a coloured sleeve.",
+    "old": "Grey cloth-covered wire, frayed at the end: the hot-wire option.",
+    "bodge": "Bare twisted copper, no plug at all."
+   },
+   "replaces": "SwitchboardStation.cs AddWire ends and hand Wire box",
+   "usedBy": [
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "switch.jumper-hook",
+   "name": "Jumper hook",
+   "what": "Two brass hooks under the board: new coloured jumpers on the left, salvaged old wire on the right.",
+   "size": [
+    0.16,
+    0.13,
+    0.03
+   ],
+   "pivot": "back-centre of the bar",
+   "tris": 120,
+   "colours": [
+    "switch-brass",
+    "switch-brass-old",
+    "wire-dirty"
+   ],
+   "charm": "'OLD' scratched into the right-hand hook's bar.",
+   "anchors": {
+    "new-coils": [
+     -0.06,
+     -0.06,
+     0.02
+    ],
+    "old-coils": [
+     0.18,
+     -0.06,
+     0.02
+    ]
+   },
+   "states": [
+    "full",
+    "running low",
+    "empty"
+   ],
+   "takes": {
+    "plain": "Brass cup hooks with neat coils hanging.",
+    "old": "A bent coat-hook.",
+    "bodge": "A nail in the plywood."
+   },
+   "replaces": "SwitchboardStation.cs HookAt / DirtyAt boxes",
+   "usedBy": [
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "tool.tone-probe",
+   "name": "Tone probe",
+   "what": "A yellow probe that finds a pair by its tone. Used to read a smudged tag.",
+   "size": [
+    0.2,
+    0.045,
+    0.045
+   ],
+   "pivot": "centre",
+   "tris": 150,
+   "colours": [
+    "tool-probe",
+    "tool-steel"
+   ],
+   "charm": "A strip of tape on the handle: 'PROPERTY OF' and the name scratched out.",
+   "anchors": {
+    "tip": [
+     0.12,
+     0,
+     0
+    ],
+    "grip": [
+     -0.04,
+     0,
+     0
+    ]
+   },
+   "states": [
+    "on the shelf",
+    "in the hand"
+   ],
+   "takes": {
+    "plain": "Yellow moulded probe, steel tip.",
+    "old": "Yellow worn to cream where the thumb goes.",
+    "bodge": "A probe held together with an elastic band."
+   },
+   "replaces": "SwitchboardStation.cs ProbeAt box and Hand.Probe",
+   "usedBy": [
+    "switchboard",
+    "lines.drop"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "tool.test-set",
+   "name": "Lineman's test handset",
+   "what": "A chunky handset with crocodile clips, for testing a port before trusting it.",
+   "size": [
+    0.2,
+    0.065,
+    0.065
+   ],
+   "pivot": "centre",
+   "tris": 200,
+   "colours": [
+    "tool-test-set",
+    "tool-steel"
+   ],
+   "charm": "Chipped paint and a curly cord ending in two clips.",
+   "anchors": {
+    "clips": [
+     0.1,
+     0,
+     0
+    ],
+    "grip": [
+     -0.03,
+     0,
+     0
+    ]
+   },
+   "states": [
+    "on the shelf",
+    "in the hand"
+   ],
+   "takes": {
+    "plain": "Black handset, coiled cord, red and black clips.",
+    "old": "Cracked earpiece, taped.",
+    "bodge": "An ordinary phone handset with the clips soldered on."
+   },
+   "replaces": "SwitchboardStation.cs TestAt box and Hand.TestSet",
+   "usedBy": [
+    "switchboard",
+    "lines.drop"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "switch.throw-switch",
+   "name": "TEST knife switch",
+   "what": "The big switch that tries every new line at once: live, dead or crossed.",
+   "size": [
+    0.15,
+    0.19,
+    0.12
+   ],
+   "pivot": "back-centre",
+   "tris": 150,
+   "colours": [
+    "switch-knife",
+    "switch-brass"
+   ],
+   "charm": "'TEST' hand-painted in white, a little drip under the T.",
+   "anchors": {
+    "handle": [
+     0,
+     0.05,
+     0.11
+    ]
+   },
+   "states": [
+    "up",
+    "thrown (down)"
+   ],
+   "takes": {
+    "plain": "Slate base, brass blade, wooden handle.",
+    "old": "A switch salvaged from a shop's fuse board.",
+    "bodge": "A light switch screwed on sideways."
+   },
+   "replaces": "SwitchboardStation.cs SwitchAt boxes",
+   "usedBy": [
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "switch.upgrade-panel",
+   "name": "Upgrade panel",
+   "what": "The $120 panel that takes the board from 8 subscribers to 16. Shown as a price sign until bought, then as the extra rows.",
+   "size": [
+    0.28,
+    0.06,
+    0.01
+   ],
+   "pivot": "back-centre",
+   "tris": 60,
+   "colours": [
+    "switch-panel",
+    "switch-label"
+   ],
+   "charm": "A paper price label still stuck on after fitting.",
+   "anchors": {},
+   "states": [
+    "for sale (sign)",
+    "fitted"
+   ],
+   "takes": {
+    "plain": "A matching plywood extension.",
+    "old": "A second-hand panel in a different wood.",
+    "bodge": "Hardboard, unpainted."
+   },
+   "replaces": "SwitchboardStation.cs PanelAt box",
+   "usedBy": [
+    "switchboard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "room.line-rack",
+   "name": "Lines-in rack",
+   "what": "Beside the switchboard: one lamp per line into the Board, and a tally card of tonight's callers and engaged tones.",
+   "size": [
+    0.62,
+    1.0,
+    0.05
+   ],
+   "pivot": "centre of the back face",
+   "tris": 300,
+   "colours": [
+    "rack-body",
+    "rack-tally",
+    "rack-label",
+    "rack-lamp-empty",
+    "rack-lamp-idle",
+    "rack-lamp-busy"
+   ],
+   "charm": "A tally card clipped on with a bulldog clip, five-bar gates in pencil.",
+   "anchors": {
+    "slot-first": [
+     -0.225,
+     0.24,
+     0.035
+    ],
+    "slot-pitch": [
+     0.09,
+     -0.1,
+     0
+    ],
+    "tally": [
+     0,
+     -0.27,
+     0.04
+    ],
+    "title": [
+     0,
+     0.4,
+     0.03
+    ]
+   },
+   "states": [
+    "0–12 cards fitted",
+    "lamps dark / idle / busy"
+   ],
+   "takes": {
+    "plain": "A grey scavenged relay rack, neat card slots.",
+    "old": "A rack with a missing slot cover.",
+    "bodge": "Cards wedged into a cutlery drawer."
+   },
+   "replaces": "LineRack.cs",
+   "usedBy": [
+    "room.bbs",
+    "lines.hunt"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "kit.line-card",
+   "name": "Line card",
+   "what": "A circuit card you buy at Sol's ($60), carry from the van and slot into the rack: one more line into the Board.",
+   "size": [
+    0.3,
+    0.06,
+    0.2
+   ],
+   "pivot": "bottom-centre",
+   "tris": 120,
+   "colours": [
+    "card-board",
+    "card-chip",
+    "card-edge"
+   ],
+   "charm": "A handwritten serial number sticker and one chip with a paper label.",
+   "anchors": {
+    "grip": [
+     0,
+     0.05,
+     0
+    ],
+    "edge": [
+     0.13,
+     0.045,
+     0
+    ]
+   },
+   "states": [
+    "boxed in the van",
+    "in the hand",
+    "fitted"
+   ],
+   "takes": {
+    "plain": "Green board, black chips, gold edge.",
+    "old": "A second-hand card, a burnt resistor.",
+    "bodge": "A card with a component held in with a blob of putty."
+   },
+   "replaces": "Cargo.cs LineCard box",
+   "usedBy": [
+    "room.bbs"
+   ],
+   "status": "box"
+  }
+ ]
+}
