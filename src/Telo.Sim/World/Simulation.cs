@@ -74,6 +74,7 @@ public sealed class Simulation
         DriftSatisfaction();
         // Word of mouth: happy subscribers bring enquiries.
         BookingRules.Day(s, Content, _rng);   // word of mouth and ads bring bookings; long waits go to NezTel
+        ServiceRules.Day(s, Content, _rng);   // service in nines, people leaving NezTel, VIP bookings
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
         Plan.AppointmentRules.Overnight(s, Content, _rng);   // missed windows remembered; today's requests answered
@@ -289,7 +290,7 @@ public sealed class Simulation
         switch (t.Kind)
         {
             case Work.TicketKind.Install when s.Customers.FirstOrDefault(x => x.Id == id) is { } cust:
-                if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); s.Installs.Remove(cust.Id); }
+                if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); s.Installs.Remove(cust.Id); if (cust.VipDay is not null) ServiceRules.VipWon(s, c, cust); }
                 if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s)) { s.Cash = Math.Max(s.Cash, SwitchRules.PanelPrice); SwitchRules.AddPanel(s); }
                 SwitchRules.AutoWire(s, c, cust, sloppy: false);
                 cust.HasAccount = true;
@@ -412,6 +413,7 @@ public sealed class Simulation
             s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + Math.Max(3, _rng.Range(10, 45) / o.Defects.Count), Source = "install", CustomerId = o.CustomerId, Text = text });
         if (o.OvertimeMinutes > 0 && s.Customers.FirstOrDefault(c => c.Id == o.CustomerId) is { } cust)
             cust.Satisfaction = Math.Clamp(cust.Satisfaction - Math.Min(5, 1 + o.OvertimeMinutes / 30), 0, 100);
+        if (s.Customers.FirstOrDefault(c => c.Id == o.CustomerId) is { } signed) ServiceRules.InstallSignedOff(s, Content, signed, o.Tested, o.Defects.Count);
         s.RngState = _rng.State;
         return true;
     }

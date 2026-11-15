@@ -29,6 +29,8 @@ public sealed class Customer
     public List<string> Products { get; set; } = new();
     /// <summary>They have been let in to the Board (v5). Without an account they can't ring in.</summary>
     public bool HasAccount { get; set; } = true;
+    /// <summary>A VIP booking: the day their line must be in by (v15, see Town/ServiceRules). Null for everyone else.</summary>
+    public int? VipDay { get; set; }
 }
 
 public enum HouseholdStatus { Unknown, Declined, Signed }
@@ -187,7 +189,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 14;
+    public const int CurrentVersion = 15;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -209,6 +211,9 @@ public sealed class GameState
     public List<Plan.DayPlan> Plans { get; set; } = new();
     /// <summary>Times customers have been asked, or agreed, to be in for a job (v14, see Plan/AppointmentRules).</summary>
     public List<Plan.Appointment> Appointments { get; set; } = new();
+    /// <summary>Line-days up and line-days counted over a rolling month, in thousandths (v15, see Town/ServiceRules).</summary>
+    public long ServiceUp { get; set; }
+    public long ServiceTotal { get; set; }
     /// <summary>Houses Nez (the monopoly) connected before you got there (v11).</summary>
     public HashSet<string> NezLots { get; set; } = new();
     public bool NezNoticed { get; set; }

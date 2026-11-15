@@ -38,6 +38,13 @@ public static class Guidance
         if (Plan.AppointmentRules.Today(s).FirstOrDefault(a => s.Minute >= a.Start - 45 && s.Minute < a.End) is { } appt)
             return ($"Booked {Plan.PlanRules.Clock(appt.Start)}-{Plan.PlanRules.Clock(appt.End)}: {appt.Title}.", appt.LotId);
 
+        // a VIP booking: by their day, no bodges, test the line
+        if (s.Customers.FirstOrDefault(x => x.Live && x.VipDay is not null && !x.SocketFitted) is { } vip)
+            return (s.Modems > 0
+                ? $"VIP: connect {vip.Name} by {new Core.GameDate(vip.VipDay!.Value)}. No bodges, and test the line before you sign."
+                : $"VIP: {vip.Name} needs a line by {new Core.GameDate(vip.VipDay!.Value)}. Buy a modem at the electronics shop first.",
+                s.Modems > 0 ? vip.LotId : c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id);
+
         if (s.Faults.FirstOrDefault() is { } fault && s.Customers.FirstOrDefault(x => x.Id == fault.CustomerId) is { } faulty)
             return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
 

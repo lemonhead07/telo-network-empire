@@ -42,6 +42,11 @@ public partial class PhoneView : ModalView
             + (s.Faults.Count > 0 ? $"   {s.Faults.Count} fault{(s.Faults.Count == 1 ? "" : "s")}" : "")
             + (Telo.Sim.Town.SleepRules.Describe(s) is { } tired ? $"   [{tired}]" : "");
         Text(Body, counters, 54);
+        if (step >= OnboardingStep.Free && s.Customers.Any(x => x.Installed))
+        {
+            int ppm = Telo.Sim.Town.ServiceRules.Ppm(s);
+            Text(Body, $"Service {Telo.Sim.Town.ServiceRules.Percent(ppm)}   NezTel {Telo.Sim.Town.ServiceRules.Percent(Telo.Sim.Town.ServiceRules.NezTelPpm)}{(ppm >= 999_000 ? "   (they're switching to you)" : "")}", 40);
+        }
         if (step >= OnboardingStep.Free)
             Text(Body, $"Booked {BookingRules.Booked(s, c)}   can do {BookingRules.WeeklyCapacity(s)}/wk   {(BookingRules.JobsToday(s) >= BookingRules.PlayerCap ? "done for today" : $"{BookingRules.PlayerCap - BookingRules.JobsToday(s)} jobs left today")}", 40);
         if (_next.Length > 0) Text(Body, _next, 54);

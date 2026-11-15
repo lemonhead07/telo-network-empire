@@ -57,7 +57,7 @@ public static class Bot
         bool daytime = Clock.Hour(s) is >= 6 and < 17.5;
         bool booked = text.StartsWith("Booked");   // a booked window comes first: they're staying in for you
         if (!booked && Committed(sim, a) is { } focus) (text, lotId) = ($"{focus.Title}: see it through", focus.LotId);
-        else if (!booked && daytime && !a.IgnoreHours && lotId is not null && c.Lots.TryGetValue(lotId, out var shut)
+        else if (!booked && daytime && !a.IgnoreHours && BookingRules.CanStartJob(s, c) && lotId is not null && c.Lots.TryGetValue(lotId, out var shut)
                  && HomeRules.WhyNot(s, c, shut) is not null)
         {
             if (MostAdvanced(sim, a, lotId) is { } alt)
@@ -66,7 +66,7 @@ public static class Bot
                 (text, lotId) = ($"{alt.Title} ({shut.Resident} is out)", alt.LotId);
             }
             // nothing else open: find the next customer instead of standing on an empty doorstep
-            else if (Onboarding.CanKnock(s, c) && TownRules.Prospects(s, c).FirstOrDefault(l => l.Id != lotId && s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay
+            else if (Onboarding.CanKnock(s, c) && TownRules.Prospects(s, c).FirstOrDefault(l => l.Id != lotId && l.Kind == LotKind.House && s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay
                          && HomeRules.WhyNot(s, c, l) is null) is { } door)
                 (text, lotId) = ($"Knock on {door.Resident}'s door while {shut.Resident} is out", door.Id);
         }

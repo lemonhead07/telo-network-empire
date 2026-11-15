@@ -165,6 +165,9 @@ public class NezTests
         Assert.True(s.NezNoticed);
         Assert.Empty(s.NezLots);                                       // noticed, not yet taking houses
         for (int i = 0; i < 6; i++) sim.AddCustomer($"More {i}", "family", 30);
+        // a line that stays down keeps your service short of a nine better than NezTel's, so nobody switches back
+        // and Nez's own pace is what's measured here (switching is ServiceTests' job)
+        s.Faults.Add(new Fault { Id = "fault-test", CustomerId = s.Customers[0].Id, Text = "a crackle", OpenedDay = s.Day });
         Assert.Equal(Telo.Sim.Nez.NezStage.Territory, Telo.Sim.Nez.NezRules.Stage(s));
         sim.AdvanceDays(7);
         Assert.Single(s.NezLots);                                      // slow: one a week
