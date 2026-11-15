@@ -43,6 +43,10 @@ The first hour, staged one thing at a time; walk-in houses and the hands-on inst
 - `docs/EXPANSION_DESIGN.md`: phase D (invoices, late payers, bookkeeper, receptionist) and the places beyond the farm.
 - `docs/ASSET_LIST.md`: all of it.
 
+## New since 2026-11-15
+- Sessions are split into **idea** and **dev**: see `docs/SESSIONS.md`. In Claude Code start with `/idea <topic>` or `/dev`.
+- `docs/TECH_TREE.md` is the progression design (8 branches, 96 tasks, the hand-off ladder). It is design input, not the next build: it fits on top of the actors-and-actions foundation above (its §0 says how). Build order is in `BUILD_PLAN.md` → **Up next**.
+
 ## Rules to keep
 
 - Outcomes are decided in `src/Telo.Sim`; Godot only shows and drives it.

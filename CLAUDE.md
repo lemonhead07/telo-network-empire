@@ -4,7 +4,9 @@
 
 First-person, open-world telecom business sim, 1983–2035, set on **one small planet** (2.5 km radius, ~16 km lap) that you walk, drive, sail and fly around, and eventually launch satellites from. You start alone wiring a frame in a rented room and end up running infrastructure millions depend on. **The core idea: the job itself changes as you play.** Verbs you do by hand become delegated, then automated, and the interface you see goes from paper to terminal to database to dashboard.
 
-**Starting a session? Read `docs/NEXT_SESSION.md` first.** **Newest direction (2026-11-14, thinking only, awaiting the owner's answers): `docs/NEZ_AND_THE_SPINE.md`**: every player action becomes a sim action anyone can perform (a test, staff, and Nez the opponent), one plot line, all text on a phone, a day planner. Where it conflicts with the two design docs below, it is newer. Rapid gameplay work happens on the branch `feature/gameplay-rapid`; models and animation come later. **What the game becomes after the first hour, and the order to build it: `docs/EXPANSION_DESIGN.md`** (the five-job loop, the Board and line capacity, places on the planet, rounds, phases A–J). **Agreed direction for interfaces, time and staff: `docs/DESK_AND_DAY_DESIGN.md`** (every panel becomes an object, starting with a real switchboard; time is lived, not spent; tickets handed to staff in person). Its top section lists what is built and what is next. Models, textures, characters and the trailer plan: `docs/ASSET_LIST.md`. Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`.
+**Every session is either an idea session or a dev session: see `docs/SESSIONS.md`.** In Claude Code, start with `/idea <topic>` or `/dev [item]`. If the owner doesn't say, ask which in one line. Idea sessions change `docs/` only; dev sessions build one item from `docs/BUILD_PLAN.md` "Up next" and park anything else in `docs/IDEAS.md`.
+
+**Starting a session? Read `docs/NEXT_SESSION.md` first.** **Newest direction (2026-11-14, thinking only, awaiting the owner's answers): `docs/NEZ_AND_THE_SPINE.md`**: every player action becomes a sim action anyone can perform (a test, staff, and Nez the opponent), one plot line, all text on a phone, a day planner. Where it conflicts with the two design docs below, it is newer. Rapid gameplay work happens on the branch `feature/gameplay-rapid`; models and animation come later. **What the game becomes after the first hour, and the order to build it: `docs/EXPANSION_DESIGN.md`** (the five-job loop, the Board and line capacity, places on the planet, rounds, phases A–J). **Agreed direction for interfaces, time and staff: `docs/DESK_AND_DAY_DESIGN.md`** (every panel becomes an object, starting with a real switchboard; time is lived, not spent; tickets handed to staff in person). Its top section lists what is built and what is next. Models, textures, characters and the trailer plan: `docs/ASSET_LIST.md`. Design canon: `TELO_GAMEPLAY_HANDOFF.md` (the full vision). Locked decisions: `docs/DECISIONS.md`. What to build next: `docs/BUILD_PLAN.md`. Progression (tech tree, hand-off ladder, tasks as actions): `docs/TECH_TREE.md`. Idea inbox: `docs/IDEAS.md`.
 
 ## Layout
 
@@ -13,6 +15,7 @@ src/Telo.Sim/          Pure C# simulation (net8.0). ALL game rules live here.
 tests/Telo.Sim.Tests/  xUnit tests for the sim. Loads the real game/content JSON.
 game/                  Godot 4.7 .NET project. The presentation layer: it shows the sim and drives it, but holds no rules.
   content/*.json       Data: acts, announcements, almanac, work (automation stages), premises (Last Mile), lots, products (the catalogue)
+  content/tree/*.json  (planned, TECH_TREE.md) One file per tech-tree branch: nodes → tasks → hand-off stages. Replaces work.json
   scripts/GameRoot.cs  Composition root: loads content, owns Simulation, builds room, wires views
   scripts/UI/          HUD + in-world screens (the Board's terminal, Almanac, Notebook). TierStyle = paper/terminal/db/dashboard look
   scripts/World/       PlanetBuilder (terrain/ocean/trees), PlanetSky, TownBuilder, RoomBuilder, LowPoly (code-built models), Interactable
@@ -123,9 +126,18 @@ Decision D15 (changed 2026-11-12). Two stages:
 - `World/GameState.cs`: all mutable state (serialisable).
 - `Almanac/AlmanacRules.cs`: research is recall. Archive (earned from your network) is spent to recall future tech. Recalling it early adds Echo, and too much Echo triggers a Correction (the entry drifts).
 - `Work/WorkRules.cs`: earned automation. Manual → Delegated → Automated, plus the interface tier.
+- `Tree/TreeRules.cs`, `Work/TaskRules.cs` (planned): node unlocks, grants, wear; task time/accuracy for player vs staff vs automation. Spec: `docs/TECH_TREE.md` §2.
 - `World/ActRules.cs`: the act advances when its exit milestone is met **and** the next act's gate announcement has fired. The announcement queue is the gate, not the calendar.
 - `Ledger/LedgerRules.cs`: the Promise Ledger. Promises with dates, broken promises remembered.
 - `Net/SwitchRules.cs`: the switchboard (read tag / test port / jumper / pull / hot-wire / reseat / throw).
+
+## Adding to the tech tree
+
+- Spec and every planned node/task: `docs/TECH_TREE.md`. Read §1–§2, then grep only the ids you're building.
+- A node or task is **data**: edit `game/content/tree/<branch>.json`. Only a new **verb** (minigame/interaction) needs C#.
+- The player is always fastest: staff `timeMul` > 1 and accuracy < 1000. `ContentDb.Validate()` enforces it.
+- Every task needs a **world tell** (a prop that shows its backlog) before it's done. No dashboards until the Sight branch earns them.
+- Never rename a shipped task id. The old `work.json` ids map to tasks in `TECH_TREE.md` §2.4 via a `SaveCodec` migration.
 
 ## Adding a new building minigame
 

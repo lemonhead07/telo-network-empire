@@ -4,6 +4,23 @@
 
 Each milestone ends playable, with green tests and `SMOKE OK`. Week counts assume one part-time developer working with AI help.
 
+## Up next
+*Dev sessions take the top **[Dev]** item (see `docs/SESSIONS.md`). Idea sessions take **[Idea]** items and add new ones, written to the Definition of Ready.*
+
+1. **[Idea] Answer the spine questions.** *Goal:* the owner answers N1–N8 in `docs/NEZ_AND_THE_SPINE.md` §9 and confirms how the tech tree fits on actors and actions (`docs/TECH_TREE.md` §0). *Done when:* answers recorded in `DECISIONS.md`; items 2–3 below confirmed or changed. *Not in scope:* any code.
+2. **[Dev] Actors and actions in the sim** (spine step 1). *Goal:* one question works for anyone: "what can this actor do now, and what is stopping the rest?" *Where:* place, hands, vehicle and travel time move into `src/Telo.Sim`; `GameRoot` player-only logic (`LotAction`, `StartInstall`, `StartBenchJob`, `KitOnSite`) shrinks to showing and forwarding. *Done when:* the game plays the same; tests pass; `GameRoot` is noticeably smaller. *Not in scope:* Nez, the phone, the tree schema.
+3. **[Dev] The script player** (spine step 2). *Goal:* a test plays the game from the first message to the farm line by choosing actions, no cheats. *Where:* `tests/`, using the actions from item 2. *Done when:* the test passes from a fresh game. *Not in scope:* `--autoplay`.
+4. **[Dev] TT1 Tree schema over work.json.** *Goal:* tech-tree content loads from `game/content/tree/*.json`, each task being an action any actor can perform at its own speed and accuracy; today's 5 work kinds migrate as tasks. *Where:* `Content/ContentDefs.cs`, `ContentDb.Validate()`, `SaveCodec` migration, `WorkRules` callers. Spec: `TECH_TREE.md` §0–§2. *Done when:* the game plays as before; one test validates every branch file. *Not in scope:* unlock rules, new tasks.
+5. **[Dev] TT2 Tree rules.** *Goal:* nodes unlock from recalls, conditions and required nodes; grants apply; automated stages wear without upkeep. *Where:* `Tree/TreeRules.cs`, `Work/TaskRules.cs`. *Done when:* two tests (unlock gating; wear drops a stage). *Not in scope:* UI.
+
+### Tech tree track (after Up next; one branch per session or two)
+- [ ] TT3 Tree in the world: tech nodes in PIP's Almanac (on the phone, per the spine), people/money nodes in the notebook; backlog props (job-sheet pile, blinking machine).
+- [ ] TT4 Field `field.van` + `field.parts` (matches the cargo backlog item below).
+- [ ] TT5 Customers `customers.door` + `customers.machine`; Money `money.tin` + `money.bookkeeper`.
+- [ ] TT6 Sight `sight.notebook` + `sight.pager`; People `people.showme`.
+- [ ] TT7 Room `room.bbs` + `room.modem2400`; Community `community.ledger` + `community.files`.
+- [ ] TT8 Tier 2 of every branch (Act 1–2 content), then tune numbers in a balancing pass.
+
 ## M0 — Scaffold ✅ (done 2026-11-11)
 Pure sim + tests; Godot room; answering machine → Frame install → billing; Almanac; Notebook (automation + Promise Ledger); save/load; smoke test.
 
