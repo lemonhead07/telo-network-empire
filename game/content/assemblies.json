@@ -1,0 +1,32 @@
+[
+  { "id": "asm-radio", "name": "radio set", "job": "Mend a radio set", "mode": "repair",
+    "parts": [
+      { "id": "back", "name": "back panel", "fastener": "screws", "count": 4 },
+      { "id": "valve", "name": "valve", "fastener": "push-fit", "count": 1, "canFail": true },
+      { "id": "speaker", "name": "speaker lead", "fastener": "solder", "count": 2, "canFail": true },
+      { "id": "dial", "name": "dial cord", "fastener": "pulleys", "count": 2, "canFail": true } ] },
+
+  { "id": "asm-extension", "name": "phone extension", "job": "Rewire a phone extension", "mode": "repair",
+    "parts": [
+      { "id": "faceplate", "name": "faceplate", "fastener": "screws", "count": 2 },
+      { "id": "terminals", "name": "terminal screws", "fastener": "screws", "count": 3, "canFail": true },
+      { "id": "run", "name": "cable run", "fastener": "staples", "count": 3, "canFail": true } ] },
+
+  { "id": "asm-crackle", "name": "junction box", "job": "Fix a crackling line", "mode": "repair",
+    "parts": [
+      { "id": "lid", "name": "box lid", "fastener": "screws", "count": 2 },
+      { "id": "terminals", "name": "corroded terminals", "fastener": "screws", "count": 2, "canFail": true },
+      { "id": "drop", "name": "drop wire joint", "fastener": "clips", "count": 2, "canFail": true } ] },
+
+  { "id": "asm-aerial", "name": "TV aerial", "job": "Tune the TV aerial", "mode": "repair", "needs": [ "ladder", "toolbox" ],
+    "parts": [
+      { "id": "bracket", "name": "chimney bracket", "fastener": "bolts", "count": 2 },
+      { "id": "mast", "name": "aerial direction", "fastener": "clamp", "count": 1, "canFail": true },
+      { "id": "plug", "name": "coax plug", "fastener": "screw-on", "count": 1, "canFail": true } ] },
+
+  { "id": "asm-answerphone", "name": "answering machine", "job": "Fit an answering machine", "mode": "install",
+    "parts": [
+      { "id": "lead", "name": "line lead", "fastener": "plug", "count": 1 },
+      { "id": "mains", "name": "mains plug", "fastener": "screws", "count": 3 },
+      { "id": "tape", "name": "cassette", "fastener": "push-fit", "count": 1 } ] }
+]

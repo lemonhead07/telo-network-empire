@@ -941,7 +941,7 @@ public partial class GameRoot : Node3D
         {
             bool needsToolbox = !oj.Bench.CanUse();
             _kitEverywhere = true;
-            for (int i = 0; i < 12 && _oddJobs.ContainsKey(jobLot.Lot.Id); i++) oj.Bench.OnUse!();
+            for (int i = 0; i < 40 && _oddJobs.ContainsKey(jobLot.Lot.Id); i++) oj.Bench.OnUse!();
             _kitEverywhere = false;
             handsOn = needsToolbox && jobLot.DoorOpen && !_oddJobs.ContainsKey(jobLot.Lot.Id);
             GD.Print($"ODDJOB {(handsOn ? "OK" : "FAIL")}: needsToolbox={needsToolbox} doorOpened={jobLot.DoorOpen}");

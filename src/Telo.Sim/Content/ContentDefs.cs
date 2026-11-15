@@ -12,6 +12,33 @@ public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServ
 
 public sealed record Condition(ConditionKind Kind, long Value);
 
+/// <summary>One part of an assembly, outermost first: what it is, what holds it, and whether it can be the fault.</summary>
+public sealed record PartDef
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public string Fastener { get; init; } = "none";
+    public int Count { get; init; } = 1;
+    public bool CanFail { get; init; }
+}
+
+/// <summary>
+/// A thing in the world as parts and fasteners (game/content/assemblies.json, spine step 6). A fault is one bad part; a repair
+/// undoes what is in the way, finds it, replaces it and does it all up again. A new appliance is data, not code.
+/// </summary>
+public sealed record AssemblyDef
+{
+    public required string Id { get; init; }
+    public string Name { get; init; } = "";
+    /// <summary>The odd job (by title) this assembly is the work of.</summary>
+    public string Job { get; init; } = "";
+    /// <summary>"repair" (find and replace a bad part) or "install" (build it).</summary>
+    public string Mode { get; init; } = "repair";
+    /// <summary>Kit beyond the toolbox, by name (ladder, cableDrum).</summary>
+    public List<string> Needs { get; init; } = new();
+    public List<PartDef> Parts { get; init; } = new();
+}
+
 /// <summary>
 /// One chapter of the plot (game/content/plot.json). Chapters run in one line, never overlapping: the current chapter is the first
 /// whose <see cref="DoneWhen"/> is not yet met (any one condition finishes it). Each teaches one thing; the last has no end.

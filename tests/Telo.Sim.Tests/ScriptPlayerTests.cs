@@ -125,3 +125,26 @@ public class PlannerTests
         }
     }
 }
+
+public class AssemblyTests
+{
+    private static readonly string[] Verbs = { "Undo", "Test", "Replace", "Do", "Fit" };
+
+    [Fact]
+    public void Every_assembly_makes_a_job_of_five_steps_or_fewer_and_the_same_job_has_the_same_fault()
+    {
+        foreach (var a in TestContent.Db.Assemblies.Values)
+            for (ulong seed = 1; seed < 40; seed++)
+            {
+                var (steps, fault) = Telo.Sim.Minigames.Assembly.AssemblyRules.Steps(a, seed);
+                Assert.InRange(steps.Count, 2, 5);
+                Assert.All(steps, st => Assert.Contains(Verbs, v => st.Verb.StartsWith(v)));
+                Assert.Equal(fault, Telo.Sim.Minigames.Assembly.AssemblyRules.Steps(a, seed).Fault);
+                if (a.Mode == "repair") Assert.True(fault!.CanFail);
+            }
+        // different jobs find different faults (the radio has three things that can go)
+        var radio = TestContent.Db.Assemblies["asm-radio"];
+        var faults = Enumerable.Range(1, 30).Select(i => Telo.Sim.Minigames.Assembly.AssemblyRules.Steps(radio, (ulong)i).Fault!.Id).Distinct().Count();
+        Assert.True(faults >= 2);
+    }
+}

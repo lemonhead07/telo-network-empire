@@ -172,8 +172,14 @@ public sealed class Simulation
         return ok;
     }
 
-    public OddJobTask? NewOddJobTask(string jobId) =>
-        State.Jobs.FirstOrDefault(j => j.Id == jobId) is { } job ? new OddJobTask(job.Id, job.Title, job.Hours) : null;
+    /// <summary>The job as its assembly says (parts, fasteners, one seeded fault), or the general repair when there is no assembly for it.</summary>
+    public OddJobTask? NewOddJobTask(string jobId)
+    {
+        if (State.Jobs.FirstOrDefault(j => j.Id == jobId) is not { } job) return null;
+        var steps = Minigames.Assembly.AssemblyRules.ForJob(Content, job.Title) is { } asm
+            ? Minigames.Assembly.AssemblyRules.Steps(asm, DetRng.Derive(State.Seed, $"fault:{job.Id}")).Steps : null;
+        return new OddJobTask(job.Id, job.Title, job.Hours, steps);
+    }
 
     // ---- god keys: skip ahead to see later stages (testing and impatient owners) ----------------
     public string GodCash(long amount) { State.Cash += amount; return $"+${amount}."; }

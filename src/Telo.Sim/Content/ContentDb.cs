@@ -15,6 +15,8 @@ public sealed class ContentDb
     public IReadOnlyDictionary<string, ProductDef> Products { get; }
     /// <summary>The plot: chapters in order (plot.json).</summary>
     public IReadOnlyList<ChapterDef> Plot { get; }
+    /// <summary>Things as parts and fasteners, by id (assemblies.json).</summary>
+    public IReadOnlyDictionary<string, AssemblyDef> Assemblies { get; }
 
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -28,7 +30,7 @@ public sealed class ContentDb
 
     public ContentDb(IEnumerable<ActDef> acts, IEnumerable<AnnouncementDef> announcements,
         IEnumerable<AlmanacEntryDef> almanac, IEnumerable<WorkKindDef> work, IEnumerable<PremiseDef> premises,
-        IEnumerable<LotDef>? lots = null, IEnumerable<ProductDef>? products = null, IEnumerable<ChapterDef>? plot = null)
+        IEnumerable<LotDef>? lots = null, IEnumerable<ProductDef>? products = null, IEnumerable<ChapterDef>? plot = null, IEnumerable<AssemblyDef>? assemblies = null)
     {
         Acts = acts.OrderBy(a => a.Index).ToList();
         Announcements = announcements.ToDictionary(a => a.Id);
@@ -38,6 +40,7 @@ public sealed class ContentDb
         Lots = (lots ?? Array.Empty<LotDef>()).ToDictionary(l => l.Id);
         Products = (products ?? Array.Empty<ProductDef>()).ToDictionary(p => p.Id);
         Plot = (plot ?? Array.Empty<ChapterDef>()).ToList();
+        Assemblies = (assemblies ?? Array.Empty<AssemblyDef>()).ToDictionary(a => a.Id);
         var errors = Validate();
         if (errors.Count > 0) throw new InvalidDataException("Content invalid:\n" + string.Join("\n", errors));
     }
@@ -51,10 +54,10 @@ public sealed class ContentDb
                 : throw new InvalidDataException($"Missing content file {name}.json");
 
         return new ContentDb(Load<ActDef>("acts"), Load<AnnouncementDef>("announcements"),
-            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"), Load<ProductDef>("products"), Load<ChapterDef>("plot"));
+            Load<AlmanacEntryDef>("almanac"), Load<WorkKindDef>("work"), Load<PremiseDef>("premises"), Load<LotDef>("lots"), Load<ProductDef>("products"), Load<ChapterDef>("plot"), Load<AssemblyDef>("assemblies"));
     }
 
-    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json", "products.json", "plot.json" };
+    public static readonly string[] FileNames = { "acts.json", "announcements.json", "almanac.json", "work.json", "premises.json", "lots.json", "products.json", "plot.json", "assemblies.json" };
 
     public ActDef ActAt(int index) => Acts[Math.Clamp(index, 0, Acts.Count - 1)];
 
@@ -62,6 +65,13 @@ public sealed class ContentDb
     public List<string> Validate()
     {
         var e = new List<string>();
+        foreach (var a in Assemblies.Values)
+        {
+            if (a.Parts.Count == 0) e.Add($"assembly {a.Id}: no parts");
+            if (a.Mode == "repair" && !a.Parts.Any(p => p.CanFail)) e.Add($"assembly {a.Id}: a repair needs a part that can fail");
+            if (a.Mode is not ("repair" or "install")) e.Add($"assembly {a.Id}: unknown mode '{a.Mode}'");
+            foreach (var n in a.Needs) if (!Enum.TryParse<Town.Tools>(n, true, out _)) e.Add($"assembly {a.Id}: unknown kit '{n}'");
+        }
         // the plot is one line: ids unique, first-hour steps never go backwards, every chapter but the last can finish
         for (int i = 0; i < Plot.Count; i++)
         {

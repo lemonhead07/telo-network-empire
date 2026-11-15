@@ -46,9 +46,9 @@ public class PacingTests
         var sim = TestContent.NewGame();
         var job = sim.OfferJob()!;
         var task = sim.NewOddJobTask(job.Id)!;
-        Assert.False(task.Do(Tools.None));               // needs the toolbox to open it up
+        if (task.Steps[0].Needs != Tools.None) Assert.False(task.Do(Tools.None));   // kit first (usually the toolbox to open it up)
         while (!task.Done) Assert.True(task.Do());
-        Assert.True(task.ElapsedMinutes >= 20 && !task.Bodged && task.Steps.Count == 4);
+        Assert.True(task.ElapsedMinutes >= 15 && !task.Bodged && task.Steps.Count is >= 2 and <= 5);   // D31: five steps at most
         Assert.NotNull(TownRules.CompleteJob(sim.State, sim.Content, job.Id));
         int good = TownRules.HouseholdOf(sim.State, job.LotId).Goodwill;
         Assert.True(good > 0);
