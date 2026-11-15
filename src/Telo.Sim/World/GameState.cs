@@ -187,13 +187,16 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 7;
+    public const int CurrentVersion = 8;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
     public ulong RngState { get; set; }
     public int Day { get; set; }
     public int ActIndex { get; set; }
+
+    /// <summary>Everyone who acts in the world, by id: where they are, what they hold, where their kit and van are (v8).</summary>
+    public Dictionary<string, Act.ActorState> Actors { get; set; } = new();
 
     // Money is whole period dollars.
     public long Cash { get; set; }

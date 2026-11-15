@@ -31,6 +31,7 @@ public static class SaveCodec
             Work.WorkRules.RestoreHires(s, content);
         }
         if (s.Version < 7) { s.Switch ??= new(); Net.SwitchRules.Rebuild(s, content); } // v7: the switchboard is a persistent object
+        if (s.Version < 8) s.Actors ??= new(); // v8: actors (place, hands, kit, van) live in the simulation
         s.Version = GameState.CurrentVersion;
         return s;
     }

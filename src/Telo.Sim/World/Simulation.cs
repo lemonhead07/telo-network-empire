@@ -17,6 +17,17 @@ public sealed class Simulation
 {
     public ContentDb Content { get; }
     public GameState State { get; }
+    /// <summary>House installs under way, by lot. Derived: restored from <see cref="GameState.Installs"/> when restarted.</summary>
+    public Dictionary<string, InstallJob> Installs { get; } = new();
+    /// <summary>Odd jobs and orders on the rug, by lot. Not saved: a half-done one is simply started again.</summary>
+    public Dictionary<string, Act.Bench> Benches { get; } = new();
+
+    /// <summary>The actor with this id, created where the player starts if new.</summary>
+    public Act.ActorState Actor(string id = "player")
+    {
+        if (!State.Actors.TryGetValue(id, out var a)) State.Actors[id] = a = new Act.ActorState { Id = id };
+        return a;
+    }
     private readonly DetRng _rng;
 
     public static readonly GameDate StartDate = GameDate.From(1983, 1, 3);
