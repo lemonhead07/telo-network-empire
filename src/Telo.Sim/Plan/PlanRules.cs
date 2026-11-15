@@ -68,7 +68,9 @@ public static class PlanRules
     {
         var plan = PlanFor(s, day);
         plan.Slots.Clear();
-        foreach (var t in StaffRules.Tickets(s, c).Where(t => t.AssignedTo is null && t.LotId is not null)
+        int modems = s.Modems;   // don't book a connection there's no modem for
+        foreach (var t in StaffRules.Tickets(s, c).Where(t => t.AssignedTo is null && t.LotId is not null && AppointmentRules.HouseWorkLeft(s, t.Key))
+                     .Where(t => t.Kind != TicketKind.Install || modems-- > 0)
                      .OrderByDescending(t => t.Kind == TicketKind.Repair).ThenByDescending(t => t.WaitingDays))
         {
             plan.Slots.Add(new PlanSlot { TicketKey = t.Key });

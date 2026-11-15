@@ -68,7 +68,7 @@ public static class AppointmentRules
             if (a.Begun is null && inWindow && working) { a.Begun = Math.Max(s.Minute, a.Start); continue; }
             // the visit is over when the work at the house stops (an install still has the switchboard to go, back home),
             // or, for a quick job at the door, when its ticket is gone
-            bool visitOver = a.Begun is not null ? !working : !open.Contains(a.TicketKey);
+            bool visitOver = a.Begun is not null ? !working : !open.Contains(a.TicketKey) || !HouseWorkLeft(s, a.TicketKey);
             if (!visitOver) continue;
             if (a.Begun is null && !inWindow) { s.Appointments.Remove(a); continue; }   // done some other time, or by someone else
             a.Done = s.Minute;
@@ -88,9 +88,14 @@ public static class AppointmentRules
                                            && s.Minute >= a.Start - EarlyMinutes && s.Minute < a.End);
 
     public static IEnumerable<Appointment> Today(GameState s) =>
-        s.Appointments.Where(a => a.Day == s.Day && a.Status == AppointmentStatus.Confirmed).OrderBy(a => a.Start);
+        s.Appointments.Where(a => a.Day == s.Day && a.Status == AppointmentStatus.Confirmed && a.Done is null
+                                  && (a.Begun is not null || HouseWorkLeft(s, a.TicketKey))).OrderBy(a => a.Start);
 
     public static Appointment? For(GameState s, string ticketKey) => s.Appointments.FirstOrDefault(a => a.TicketKey == ticketKey);
+
+    /// <summary>Is there still work to do at the house for this ticket? A connection whose socket is in only has the switchboard left, back home.</summary>
+    public static bool HouseWorkLeft(GameState s, string ticketKey) =>
+        !ticketKey.StartsWith("install:") || s.Customers.FirstOrDefault(x => $"install:{x.Id}" == ticketKey) is not { SocketFitted: true };
 
     /// <summary>Is being out at work the only reason they wouldn't be in then? Then they can be asked to be in.</summary>
     public static bool CouldBeIn(GameState s, ContentDb c, LotDef lot, int day, int minute)
@@ -109,7 +114,7 @@ public static class AppointmentRules
         foreach (var slot in plan.Slots)
         {
             if (!tickets.TryGetValue(slot.TicketKey, out var t) || t.LotId is null || !c.Lots.TryGetValue(t.LotId, out var lot)
-                || lot.Kind is not (LotKind.House or LotKind.Farm)) continue;
+                || lot.Kind is not (LotKind.House or LotKind.Farm) || !HouseWorkLeft(s, slot.TicketKey)) continue;
             keep.Add(slot.TicketKey);
             int start = slot.Start / 30 * 30;   // on the half hour
             var a = For(s, slot.TicketKey);
@@ -135,7 +140,7 @@ public static class AppointmentRules
         foreach (var a in s.Appointments.Where(a => a.Day < s.Day).ToList())
         {
             s.Appointments.Remove(a);
-            if (a.Status != AppointmentStatus.Confirmed || a.Begun is not null || !open.Contains(a.TicketKey)) continue;   // came, done, or never agreed
+            if (a.Status != AppointmentStatus.Confirmed || a.Begun is not null || !open.Contains(a.TicketKey) || !HouseWorkLeft(s, a.TicketKey)) continue;   // came, done, or never agreed
             var who = c.Lots.TryGetValue(a.LotId, out var l) ? l.Resident : "A customer";
             if (s.Customers.FirstOrDefault(x => x.LotId == a.LotId) is { } cust) cust.Satisfaction = Math.Max(0, cust.Satisfaction - MissedSatisfaction);
             TownRules.HouseholdOf(s, a.LotId).Goodwill = Math.Max(0, TownRules.HouseholdOf(s, a.LotId).Goodwill - 50);

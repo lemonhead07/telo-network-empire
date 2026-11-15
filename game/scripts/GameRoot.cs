@@ -157,6 +157,8 @@ public partial class GameRoot : Node3D
                 StartInstall(midView, mid);
 
         RefreshIdleScreens();
+        // developer skip-ahead (DevStart.cs): --from=free|hire|poles|act1..act7, for playtesting without the opening
+        if (args.FirstOrDefault(a => a.StartsWith("--from=") || a.StartsWith("--autoplay-from=")) is { } from) StartFrom(from.Split('=')[1]);
         if (args.Contains("--smoke")) _ = RunSmoke();
         if (args.FirstOrDefault(a => a == "--autoplay" || a.StartsWith("--autoplay=")) is { } auto)
             _ = RunAutoplay(auto.Contains('=') ? auto[(auto.IndexOf('=') + 1)..] : null, args);

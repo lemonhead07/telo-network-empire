@@ -29,6 +29,8 @@ public sealed class ActorState
     [JsonIgnore] public Func<Tools>? OnSiteOverride { get; set; }
     /// <summary>Automated checks ignore who is home. Not saved.</summary>
     [JsonIgnore] public bool IgnoreHours { get; set; }
+    /// <summary>The job (ticket key) this actor has committed to, so it sees one thing through instead of dithering. Not saved.</summary>
+    [JsonIgnore] public string? Focus { get; set; }
 
     /// <summary>Kit in their hands or put down where they are standing.</summary>
     public Tools OnSite() => OnSiteOverride?.Invoke()

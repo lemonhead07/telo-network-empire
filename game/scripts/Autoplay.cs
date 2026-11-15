@@ -39,6 +39,9 @@ public partial class GameRoot
         float minutes = args.FirstOrDefault(a => a.StartsWith("--autoplay-minutes=")) is { } mn ? float.Parse(mn.Split('=')[1]) : 30f;
         Engine.TimeScale = speed;
         Me.OnSiteOverride = KitInWorkArea;
+        // --autoplay-teleport (development): the van jumps to where it's going instead of driving, so the run is all work
+        _teleport = args.Contains("--autoplay-teleport");
+        _sample = args.FirstOrDefault(a => a.StartsWith("--autoplay-sample=")) is { } smp && int.TryParse(smp.Split('=')[1], out int x) ? Math.Max(1, x) : 1;
         await Frames(40);
         await Snap("start", force: true);
 
@@ -50,6 +53,14 @@ public partial class GameRoot
         {
             if (Done(until) || Time.GetTicksMsec() - started > minutes * 60000) break;
             SyncActor();
+            if (Sim.State.ActIndex != _actLogged)
+            {
+                _actLogged = Sim.State.ActIndex;
+                var act = _content.Acts[Sim.State.ActIndex];
+                _autoLog.Add($"===== Act {act.Index}: {act.Name} ({Sim.State.Date}, {Sim.State.LiveSubscribers} subscribers, ${Sim.State.Cash})");
+                GD.Print("AUTO ", _autoLog[^1]);
+                await Snap($"act{act.Index}", force: true);
+            }
             var (id, why) = Bot.Choose(Sim, Me, _planet);
             _autoWhy = why;
             _autoLog.Add($"{Sim.State.Date} {Clock.Text(Sim.State)}  {id}  — {why}");
@@ -62,6 +73,7 @@ public partial class GameRoot
                 await Assist(id);
                 continue;
             }
+            if (SkipBySample(id)) continue;
             await Do(id);
             await Snap(Kind(id));
         }
@@ -76,8 +88,49 @@ public partial class GameRoot
         GetTree().Quit(Done(until) ? 0 : 1);
     }
 
+    private bool _teleport;
+    private int _actLogged = -1;
+    private int _sample = 1, _jobsSeen;
+    private readonly HashSet<string> _played = new();
+
+    /// <summary>
+    /// --autoplay-sample=X (development): play one job in X in full, in the world; finish the rest by decree the moment the
+    /// bot sets off for them, so a run gets through the game quickly but still shows every kind of job now and then.
+    /// </summary>
+    private bool SkipBySample(string id)
+    {
+        if (_sample <= 1 || !id.StartsWith("go:")) return false;
+        string place = id[3..];
+        var keys = Telo.Sim.Work.StaffRules.Tickets(Sim.State, _content)
+            .Where(t => t.LotId == place && t.AssignedTo is null && Telo.Sim.Plan.AppointmentRules.HouseWorkLeft(Sim.State, t.Key))
+            .Select(t => t.Key).ToList();
+        bool pole = Places.IsPole(place, out var pid, out _);
+        if (pole) keys.Add(place);
+        if (keys.Count == 0 || keys.Any(_played.Contains)) return false;   // not a job, or one we're already playing
+        if (++_jobsSeen % _sample == 1) { foreach (var k in keys) _played.Add(k); _autoLog.Add($"   (playing this one in full: {string.Join(", ", keys)})"); return false; }
+
+        foreach (var k in keys)
+        {
+            if (pole && _content.Premises.TryGetValue(pid, out var premise))
+            {
+                // the pole and the span back to the one before, by decree
+                Telo.Sim.Build.LineRules.Plant(Sim.State, _planet, premise, Tools.All);
+                while (Telo.Sim.Build.LineRules.CanString(Sim.State, _planet, premise) && Telo.Sim.Build.LineRules.ProgressOf(Sim.State, pid).Strung < Telo.Sim.Build.LineRules.ProgressOf(Sim.State, pid).Planted - 1)
+                    Telo.Sim.Build.LineRules.String(Sim.State, _content, _planet, premise, Tools.All);
+                if (Telo.Sim.Build.LineRules.ProgressOf(Sim.State, pid).Planted >= Telo.Sim.Build.LineRules.PoleSites(_planet, premise).Count)
+                    while (Telo.Sim.Build.LineRules.CanString(Sim.State, _planet, premise)) Telo.Sim.Build.LineRules.String(Sim.State, _content, _planet, premise, Tools.All);
+                _autoLog.Add($"   (skipped by sample: {k})");
+            }
+            else if (Sim.GodFinishTicket(k) is { } title) _autoLog.Add($"   (skipped by sample: {title})");
+        }
+        RefreshViews();
+        return true;
+    }
+
     private bool Done(string until) => until switch
     {
+        // --autoplay-until=act3: play on until that act begins (the acts one after another)
+        _ when until.StartsWith("act") && int.TryParse(until[3..], out int act) => Sim.State.ActIndex >= act,
         "farm" => Sim.Content.Premises.Values.Where(p => p.PoleLine is not null).All(p => LedgerRules.StatusOf(Sim.State, p.Id) == PromiseStatus.Served),
         _ => Onboarding.Current(Sim.State, _content) == OnboardingStep.Free && Sim.State.LiveSubscribers >= 2 && Sim.Installs.Count == 0 && Sim.Benches.Count == 0,
     };
@@ -219,8 +272,11 @@ public partial class GameRoot
     private async Task GoTo(string place)
     {
         var target = WorldOf(place);
-        float dist = (target - BodyPos()).Length();
-        if (_cargo.Held is null && dist > (float)Places.DriveOverM) { await Drive(ParkOf(place) ?? target); Me.VanAt = place; }
+        // drive or walk by the same measure the brain used (place to place), so it never asks for the van to come over
+        // and then walks there leaving it behind
+        double brainDist = Places.DistanceM(_planet, Sim.Content, Me.Place, place);
+        bool vanHere = _van.Driven || (_van.GlobalPosition - BodyPos()).Length() < 40;
+        if (_cargo.Held is null && vanHere && brainDist > Places.DriveOverM) { await Drive(ParkOf(place) ?? target); Me.VanAt = place; }
         else await WalkTo(target, 1.0f);
         Me.Place = place;
     }
@@ -236,7 +292,12 @@ public partial class GameRoot
             return job.NextStep is { } step && site.SpotFor(step) is { } spot ? spot.GlobalPosition : site.Phone.GlobalPosition;
         if (lot is not null && _oddJobs.TryGetValue(lot.Lot.Id, out var bench)) return bench.Bench.GlobalPosition;
         if (lot is not null && TownRules.FaultAt(Sim.State, lot.Lot.Id) is not null) return lot.Door.GlobalPosition;
-        if (Places.IsPole(Me.Place, out _, out _)) return WorldOf(Me.Place);
+        // at a pole site the work area is the marker itself (plant here, or string the span back from here), whichever is here
+        if (Places.IsPole(Me.Place, out var pid, out _) && _lines.FirstOrDefault(l => l.Premise.Id == pid) is { View: { } view })
+        {
+            var poleSite = WorldOf(Me.Place);
+            return new[] { view.PlantSpot, view.StringSpot }.Select(x => x.GlobalPosition).OrderBy(p => p.DistanceTo(poleSite)).FirstOrDefault(p => p.DistanceTo(poleSite) < 15, poleSite);
+        }
         return null;
     }
 
@@ -318,6 +379,17 @@ public partial class GameRoot
             await WalkTo(_van.GlobalPosition - _van.GlobalBasis.X * 2.0f, 0.8f);
             EnterVan();
             await Seconds(0.4f);
+        }
+        if (_teleport)
+        {
+            // development: straight there, parked, facing back the way it came (not counted as an assist: it was asked for)
+            var from = _van.GlobalPosition;
+            var dir = from - target; dir -= target.Normalized() * dir.Dot(target.Normalized());
+            _van.PlaceAt(target + target.Normalized() * 0.3f, dir.LengthSquared() > 0.01f ? dir.Normalized() : _van.Forward);
+            await Physics(15);
+            ExitVan();
+            await Physics(10);
+            return;
         }
         // keep to the roads: along Main Street, in at the driveway, out along the road; never across lawns and through houses
         _roadNet ??= new RoadNet(_planet, _town, GetWorld3D().DirectSpaceState, new Godot.Collections.Array<Rid> { _van.GetRid(), _player.GetRid() });

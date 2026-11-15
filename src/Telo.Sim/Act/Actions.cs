@@ -287,7 +287,7 @@ public static class Actions
                     if (!LineRules.Plant(s, gen, p, onSite)) return;
                     if (a.Holding == Tools.Pole) a.Holding = Tools.None; else a.Kit.Remove(Tools.Pole); // the next pole is on the rack
                 }));
-        if (k == line.Strung && LineRules.CanString(s, gen, p))
+        if (k == LineRules.StringSite(line.Strung, LineRules.PoleSites(gen, p).Count) && LineRules.CanString(s, gen, p))
             list.Add(new("pole:string", $"String span {k + 1}", LineRules.StringMinutes,
                 (onSite & LineRules.StringNeeds) == LineRules.StringNeeds ? null : $"you need the {Names(LineRules.StringNeeds & ~onSite)} here",
                 () => LineRules.String(s, sim.Content, gen, p, onSite)));
@@ -305,7 +305,7 @@ public static class Actions
             if (n == 0) continue;
             var line = LineRules.ProgressOf(sim.State, p.Id);
             if (line.Planted < n) yield return Places.Pole(p.Id, line.Planted);
-            if (line.Strung < n && line.Strung != line.Planted) yield return Places.Pole(p.Id, line.Strung);
+            if (LineRules.CanString(sim.State, gen, p)) yield return Places.Pole(p.Id, LineRules.StringSite(line.Strung, n));
         }
     }
 

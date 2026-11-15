@@ -36,6 +36,13 @@ public static class LineRules
         return sites;
     }
 
+    /// <summary>
+    /// Where span <paramref name="span"/> is strung from: its far end, the newest pole (the last span, to the building, from the
+    /// last pole). So the work runs forward: at each new site, plant the pole, string back to the one before, all from the
+    /// van parked right there, then drive on.
+    /// </summary>
+    public static int StringSite(int span, int poles) => Math.Min(span + 1, poles - 1);
+
     public static LineProgress ProgressOf(GameState s, string premiseId) =>
         s.Lines.TryGetValue(premiseId, out var l) ? l : new LineProgress();
 

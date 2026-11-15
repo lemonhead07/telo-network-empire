@@ -99,7 +99,7 @@ public static class Guidance
         {
             var line = Build.LineRules.ProgressOf(s, far.Id);
             return (line.Strung < line.Planted - 1
-                ? $"Pole line to {far.Name}: string the next span (cable drum and ladder)."
+                ? $"Pole line to {far.Name}: string the span back from the newest pole (cable drum and ladder)."
                 : $"Pole line to {far.Name}: plant pole {line.Planted + 1} along the farm road (poles are on the van, ${far.PoleLine!.PoleCost} each).", null);
         }
         // this chapter's work is done and the world hasn't caught up: remember the next one early

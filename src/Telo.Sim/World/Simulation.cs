@@ -276,6 +276,32 @@ public sealed class Simulation
     }
 
     /// <summary>Jump to the next act (age), whatever the calendar and the milestones say.</summary>
+    /// <summary>
+    /// Finish one job ticket by decree, as if it had been done properly: a connection fitted and wired in, a fault fixed,
+    /// an order fitted, an odd job done. For sampled auto runs (most jobs skipped, one in a few played in full). Null if
+    /// there is no such open ticket.
+    /// </summary>
+    public string? GodFinishTicket(string key)
+    {
+        var s = State; var c = Content;
+        if (Work.StaffRules.Tickets(s, c).FirstOrDefault(t => t.Key == key) is not { } t) return null;
+        var id = key[(key.IndexOf(':') + 1)..];
+        switch (t.Kind)
+        {
+            case Work.TicketKind.Install when s.Customers.FirstOrDefault(x => x.Id == id) is { } cust:
+                if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); s.Installs.Remove(cust.Id); }
+                if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s)) { s.Cash = Math.Max(s.Cash, SwitchRules.PanelPrice); SwitchRules.AddPanel(s); }
+                SwitchRules.AutoWire(s, c, cust, sloppy: false);
+                cust.HasAccount = true;
+                break;
+            case Work.TicketKind.Repair: TownRules.Repair(s, id, Tools.All); break;
+            case Work.TicketKind.Order: CompleteOrder(id, false); break;
+            case Work.TicketKind.OddJob: TownRules.CompleteJob(s, c, id); break;
+        }
+        State.RngState = _rng.State;
+        return t.Title;
+    }
+
     public string GodNextAct()
     {
         var s = State;

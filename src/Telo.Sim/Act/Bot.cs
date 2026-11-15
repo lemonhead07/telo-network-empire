@@ -50,8 +50,32 @@ public static class Bot
             if (work is not null) return ("wait", work.Blocked!);
         }
 
-        // 4. Follow the line everyone reads.
+        // 3. See one thing through. A job we committed to keeps us until it's done or nobody's in for it.
+        //    If the line points at a door nobody will answer for hours, don't stand on the step: take the most
+        //    advanced job someone is in for, commit to it, and come back to the other later.
         var (text, lotId) = Guidance.Next(s, c);
+        bool daytime = Clock.Hour(s) is >= 6 and < 17.5;
+        bool booked = text.StartsWith("Booked");   // a booked window comes first: they're staying in for you
+        if (!booked && Committed(sim, a) is { } focus) (text, lotId) = ($"{focus.Title}: see it through", focus.LotId);
+        else if (!booked && daytime && !a.IgnoreHours && lotId is not null && c.Lots.TryGetValue(lotId, out var shut)
+                 && HomeRules.WhyNot(s, c, shut) is not null)
+        {
+            if (MostAdvanced(sim, a, lotId) is { } alt)
+            {
+                a.Focus = alt.Key;
+                (text, lotId) = ($"{alt.Title} ({shut.Resident} is out)", alt.LotId);
+            }
+            // nothing else open: find the next customer instead of standing on an empty doorstep
+            else if (Onboarding.CanKnock(s, c) && TownRules.Prospects(s, c).FirstOrDefault(l => l.Id != lotId && s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay
+                         && HomeRules.WhyNot(s, c, l) is null) is { } door)
+                (text, lotId) = ($"Knock on {door.Resident}'s door while {shut.Resident} is out", door.Id);
+        }
+
+        // at the shop anyway: buy enough modems for the connections waiting (a few at a time), not one per trip
+        if (acts.FirstOrDefault(x => x.Id == "buy:modem" && x.Ready) is { } modem && s.Modems < Math.Min(4, s.PendingInstalls) && s.Cash >= 100)
+            return (modem.Id, "stock up on modems while you're here");
+
+        // 4. Follow the line everyone reads.
         var (place, want) = Target(sim, gen, text, lotId);
         // nobody in over there and it's night: sleep instead of walking over to a dark door
         if (place != a.Place && !a.IgnoreHours && c.Lots.TryGetValue(place, out var dest) && HomeRules.WhyNot(s, c, dest) is not null
@@ -114,8 +138,10 @@ public static class Bot
         {
             var p = c.Premises.Values.First(p => p.PoleLine is not null && LedgerRules.StatusOf(s, p.Id) != PromiseStatus.Served && p.Act <= s.ActIndex + 1);
             var line = LineRules.ProgressOf(s, p.Id);
-            bool str = line.Strung < line.Planted - 1 || line.Planted >= LineRules.PoleSites(gen, p).Count;   // every pole in: string the rest
-            return (Places.Pole(p.Id, str ? line.Strung : line.Planted), new[] { str ? "pole:string" : "pole:plant" });
+            int n = LineRules.PoleSites(gen, p).Count;
+            // work forward from the newest pole: a span waiting behind it is strung from here before moving on
+            bool str = line.Strung < line.Planted - 1 || line.Planted >= n;
+            return (Places.Pole(p.Id, str ? LineRules.StringSite(line.Strung, n) : line.Planted), new[] { str ? "pole:string" : "pole:plant" });
         }
         string[] room =
             text.Contains("answering machine") ? new[] { "messages" }
@@ -129,6 +155,34 @@ public static class Bot
             : text.Contains("recall") ? new[] { "recall:" }
             : new[] { "sleep" };
         return (Places.Room, room);
+    }
+
+    // ---- committing to a job ----------------------------------------------------------------------
+    /// <summary>The job this actor committed to, while it's still open and they're still in for it; otherwise let it go.</summary>
+    private static Work.Ticket? Committed(Simulation sim, ActorState a)
+    {
+        if (a.Focus is null) return null;
+        var t = Work.StaffRules.Tickets(sim.State, sim.Content).FirstOrDefault(x => x.Key == a.Focus);
+        if (t is { AssignedTo: null, LotId: { } lot } && Plan.AppointmentRules.HouseWorkLeft(sim.State, t.Key)
+            && (a.IgnoreHours || !sim.Content.Lots.TryGetValue(lot, out var def) || HomeRules.WhyNot(sim.State, sim.Content, def) is null))
+            return t;
+        a.Focus = null;
+        return null;
+    }
+
+    /// <summary>
+    /// The most advanced job someone is in for right now: a fault first (a customer without a working line), then a
+    /// connection, then an order, then an odd job; longest waiting first. Never one that only needs the switchboard.
+    /// </summary>
+    private static Work.Ticket? MostAdvanced(Simulation sim, ActorState a, string notAt)
+    {
+        var s = sim.State; var c = sim.Content;
+        int Rank(Work.TicketKind k) => k switch { Work.TicketKind.Repair => 0, Work.TicketKind.Install => 1, Work.TicketKind.Order => 2, _ => 3 };
+        return Work.StaffRules.Tickets(s, c)
+            .Where(t => t.AssignedTo is null && t.LotId is { } l && l != notAt && c.Lots.TryGetValue(l, out var lot)
+                        && HomeRules.WhyNot(s, c, lot) is null && Plan.AppointmentRules.HouseWorkLeft(s, t.Key)
+                        && (t.Kind != Work.TicketKind.Install || s.Modems > 0))
+            .OrderBy(t => Rank(t.Kind)).ThenByDescending(t => t.WaitingDays).FirstOrDefault();
     }
 
     // ---- kit ---------------------------------------------------------------------------------------
