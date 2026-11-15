@@ -2,9 +2,15 @@
 
 *Idea session, 2026-11-15, from the owner's direction. Decisions D35–D39. Builds on `NEZ_AND_THE_SPINE.md` (Nez, the planner) and `AGES.md`.*
 
-## 1. Who Nez is (D35, D36)
+## 1. Who Nez is (D35, D40)
 
-**Nez is your previous run.** You built all this once already. Your memory was wiped and the world reset to 1983; PIP's Almanac is what survived of your notes. Nez is who you became, still running the company you built, on the far side of the planet. **Beating Nez means stopping yourself.** (Answers N2.)
+**You are Nez, with amnesia, living time backwards.** Nez invented a new telecom technology where everything works perfectly, and wrote notes on the better way to do every job. Those notes are PIP's Almanac: recalling a page is remembering what you invented. You don't remember writing them.
+
+**NezTel is your worse future:** the company as it turns out if it's built the old way. Big, rich, and stuck at 99%. In that timeline the network fails when it matters most: the **Blackout** (`AGES.md` Act 7). You are racing your own bad timeline, building the better tech faster than history would, so the world is sturdy enough to survive it.
+
+- Every Almanac page recalled and built early makes the world sturdier. **Echo** is the timeline pushing back.
+- Beating NezTel on service (§3) *is* the race: every customer who switches is a piece of the bad future that won't happen.
+- The full reveal (that you are Nez) comes at the end, from PIP's last page, "Exchange 0" (B3).
 
 **The company is NezTel.** Its motto is a recursive acronym, in the style of PHP:
 
@@ -56,4 +62,4 @@ Tickets and staff (D25), the timesheet (spine 5), orders that go to NezTel when 
 
 - B1. Does reputation replace satisfaction, or sit on top of it (one town-wide number made from everyone's satisfaction)? *Leaning: on top of it.*
 - B2. Should a skilled person ever reach 5 installs a day, or should installs count as 2 "slots" and quick jobs as 1? *Leaning: slots, so 5 is quick jobs only.*
-- B3. When does the player learn Nez is them? *Leaning: Act 7, from PIP's last Almanac page ("Exchange 0").*
+- B3. When does the player learn they are Nez? *Leaning: Act 7, from PIP's last Almanac page ("Exchange 0"), just before the Blackout.*
