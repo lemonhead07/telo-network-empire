@@ -1124,11 +1124,11 @@ public partial class GameRoot : Node3D
         var famLot = _town.Lots.First(l => l.Lot.Archetype == "family" && l.Car is not null);
         Sim.State.Minute = 5 * 60; _slowTick = 0; await Frames(3);
         bool outByDay = !famLot.Car!.Visible && !famLot.Door.CanUse() && famLot.Door.Prompt().Contains("car");
-        Sim.State.Minute = 13 * 60 + 30; _slowTick = 0; await Frames(3);
+        Sim.State.Minute = 15 * 60 + 30; _slowTick = 0; await Frames(3);   // half nine: dusk comes late now (Clock.Dark), before bedtime at ten
         bool inByNight = famLot.Car.Visible && famLot.Lights!.Visible;
         _ignoreHours = true;
         bool hours = outByDay && inByNight;
-        GD.Print($"HOURS {(hours ? "OK" : "FAIL")}: outAtEleven={outByDay} homeAndLitAtHalfSeven={inByNight}");
+        GD.Print($"HOURS {(hours ? "OK" : "FAIL")}: outAtEleven={outByDay} homeAndLitAtHalfNine={inByNight}");
 
         // the depot: lease 1 Main Street, and from the next working morning tickets are collected without you
         Sim.State.Cash += 500;

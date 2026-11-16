@@ -1,6 +1,8 @@
 # Next Session — start here
 
-*Left off: 2026-11-16. Branch: `feature/gameplay-rapid`. 82 sim tests pass. Saves are at v17. The owner wants **early access to cover Acts 0–5**, gameplay first, models later.*
+*Left off: 2026-11-16 (handed to the cloud from a local session). Branch: `feature/gameplay-rapid`. 82 sim tests and `--smoke` pass. Saves are at v17. The owner wants **early access to cover Acts 0–5**, gameplay first, models later.*
+
+**Start here:** `BUILD_PLAN.md` → "Early access: Acts 0–5", items EA1–EA6, in order. Before committing a rules change, run `dotnet test tests/Telo.Sim.Tests` (the Act 5 script player is in it) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act5` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front).
 
 ## Newest (2026-11-16, a long local session): the path from the first message into Act 5
 
