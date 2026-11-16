@@ -57,7 +57,7 @@ public static class TownRules
         if (lot.Premise is not null) return KnockResult.LastMile;
         if (!Onboarding.CanKnock(s, c) || lot.Kind == LotKind.Depot) return KnockResult.TooSoon;
         var h = HouseholdOf(s, lotId);
-        if (h.Status == HouseholdStatus.Signed) return KnockResult.AlreadySigned;
+        if (h.Status == HouseholdStatus.Signed || s.NezLots.Contains(lotId)) return KnockResult.AlreadySigned;   // yours, or Nez's
         if (s.Day < h.RetryDay) return KnockResult.TooSoon;
 
         // nobody answers when nobody is in: people keep hours (see HomeRules). No dice.
@@ -90,7 +90,8 @@ public static class TownRules
 
     /// <summary>Lots that could still become customers by ordinary means.</summary>
     public static IEnumerable<LotDef> Prospects(GameState s, ContentDb c) =>
-        c.Lots.Values.Where(l => l.Kind is LotKind.House or LotKind.Shop && l.Premise is null && HouseholdOf(s, l.Id).Status != HouseholdStatus.Signed).OrderBy(l => l.Id);
+        c.Lots.Values.Where(l => l.Kind is LotKind.House or LotKind.Shop && l.Premise is null && s.LiveSubscribers >= l.OpensAt && (l.NeedsProject is null || s.ProjectsDone.Contains(l.NeedsProject))
+                                 && HouseholdOf(s, l.Id).Status != HouseholdStatus.Signed && !s.NezLots.Contains(l.Id)).OrderBy(l => l.Id);
 
     // ---- installing ------------------------------------------------------------------------------
     public static bool BuyModem(GameState s)

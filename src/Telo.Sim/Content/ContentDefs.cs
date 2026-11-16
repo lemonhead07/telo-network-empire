@@ -8,9 +8,53 @@ public enum WorkMode { Manual, Delegated, Automated }
 /// <summary>How the player *sees* a kind of work. The UI literally changes as this climbs.</summary>
 public enum InterfaceTier { Paper, Terminal, Database, Dashboard }
 
-public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries }
+public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries, Customers, SocketsFitted, JobsDone, Knocked, ServiceNines, ProjectsDone }
 
 public sealed record Condition(ConditionKind Kind, long Value);
+
+/// <summary>One part of an assembly, outermost first: what it is, what holds it, and whether it can be the fault.</summary>
+public sealed record PartDef
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public string Fastener { get; init; } = "none";
+    public int Count { get; init; } = 1;
+    public bool CanFail { get; init; }
+}
+
+/// <summary>
+/// A thing in the world as parts and fasteners (game/content/assemblies.json, spine step 6). A fault is one bad part; a repair
+/// undoes what is in the way, finds it, replaces it and does it all up again. A new appliance is data, not code.
+/// </summary>
+public sealed record AssemblyDef
+{
+    public required string Id { get; init; }
+    public string Name { get; init; } = "";
+    /// <summary>The odd job (by title) this assembly is the work of.</summary>
+    public string Job { get; init; } = "";
+    /// <summary>"repair" (find and replace a bad part) or "install" (build it).</summary>
+    public string Mode { get; init; } = "repair";
+    /// <summary>Kit beyond the toolbox, by name (ladder, cableDrum).</summary>
+    public List<string> Needs { get; init; } = new();
+    public List<PartDef> Parts { get; init; } = new();
+}
+
+/// <summary>
+/// One chapter of the plot (game/content/plot.json). Chapters run in one line, never overlapping: the current chapter is the first
+/// whose <see cref="DoneWhen"/> is not yet met (any one condition finishes it). Each teaches one thing; the last has no end.
+/// </summary>
+public sealed record ChapterDef
+{
+    public required string Id { get; init; }
+    public string Title { get; init; } = "";
+    /// <summary>Which first-hour step this chapter is (everything after the first hour is "free").</summary>
+    public Town.OnboardingStep Step { get; init; } = Town.OnboardingStep.Free;
+    /// <summary>The action (by id prefix) this chapter teaches. The bot and the phone use it.</summary>
+    public string Teaches { get; init; } = "";
+    /// <summary>The morning text that opens the chapter (on the phone).</summary>
+    public string Text { get; init; } = "";
+    public List<Condition> DoneWhen { get; init; } = new();
+}
 
 public sealed record ActDef
 {
@@ -157,4 +201,64 @@ public sealed record LotDef
     public long Fee { get; init; } = 8;
     /// <summary>Set when this household is a Last Mile case: too far or too costly to sign up by knocking.</summary>
     public string? Premise { get; init; }
+    /// <summary>Paying subscribers you need before this household has heard of you (0: from the start). How new streets and villages open up.</summary>
+    public int OpensAt { get; init; }
+    /// <summary>A project that has to be built before this household can be connected (the poles up their lane, the village cabinet).</summary>
+    public string? NeedsProject { get; init; }
+}
+
+/// <summary>One step of a project: an action held for a while, a few times over, with the kit it needs here.</summary>
+public sealed record ProjectStepDef
+{
+    public required string Verb { get; init; }
+    public int Clicks { get; init; } = 1;
+    public int Minutes { get; init; } = 15;
+    public List<string> Needs { get; init; } = new();
+    /// <summary>Days to wait before this step can start (NezTel's engineer is booked; the concrete has to set).</summary>
+    public int WaitDays { get; init; }
+    /// <summary>What you're waiting for, in words.</summary>
+    public string WaitText { get; init; } = "";
+}
+
+/// <summary>What finishing a project changes.</summary>
+public sealed record ProjectRewardDef
+{
+    /// <summary>Extra lines in on the Board.</summary>
+    public int LinesIn { get; init; }
+    /// <summary>Added to every live subscriber's monthly bill (a new service on their line).</summary>
+    public long PerSubscriber { get; init; }
+    public long MonthlyRevenue { get; init; }
+    /// <summary>A monthly bill that comes with it (rent on a line, power).</summary>
+    public long MonthlyCost { get; init; }
+    /// <summary>Another project whose monthly cost this one ends (your own link replaces the leased one).</summary>
+    public string? Cancels { get; init; }
+    /// <summary>A whole town or region it opens: this many subscribers sign over the following weeks, counted and billed as a block.</summary>
+    public int Region { get; init; }
+    public string RegionName { get; init; } = "";
+    /// <summary>What each of them pays a month.</summary>
+    public long RegionFee { get; init; } = 15;
+}
+
+/// <summary>
+/// A project (projects.json): something built in the world, step by step, that opens the next part of the game. Every
+/// project is gated (act, earlier projects, an Almanac page, how big you are) so the game flows from one to the next.
+/// </summary>
+public sealed record ProjectDef
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public int Act { get; init; }
+    public required string Site { get; init; }
+    public double East { get; init; }
+    public double South { get; init; }
+    public long Cost { get; init; }
+    public List<string> RequiresProjects { get; init; } = new();
+    public string? RequiresEntry { get; init; }
+    public bool RequiresDepot { get; init; }
+    public List<Condition> Requires { get; init; } = new();
+    public List<ProjectStepDef> Steps { get; init; } = new();
+    public ProjectRewardDef Reward { get; init; } = new();
+    /// <summary>The one-line why, on the phone when it becomes available.</summary>
+    public string Story { get; init; } = "";
+    public string DoneText { get; init; } = "";
 }

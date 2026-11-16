@@ -12,7 +12,7 @@
   { "id": "act2-dialup", "index": 2, "name": "Dial-Up Frontier", "years": "1989–95",
     "businessModel": "Subscription plus overage", "bindingConstraint": "The modem bank and the upstream bill",
     "signatureMinigame": "modem-bank", "gateAnnouncement": "ann-www",
-    "exitMilestone": [ { "kind": "subscribers", "value": 60 }, { "kind": "monthlyRevenue", "value": 1500 } ],
+    "exitMilestone": [ { "kind": "subscribers", "value": 30 }, { "kind": "monthlyRevenue", "value": 600 } ],
     "exitText": "First profitable quarter with staff." },
   { "id": "act3-boom", "index": 3, "name": "The Boom", "years": "1995–2001",
     "businessModel": "Hosting, colocation, roll-ups, IPO", "bindingConstraint": "Servers, staff, fraud",

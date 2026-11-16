@@ -1,0 +1,61 @@
+[
+  { "id": "ch-message", "title": "A message on the machine", "step": "enquiry", "teaches": "messages",
+    "text": "…signal. Low battery. Year reads 1983. That can't be right. Your answering machine is blinking.",
+    "doneWhen": [ { "kind": "customers", "value": 1 } ] },
+
+  { "id": "ch-install", "title": "The first install", "step": "install", "teaches": "install:",
+    "text": "Someone wants a line. Everything you need is on the van. Outside wall first, then indoors.",
+    "doneWhen": [ { "kind": "socketsFitted", "value": 1 }, { "kind": "subscribers", "value": 1 } ] },
+
+  { "id": "ch-switchboard", "title": "The switchboard", "step": "frame", "teaches": "switch:",
+    "text": "Their socket is in. The line is still dead until you jumper it at the switchboard in your room.",
+    "doneWhen": [ { "kind": "subscribers", "value": 1 } ] },
+
+  { "id": "ch-oddjob", "title": "Odd jobs", "step": "oddJob", "teaches": "oddjob:",
+    "text": "One subscriber won't cover the rent. A neighbour has something that needs fixing.",
+    "doneWhen": [ { "kind": "jobsDone", "value": 1 }, { "kind": "subscribers", "value": 2 }, { "kind": "staff", "value": 1 } ] },
+
+  { "id": "ch-knock", "title": "Door to door", "step": "knock", "teaches": "knock:",
+    "text": "Customers won't all ring you. Knock on a door.",
+    "doneWhen": [ { "kind": "knocked", "value": 1 }, { "kind": "subscribers", "value": 2 }, { "kind": "staff", "value": 1 } ] },
+
+  { "id": "ch-round", "title": "The round", "step": "free", "teaches": "invest:install",
+    "text": "You know the round now. The phone will ring by itself. When you can afford help, the notebook has the page.",
+    "doneWhen": [ { "kind": "staff", "value": 1 } ] },
+
+  { "id": "ch-farm", "title": "The farm line", "step": "free", "teaches": "pole:",
+    "text": "Ruth Adeyemi has asked politely twice. No fee buys a line out there. You'll have to build it.",
+    "doneWhen": [ { "kind": "ledgerServed", "value": 1 } ] },
+
+  { "id": "ch-lane", "title": "Behind Main Street", "step": "free", "teaches": "knock:",
+    "text": "The farm has dial tone and the whole town heard who built it. Behind Main Street, Church Lane has never had a phone that worked on a Sunday. Father Roe says the Lord can wait. The parish council can't.",
+    "doneWhen": [ { "kind": "projectsDone", "value": 1 } ] },
+
+  { "id": "ch-eastgate", "title": "The valley road", "step": "free", "teaches": "knock:",
+    "text": "Eastgate is a short drive down the valley road. NezTel calls it 'scheduled for the next phase'. The Post Office has been in the next phase since 1971.",
+    "doneWhen": [ { "kind": "projectsDone", "value": 2 } ] },
+
+  { "id": "ch-nines", "title": "Ninety-nine percent", "step": "free", "teaches": "repair:",
+    "text": "NezTel's leaflet promises 99%. Doc Ferreira did the sum on the back of it: three and a half days a year with no line. Do better than that and people notice. Fix faults the day they show, and don't keep anyone waiting.",
+    "doneWhen": [ { "kind": "subscribers", "value": 24 } ] },
+
+  { "id": "ch-open", "title": "The valley is yours", "step": "free", "teaches": "project:",
+    "text": "Two villages, one switchboard, and service NezTel can't match. PIP's Almanac has a page about modems answering in turn, and a word underlined three times: web.",
+    "doneWhen": [ { "kind": "projectsDone", "value": 3 } ] },
+
+  { "id": "ch-dialup", "title": "The road out is NezTel's", "step": "free", "teaches": "project:",
+    "text": "The web is out there and the only road to it is NezTel's trunk. Lease it, because you have to. Then build your own way out over the ridge, because you can.",
+    "doneWhen": [ { "kind": "projectsDone", "value": 5 } ] },
+
+  { "id": "ch-boom", "title": "The boom", "step": "free", "teaches": "project:",
+    "text": "Everybody wants a web page and somewhere to keep it. Millbrook over the hills, a cold store in Eastgate, and across the water, Farland. NezTel owns the only ocean cable. For now.",
+    "doneWhen": [ { "kind": "projectsDone", "value": 9 } ] },
+
+  { "id": "ch-broadband", "title": "Always on", "step": "free", "teaches": "project:",
+    "text": "Nobody wants to hear a modem shriek any more. Broadband over the copper, a ring of fibre round the bay, and Farland's capital, where NezTel charges twice what you do.",
+    "doneWhen": [ { "kind": "projectsDone", "value": 12 } ] },
+
+  { "id": "ch-mobile", "title": "In everyone's pocket", "step": "free", "teaches": "project:",
+    "text": "The phone doesn't need a wall any more. Masts on the ridge, masts along the coast, and fibre behind every one. PIP has started finishing your sentences, which is new.",
+    "doneWhen": [] }
+]

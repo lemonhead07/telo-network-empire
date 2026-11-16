@@ -28,6 +28,8 @@ public partial class GameRoot : Node3D
     public Simulation Sim { get; private set; } = null!;
     private FirstPersonController _player = null!;
     private Hud _hud = null!;
+    private PhoneView _phoneView = null!;
+    private WorldScreen _phone = null!;
     private SwitchboardStation _switch = null!;
     private AlmanacView _almanac = null!;
     private NotebookView _notebook = null!;
@@ -40,13 +42,26 @@ public partial class GameRoot : Node3D
     /// <summary>Seconds into the day (which starts at six), as the sky and lamps want it. The sim owns the clock; this is a view of it.</summary>
     private float _dayClock
     {
-        get => (Sim.State.Minute + _minuteFrac) / Clock.MinutesPerDay * DayLengthSeconds;
-        set { float m = Mathf.Clamp(value / DayLengthSeconds * Clock.MinutesPerDay, 0, Clock.MinutesPerDay - 1); Sim.State.Minute = (int)m; _minuteFrac = m - (int)m; }
+        get => (Sim.State.Minute + _minuteFrac) / SleepRules.Bedtime * DayLengthSeconds;
+        set { float m = Mathf.Clamp(value / DayLengthSeconds * SleepRules.Bedtime, 0, Clock.MinutesPerDay - 1); Sim.State.Minute = (int)m; _minuteFrac = m - (int)m; }
     }
-    /// <summary>Real seconds of holding E for a job step of this many game minutes: exactly as long as the clock says, within reason.</summary>
-    private static float Hold(float minutes) => Mathf.Clamp(minutes * DayLengthSeconds / Clock.MinutesPerDay, 0.8f, 6f);
+    /// <summary>Real seconds of holding E for a job step of this many game minutes: as long as the clock says, within reason, and longer when you're tired.</summary>
+    private float Hold(float minutes) => Mathf.Clamp(minutes * DayLengthSeconds / SleepRules.Bedtime, 0.8f, 6f) * SleepRules.WorkTimePermille(Sim.State) / 1000f;
+
+    /// <summary>
+    /// Where the sun is for a clock hour. Daylight is stretched over the waking day so most of it is light: the sun is up
+    /// from six until nine at night, dusk is short, and the dark after ten belongs to people who should be in bed.
+    /// </summary>
+    private static float SkyHour(float h)
+    {
+        if (h < 6) h += 24;                                  // the small hours (only if you are still up)
+        return h <= 21 ? 6f + (h - 6f) * 12f / 15f           // 06:00-21:00 -> sunrise to sunset
+             : Mathf.Min(18f + (h - 21f) * 1.2f, 24f);       // 21:00-02:00 -> dusk, then night
+    }
     private TicketRail _rail = null!;
     private WallCalendar _calendar = null!;
+    private Timesheet _sheet = null!;
+    private AdBoard _ads = null!;
     private readonly HashSet<string> _clipboard = new();
     private readonly Dictionary<string, StaffFigure> _figures = new();
     /// <summary>Automated checks ignore who is home and whether the shop is open.</summary>
@@ -72,9 +87,9 @@ public partial class GameRoot : Node3D
     private Transform3D _cameraHome;
     private Tween? _lean;
     /// <summary>House installs under way, by lot. Not saved: a half-done job is simply started again.</summary>
-    private readonly Dictionary<string, InstallJob> _installs = new();
+    private Dictionary<string, InstallJob> _installs => Sim.Installs;   // the sim keeps the jobs; the houses show them
 
-    private float Hour => (6f + _dayClock / DayLengthSeconds * 24f) % 24f;
+    private float Hour => (6f + _dayClock / DayLengthSeconds * SleepRules.Bedtime / 60f) % 24f;
     private bool AnyScreenOpen => _switch.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen;
 
     public override void _Ready()
@@ -86,6 +101,7 @@ public partial class GameRoot : Node3D
         ulong seed = args.FirstOrDefault(a => a.StartsWith("--seed=")) is { } sa ? ulong.Parse(sa["--seed=".Length..]) : DefaultSeed;
         Sim = _pendingLoad is { } json ? new Simulation(_content, SaveCodec.FromJson(json, _content)) : Simulation.NewGame(_content, seed);
         _pendingLoad = null;
+        Sim.Morning += WakeInBed;
 
         // The world: a small planet, built from the sim's pure terrain function.
         _planet = new PlanetGen(Sim.State.Seed);
@@ -96,6 +112,7 @@ public partial class GameRoot : Node3D
         _town = TownBuilder.Build(this, _planet, _content);
         foreach (var lot in _town.Lots) WireLot(lot);
         _ = BuildRoadsWhenPhysicsIsReady();
+        BuildProjects();   // project sites (Projects.cs): shown once open to you
 
         _almanac = new AlmanacView { Sim = Sim };
         _notebook = new NotebookView { Sim = Sim };
@@ -123,7 +140,13 @@ public partial class GameRoot : Node3D
         AddChild(ui);
         _hud = new Hud(); ui.AddChild(_hud);
 
-        _pip = new PipTips(_hud);
+        // PIP in your hand: the phone replaces the status strip and the bubbles (spine step 4, D34)
+        _phoneView = new PhoneView { Sim = Sim };
+        _phone = WorldScreen.Create(_phoneView, 0.24f, glows: true, onTop: true);
+        _phone.Position = new Vector3(0.25f, -0.15f, -0.42f); _phone.RotationDegrees = new Vector3(6, -14, 0);
+        _player.Camera.AddChild(_phone);
+        _phoneView.Show(InterfaceTier.Terminal);
+        _pip = new PipTips(_hud) { Phone = _phoneView };
         _lastStep = Onboarding.Current(Sim.State, _content);
         if (_lastStep == OnboardingStep.Enquiry) _pip.Once("hello");
         if (_lastStep == OnboardingStep.Free) _pip.Skip("customer", "van", "carry", "install", "step", "modem", "dial", "signed", "frame", "oddjob", "knock", "free");
@@ -135,7 +158,11 @@ public partial class GameRoot : Node3D
                 StartInstall(midView, mid);
 
         RefreshIdleScreens();
+        // developer skip-ahead (DevStart.cs): --from=free|hire|poles|act1..act7, for playtesting without the opening
+        if (args.FirstOrDefault(a => a.StartsWith("--from=") || a.StartsWith("--autoplay-from=")) is { } from) StartFrom(from.Split('=')[1]);
         if (args.Contains("--smoke")) _ = RunSmoke();
+        if (args.FirstOrDefault(a => a == "--autoplay" || a.StartsWith("--autoplay=")) is { } auto)
+            _ = RunAutoplay(auto.Contains('=') ? auto[(auto.IndexOf('=') + 1)..] : null, args);
         if (args.FirstOrDefault(a => a.StartsWith("--shot=")) is { } shot) _ = TakeScreenshot(shot["--shot=".Length..]);
     }
 
@@ -148,6 +175,7 @@ public partial class GameRoot : Node3D
         for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
         TownBuilder.BuildRoads(_town.Root, _planet, GetWorld3D().DirectSpaceState);
         foreach (var p in _content.Premises.Values) BuildPoleLine(p);
+        BuildNadir();
         if (!Onboarding.RoadOpen(Sim.State, _content)) BuildRoadBarrier();
     }
 
@@ -302,6 +330,23 @@ public partial class GameRoot : Node3D
         _rail.Use = t => { if (!_clipboard.Remove(t.Key)) { _clipboard.Add(t.Key); _pip.Once("ticket"); } SyncPaper(); };
         _calendar = new WallCalendar { Position = new Vector3(-RoomBuilder.W / 2 + 0.07f, 1.5f, 0.2f), RotationDegrees = new Vector3(0, 90, 0) };
         room.AddChild(_calendar);
+        // the timesheet: tomorrow, hour by hour (spine step 5)
+        _sheet = new Timesheet { Position = new Vector3(-RoomBuilder.W / 2 + 0.07f, 1.5f, 1.0f), RotationDegrees = new Vector3(0, 90, 0) };
+        room.AddChild(_sheet);
+        // the ad board: the booking loop's one lever (D37)
+        _ads = new AdBoard { Position = new Vector3(RoomBuilder.W / 2 - 0.07f, 1.55f, -1.15f), RotationDegrees = new Vector3(0, -90, 0) };
+        room.AddChild(_ads);
+        _ads.Hot.Prompt = () => Sim.State.AdLevel < BookingRules.MaxAdLevel(Sim.State, _content)
+            ? $"Put up {BookingRules.Ads[Sim.State.AdLevel + 1].Name} (${BookingRules.Ads[Sim.State.AdLevel + 1].WeeklyCost} a week)"
+            : BookingRules.MaxAdLevel(Sim.State, _content) == 0 ? "The ad board. Nothing to advertise yet" : "Every ad you can buy is up";
+        _ads.Hot.CanUse = () => Sim.State.AdLevel < BookingRules.MaxAdLevel(Sim.State, _content);
+        _ads.Hot.OnUse = () => { BookingRules.SetAds(Sim.State, _content, Sim.State.AdLevel + 1); SyncPaper(); };
+        _ads.Hot.AltPrompt = () => Sim.State.AdLevel > 0 ? $"Cancel {BookingRules.Ads[Sim.State.AdLevel].Name}" : null;
+        _ads.Hot.OnAlt = () => { BookingRules.SetAds(Sim.State, _content, Sim.State.AdLevel - 1); SyncPaper(); };
+        _sheet.Hot.Prompt = () => $"Plan tomorrow: fill the timesheet with what fits";
+        _sheet.Hot.OnUse = () => { Telo.Sim.Plan.PlanRules.AutoPlan(Sim.State, _content, _planet, PlanDay()); SyncPaper(); };
+        _sheet.Hot.AltPrompt = () => "Clear the sheet";
+        _sheet.Hot.OnAlt = () => { Telo.Sim.Plan.PlanRules.PlanFor(Sim.State, PlanDay()).Slots.Clear(); SyncPaper(); };
 
         // Camp bed. Sleeping is how days pass quickly.
         RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
@@ -309,7 +354,9 @@ public partial class GameRoot : Node3D
             () =>
             {
                 int days = 1;
-                if (Guidance.IsQuiet(Sim.State, _content)) days = Sim.RestUntilNeeded(); else Sim.Sleep();
+                // the night text to PIP ends the day and saves (D34, N4); a quiet spell sleeps until something needs you
+                if (Guidance.IsQuiet(Sim.State, _content)) days = Sim.RestUntilNeeded(); else Telo.Sim.Phone.PhoneRules.SendNight(Sim);
+                if (!_ignoreHours) Save();
                 _minuteFrac = 0;
                 if (days > 1) _pip.Say($"{days} days went by. {Sim.State.Date}. Something needs you.");
                 RefreshIdleScreens();
@@ -399,12 +446,16 @@ public partial class GameRoot : Node3D
             _pip.Once("hours");
             return ($"{lot.Resident}: {away}", null);
         }
+        // a day holds three jobs (D37): starting a fourth waits till tomorrow; work already under way carries on
+        bool capped = !BookingRules.CanStartJob(s, _content) && !_installs.ContainsKey(lot.Id) && !_oddJobs.ContainsKey(lot.Id);
+        Action Job(Action start) => () => { start(); BookingRules.CountJob(s); };
         // a broken line comes before anything else at this door
         if (TownRules.FaultAt(s, lot.Id) is { } fault && TownRules.CustomerAt(s, lot.Id) is { } broken)
         {
             var missing = TownRules.RepairNeeds & ~KitOnSite();
+            if (capped) return ($"{broken.Name}'s line: {fault.Text}. {BookingRules.CapReason}", null);
             return missing == Tools.None
-                ? ($"Fix {broken.Name}'s line: {fault.Text}", () => TownRules.Repair(s, fault.Id, KitOnSite()))
+                ? ($"Fix {broken.Name}'s line: {fault.Text}", Job(() => TownRules.Repair(s, fault.Id, KitOnSite())))
                 : ($"{broken.Name} has a fault: {fault.Text}. You need {Cargo.Names(missing)} from the van", null);
         }
         if (OrderRules.OrderAt(s, lot.Id) is { } order && _content.Products.TryGetValue(order.ProductId, out var product)
@@ -412,34 +463,37 @@ public partial class GameRoot : Node3D
         {
             if (_oddJobs.TryGetValue(lot.Id, out var fitting))
                 return ($"{fitting.Task.Title}: {(fitting.Task.Next is { } n ? n.Verb.ToLowerInvariant() : "show them how it works")} (indoors, on the rug)", null);
-            return ($"{lot.Resident} ordered: {product.Name.ToLowerInvariant()} (+${product.Price}). They let you in", () => StartOrder(orderHome, order, product));
+            if (capped) return ($"{lot.Resident} ordered: {product.Name.ToLowerInvariant()}. {BookingRules.CapReason}", null);
+            return ($"{lot.Resident} ordered: {product.Name.ToLowerInvariant()} (+${product.Price}). They let you in", Job(() => StartOrder(orderHome, order, product)));
         }
         if (TownRules.JobAt(s, lot.Id) is { } job && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } jobHome)
         {
             // houses: the job is done by hand indoors
             if (_oddJobs.TryGetValue(lot.Id, out var doing))
                 return ($"{doing.Task.Title}: {(doing.Task.Next is { } nx ? nx.Verb.ToLowerInvariant() : "hand it back")} (indoors, on the rug)", null);
-            return ($"{job.Title} for {lot.Resident} (+${job.Pay}): they let you in. Bring the toolbox", () => StartOddJob(jobHome, job));
+            if (capped) return ($"{job.Title} for {lot.Resident}. {BookingRules.CapReason}", null);
+            return ($"{job.Title} for {lot.Resident} (+${job.Pay}): they let you in. Bring the toolbox", Job(() => StartOddJob(jobHome, job)));
         }
         if (TownRules.JobAt(s, lot.Id) is { } quick)
         {
             // the shop and the farm aren't enterable yet: the job is still done at the door
-            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay})", () => TownRules.CompleteJob(s, _content, quick.Id));
+            if (capped) return ($"{quick.Title} for {lot.Resident}. {BookingRules.CapReason}", null);
+            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay})", Job(() => TownRules.CompleteJob(s, _content, quick.Id)));
         }
         var cust = TownRules.CustomerAt(s, lot.Id);
         if (cust is { SocketFitted: false } && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } view)
         {
             if (_installs.TryGetValue(lot.Id, out var running))
-                return ($"{cust.Name}'s install: {(running.NextStep is { } n ? InstallJob.Def(n).Verb.ToLowerInvariant() + (InstallJob.Def(n).Outside ? " (outside wall, left of the window)" : " (indoors)") : "test the line, then sign the job sheet indoors")}", null);
+                return ($"{cust.Name}'s install: {(running.NextStep is { } n ? running.VerbFor(n).ToLowerInvariant() +(InstallJob.Def(n).Outside ? " (outside wall, left of the window)" : " (indoors)") : "test the line, then sign the job sheet indoors")}", null);
             return s.Modems > 0
                 ? (WorkRules.Current(s, _content, "install").Mode != WorkMode.Manual
                     ? $"{cust.Name} is booked in with your technician. Or do the install yourself now"
-                    : $"Start {cust.Name}'s install: they let you in (about an hour; bring the kit from the van)", () => StartInstall(view, cust))
+                    : $"Start {cust.Name}'s install: they let you in (about an hour; bring the kit from the van)", capped ? null : Job(() => StartInstall(view, cust)))
                 : ($"{cust.Name} is waiting for their line. You have no modems (Sol's Electronics sells them)", null);
         }
         if (cust is { SocketFitted: false })
             return s.Modems > 0
-                ? ($"Fit the wall socket for {cust.Name} (uses a modem)", () => TownRules.FitSocket(s, cust.Id))
+                ? ($"Fit the wall socket for {cust.Name} (uses a modem)", capped ? null : Job(() => TownRules.FitSocket(s, cust.Id)))
                 : ($"{cust.Name} is waiting for a socket. You have no modems (Sol's Electronics sells them)", null);
         if (cust is not null)
             return (cust.Installed ? $"{lot.Resident}: subscriber, satisfaction {cust.Satisfaction}%" : $"{lot.Resident}: socket fitted. Jumper their line at the switchboard", null);
@@ -452,6 +506,7 @@ public partial class GameRoot : Node3D
         var h = TownRules.HouseholdOf(s, lot.Id);
         if (s.Day < h.RetryDay)
             return (h.Status == HouseholdStatus.Declined ? $"{lot.Resident} said no. Try again in {h.RetryDay - s.Day} days" : $"Nobody home at {lot.Resident}'s. Try tomorrow", null);
+        if (s.NezLots.Contains(lot.Id)) return ($"{lot.Resident} signed with the national phone monopoly. There's a plaque by the door", null);
         return ($"Knock on {lot.Resident}'s door", () => Sim.Knock(lot.Id));
     }
 
@@ -467,7 +522,11 @@ public partial class GameRoot : Node3D
             {
                 if (step == InstallStep.Test) { var r = job.Test(); view.Install.NoteTest(r); _pip.Once(r.DialTone ? "dial" : "nodial"); }
                 else if (rush) { if (job.Rush(step, KitOnSite())) _pip.Once("bodge"); }
-                else if (job.Do(step, KitOnSite())) _pip.Once(step == InstallStep.Modem ? "modem" : "step");
+                else if (job.Do(step, KitOnSite()))
+                {
+                    _pip.Once(step == InstallStep.Modem ? "modem" : "step");
+                    if (Sim.TiredSlip()) { job.Slip(step); _pip.Once("slip"); } // tired hands: it went in crooked
+                }
                 Sim.RecordInstall(job);
                 // the modem is out of its box and on their table: the empty box goes back on the van
                 if (job.IsDone(InstallStep.Modem) && _cargo.Items.FirstOrDefault(i => i.Tool == Tools.ModemBox && i.Where != Carryable.Place.Van) is { } boxed) _cargo.Stow(boxed);
@@ -517,16 +576,16 @@ public partial class GameRoot : Node3D
 
     // ---- odd jobs by hand: the thing to fix sits on the rug in their front room ------------------
     private void StartOddJob(LotView view, OddJob job) =>
-        StartBenchJob(view, Sim.NewOddJobTask(job.Id), new Color(0.22f, 0.2f, 0.18f), $"Hand it back to {view.Lot.Resident} (+${job.Pay})",
+        StartBenchJob(view, Sim.NewOddJobTask(job.Id), "job", job.Id, new Color(0.22f, 0.2f, 0.18f), $"Hand it back to {view.Lot.Resident} (+${job.Pay})",
             bodged => TownRules.CompleteJob(Sim.State, _content, job.Id, bodged), () => TownRules.JobAt(Sim.State, view.Lot.Id)?.Id == job.Id, "oddstart");
 
     /// <summary>Something from the catalogue, fitted in the customer's front room.</summary>
     private void StartOrder(LotView view, Order order, ProductDef product) =>
-        StartBenchJob(view, OrderRules.NewTask(_content, order), new Color(0.78f, 0.72f, 0.58f), $"Show {view.Lot.Resident} how it works (+${product.Price})",
+        StartBenchJob(view, OrderRules.NewTask(_content, order), "order", order.Id, new Color(0.78f, 0.72f, 0.58f), $"Show {view.Lot.Resident} how it works (+${product.Price})",
             bodged => Sim.CompleteOrder(order.Id, bodged), () => Sim.State.Orders.Any(o => o.Id == order.Id), "order");
 
     /// <summary>A small job done by hand indoors: the thing sits on the rug, E works through its steps, R thumps it.</summary>
-    private void StartBenchJob(LotView view, OddJobTask? task, Color colour, string handBack, Action<bool> complete, Func<bool> wanted, string pipKey)
+    private void StartBenchJob(LotView view, OddJobTask? task, string kind, string refId, Color colour, string handBack, Action<bool> complete, Func<bool> wanted, string pipKey)
     {
         if (task is null) return;
         var bench = new Interactable { Position = new Vector3(1.5f, TownBuilder.HouseFloor + 0.17f, -0.9f), CollisionLayer = 2, CollisionMask = 0 };
@@ -555,12 +614,14 @@ public partial class GameRoot : Node3D
         bench.OnAlt = () => { if (task.Bodge()) _pip.Once("thump"); };
         view.Body.AddChild(bench);
         _oddJobs[view.Lot.Id] = (task, bench, wanted);
+        Sim.Benches[view.Lot.Id] = new Telo.Sim.Act.Bench(task, kind, refId);
         OpenDoor(view, true);
         _pip.Once(pipKey);
     }
 
     private void EndOddJob(string lotId)
     {
+        Sim.Benches.Remove(lotId);
         if (!_oddJobs.Remove(lotId, out var doing)) return;
         doing.Bench.QueueFree();
     }
@@ -605,6 +666,9 @@ public partial class GameRoot : Node3D
             var date = new Telo.Sim.Core.GameDate(d.Day).ToDate();
             return $"{(d.Day == s.Day ? "▶" : "  ")} {date:ddd d}{(d.Note.Length > 0 ? "   " + d.Note : "")}";
         });
+        ShowSheet();
+        var st = Sim.State;
+        _ads.Show($"Running: {BookingRules.Ads[st.AdLevel].Name}{(st.AdLevel > 0 ? $" (${BookingRules.Ads[st.AdLevel].WeeklyCost}/wk)" : "")}\nBooked: {BookingRules.Booked(st, _content)}   Can do: {BookingRules.WeeklyCapacity(st)} a week\nReputation {BookingRules.Reputation(st)}");
         _calendar.Show($"{today:MMMM yyyy}".ToUpperInvariant() + $"        {Clock.Text(s)}\n\n" + string.Join("\n", lines));
 
         foreach (var m in s.StaffMembers.Where(m => m.Does.Count > 0))
@@ -636,6 +700,20 @@ public partial class GameRoot : Node3D
                     : _town.Hq.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(RoomBuilder.DoorX + 2.4f, -0.1f, RoomBuilder.D / 2 + 1.1f));
             fig.GlobalTransform = at;
         }
+    }
+
+    /// <summary>The day the sheet is for: today until mid-afternoon, then tomorrow (evening is for planning).</summary>
+    private int PlanDay() => Clock.Hour(Sim.State) >= 15 ? Sim.State.Day + 1 : Sim.State.Day;
+
+    private void ShowSheet()
+    {
+        var s = Sim.State; int day = PlanDay();
+        var plan = s.Plans.FirstOrDefault(p => p.Day == day && p.Who == "player");
+        if (plan is not null) Telo.Sim.Plan.PlanRules.Lay(s, _content, _planet, plan);
+        var head = $"{(day == s.Day ? "TODAY" : "TOMORROW")}, {new Telo.Sim.Core.GameDate(day).ToDate():ddd d MMM}\n\n";
+        var rows = plan is null || plan.Slots.Count == 0 ? new[] { "(nothing planned: E fills it with what fits)" }
+            : plan.Slots.Select(x => $"{(x.Grey is null ? "" : "▒ ")}{Telo.Sim.Plan.PlanRules.Clock(x.Start)}  {x.Title}  {x.Minutes / 60}h{x.Minutes % 60:00}{(x.Grey is null ? "" : $"  ({x.Grey})")}{(x.Booking is null ? "" : $"  [{x.Booking}]")}");
+        _sheet.Show(head + string.Join("\n", rows));
     }
 
     private Ticket? TicketToGive(StaffMember m)
@@ -762,13 +840,34 @@ public partial class GameRoot : Node3D
     {
         _player.SetActive(false);
         _van.SetDriven(true);
+        _phone.Reparent(_van.Camera, false);
         _pip.Once("van");
+    }
+
+    /// <summary>
+    /// Every day starts in bed. After a proper night you are already there; after falling asleep on your feet at two,
+    /// PIP has got you home, put the kit back on the van and parked it outside.
+    /// </summary>
+    private void WakeInBed(bool collapsed)
+    {
+        if (_player is null || _town is null) return;
+        if (_switch?.IsOpen == true) _switch.Close();
+        if (_van.Driven) ExitVan();
+        if (collapsed)
+        {
+            _cargo.StowHeld();
+            _van.PlaceAt(_town.HqPark, _van.Forward);
+        }
+        var bed = _town.Hq.GetNode<Node3D>("Bed");
+        _player.PlaceAt(bed.GlobalPosition + bed.GlobalBasis.X * 0.9f + _player.Up * 0.3f, _player.Forward);
+        _minuteFrac = 0;
     }
 
     private void ExitVan()
     {
         _van.SetDriven(false);
         _player.SetActive(true);
+        _phone.Reparent(_player.Camera, false);
         _player.PlaceAt(_van.GlobalPosition + _van.GlobalBasis.X * -2.4f + _van.Up * 0.6f, _van.Forward);
     }
 
@@ -778,13 +877,19 @@ public partial class GameRoot : Node3D
         if (!AnyScreenOpen || _switch.IsOpen)
         {
             // time passes only as it is lived: real seconds become game minutes, and nothing else moves the clock
-            _minuteFrac += (float)delta * Clock.MinutesPerDay / DayLengthSeconds;
+            // the waking day (six till ten) lasts DayLengthSeconds; the night is slept, never lived
+            // on a booked job the job clock runs instead: the two-hour window lasts four real minutes (Plan/AppointmentRules)
+            float perSecond = Telo.Sim.Plan.AppointmentRules.OnTheClock(Sim.State) is not null
+                ? (float)Telo.Sim.Plan.AppointmentRules.Window / Telo.Sim.Plan.AppointmentRules.JobRealSeconds
+                : (float)SleepRules.Bedtime / DayLengthSeconds;
+            _minuteFrac += (float)delta * perSecond;
             int whole = (int)_minuteFrac;
             if (whole > 0) { _minuteFrac -= whole; Sim.AdvanceMinutes(whole); }
         }
-        _sky.SetHour(Hour);
+        _sky.SetHour(SkyHour(Hour));
         _hud.SetCrosshair(!AnyScreenOpen && !_van.Driven);
-        _hud.SetReading(AnyScreenOpen);
+        _hud.SetReading(true);   // the phone carries the numbers now
+        _phone.Visible = !AnyScreenOpen;
 
         var (next, targetLot) = Guidance.Next(Sim.State, _content);
         SphereBody who = _van.Driven ? _van : _player;
@@ -793,6 +898,11 @@ public partial class GameRoot : Node3D
         if (_slowTick <= 0)
         {
             _slowTick = 0.5f;
+            SyncProjects();
+            if (SleepRules.PastBedtime(Sim.State)) _pip.Once("bedtime");
+            if (Sim.State.Appointments.Count > 0) _pip.Once("booked");
+            if (Telo.Sim.Plan.AppointmentRules.OnTheClock(Sim.State) is not null) _pip.Once("jobclock");
+            if (SleepRules.Level(Sim.State) >= Tiredness.Tired) _pip.Once("tired");
             foreach (var lot in _town.Lots)
             {
                 bool job = TownRules.JobAt(Sim.State, lot.Lot.Id) is not null || TownRules.FaultAt(Sim.State, lot.Lot.Id) is not null;
@@ -802,6 +912,8 @@ public partial class GameRoot : Node3D
                 lot.Marker.Modulate = target ? new Color(1f, 0.85f, 0.2f) : new Color(0.6f, 0.95f, 0.6f);
             }
             if (!AnyScreenOpen) RefreshIdleScreens();
+            _phoneView.Rebuild();
+            SyncNez();
             SyncHouses(_player.GlobalPosition);
             SyncPaper();
             // who is in: warm windows after dark, and the car on the drive
@@ -824,7 +936,8 @@ public partial class GameRoot : Node3D
             : _van.Driven ? "[E] Get out   [W/S] drive   [A/D] steer"
             : _player.Focus is { } f ? (!f.CanUse() ? "" : f.HoldSeconds() > 0 ? "[Hold E] " : "[E] ") + f.Prompt() + (f.AltPrompt() is { } alt ? $"   [R] {alt}" : "")
             : _cargo.Held is { } held ? $"Carrying the {held.Label}   [G] put it down" : null;
-        _hud.Refresh(Sim, prompt, Hour, where, AnyScreenOpen ? "" : "▶ " + next);
+        _hud.Refresh(Sim, prompt, Hour, where, "");
+        _phoneView.Tick((float)delta, Hour, AnyScreenOpen ? "" : "▶ " + next, where);
         _hud.SetHold(_van.Driven ? 0 : _player.HoldProgress);
     }
 
@@ -899,7 +1012,7 @@ public partial class GameRoot : Node3D
         {
             bool needsToolbox = !oj.Bench.CanUse();
             _kitEverywhere = true;
-            for (int i = 0; i < 12 && _oddJobs.ContainsKey(jobLot.Lot.Id); i++) oj.Bench.OnUse!();
+            for (int i = 0; i < 40 && _oddJobs.ContainsKey(jobLot.Lot.Id); i++) oj.Bench.OnUse!();
             _kitEverywhere = false;
             handsOn = needsToolbox && jobLot.DoorOpen && !_oddJobs.ContainsKey(jobLot.Lot.Id);
             GD.Print($"ODDJOB {(handsOn ? "OK" : "FAIL")}: needsToolbox={needsToolbox} doorOpened={jobLot.DoorOpen}");
@@ -1011,11 +1124,11 @@ public partial class GameRoot : Node3D
         var famLot = _town.Lots.First(l => l.Lot.Archetype == "family" && l.Car is not null);
         Sim.State.Minute = 5 * 60; _slowTick = 0; await Frames(3);
         bool outByDay = !famLot.Car!.Visible && !famLot.Door.CanUse() && famLot.Door.Prompt().Contains("car");
-        Sim.State.Minute = 13 * 60 + 30; _slowTick = 0; await Frames(3);
+        Sim.State.Minute = 15 * 60 + 30; _slowTick = 0; await Frames(3);   // half nine: dusk comes late now (Clock.Dark), before bedtime at ten
         bool inByNight = famLot.Car.Visible && famLot.Lights!.Visible;
         _ignoreHours = true;
         bool hours = outByDay && inByNight;
-        GD.Print($"HOURS {(hours ? "OK" : "FAIL")}: outAtEleven={outByDay} homeAndLitAtHalfSeven={inByNight}");
+        GD.Print($"HOURS {(hours ? "OK" : "FAIL")}: outAtEleven={outByDay} homeAndLitAtHalfNine={inByNight}");
 
         // the depot: lease 1 Main Street, and from the next working morning tickets are collected without you
         Sim.State.Cash += 500;
@@ -1119,6 +1232,12 @@ public partial class GameRoot : Node3D
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 66, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 72, 1, 0, 2).Origin);
         await Shot("-aerial", TownBuilder.Place(_planet, 250, 500, 0, 420).Origin, hq);
+        if (_nadir != Vector3.Zero)
+        {
+            var nu = _nadir.Normalized(); var side = nu.Cross(Vector3.Up).Normalized();
+            if (side.LengthSquared() < 0.1f) side = nu.Cross(Vector3.Right).Normalized();
+            await Shot("-nadir", _nadir + nu * 30 + side * 70 + nu.Cross(side) * 40, _nadir + nu * 8, nu);
+        }
         if (_planet.SiteById("farm-hollow") is { } farm)
         {
             var f = TownBuilder.Place(_planet, farm, 0, 0).Origin;
@@ -1191,7 +1310,7 @@ public partial class GameRoot : Node3D
         // the Board at half past seven with the whole town on two lines
         for (int i = 0; i < 12 && (Sim.State.Staff == 0 || TownRules.Prospects(Sim.State, _content).Any() || !_lines.All(l => LineRules.Complete(Sim.State, _planet, l.Premise))); i++) Sim.GodNextStage(_planet);
         Sim.AdvanceDays(2);
-        _dayClock = DayLengthSeconds * (19.6f - 6f) / 24f;
+        _dayClock = DayLengthSeconds * (19.6f - 6f) * 60f / SleepRules.Bedtime;
         await ToSignal(GetTree().CreateTimer(1.2), SceneTreeTimer.SignalName.Timeout);
         _player.Camera.Current = false; cam.Current = true;
         cam.GlobalTransform = _rack.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0.1f, 0.05f, 1.15f));
@@ -1202,12 +1321,21 @@ public partial class GameRoot : Node3D
         Sim.State.Modems += 4;
         for (int i = 0; i < 6; i++) { Sim.State.MessagesWaiting = 1; Sim.TakeEnquiry(); }
         while (!Clock.IsWorkingDay(Sim.State.Day) || Clock.Weekday(Sim.State.Day) == DayOfWeek.Friday) Sim.AdvanceDay();
-        _dayClock = DayLengthSeconds * (9.5f - 6f) / 24f;
+        _dayClock = DayLengthSeconds * (9.5f - 6f) * 60f / SleepRules.Bedtime;
         SyncPaper();
         if (StaffRules.Tickets(Sim.State, _content).FirstOrDefault(t => _rail.CanUse(t)) is { } pick) _rail.Use(pick);
         cam.GlobalTransform = _rail.GlobalTransform * new Transform3D(new Basis(Vector3.Up, 0.12f), new Vector3(0.62f, 0.02f, 1.75f));
         await Frames(12);
         GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-wall.png"));
+        // the ad board and the timesheet: plan tomorrow, put up leaflets
+        BookingRules.SetAds(Sim.State, _content, 1);
+        Telo.Sim.Plan.PlanRules.AutoPlan(Sim.State, _content, _planet, Sim.State.Day); SyncPaper();
+        cam.GlobalTransform = _ads.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0, 0, 1.1f));
+        await Frames(12);
+        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-ads.png"));
+        cam.GlobalTransform = _sheet.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0, 0, 1.0f));
+        await Frames(12);
+        GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-timesheet.png"));
         // Jory waiting at your door for a ticket
         if (_figures.TryGetValue("install", out var jory))
         {
@@ -1217,20 +1345,26 @@ public partial class GameRoot : Node3D
         }
         // Main Street at half past seven on a working day: lit windows and cars show who is in
         _ignoreHours = false;
-        _dayClock = DayLengthSeconds * (19.5f - 6f) / 24f; _slowTick = 0;
+        _dayClock = DayLengthSeconds * (19.5f - 6f) * 60f / SleepRules.Bedtime; _slowTick = 0;
         await Frames(4);
         await Shot("-evening", TownBuilder.Place(_planet, -62, 22, 0, 5).Origin, TownBuilder.Place(_planet, -20, 14, 0, 2).Origin);
-        _dayClock = DayLengthSeconds * (11f - 6f) / 24f; _slowTick = 0;
+        _dayClock = DayLengthSeconds * (11f - 6f) * 60f / SleepRules.Bedtime; _slowTick = 0;
         await Frames(4);
         await Shot("-midday", TownBuilder.Place(_planet, -62, 22, 0, 5).Origin, TownBuilder.Place(_planet, -20, 14, 0, 2).Origin);
         _ignoreHours = true;
-        _dayClock = DayLengthSeconds * (19.6f - 6f) / 24f;
+        _dayClock = DayLengthSeconds * (19.6f - 6f) * 60f / SleepRules.Bedtime;
         // the sysop's terminal, with a caller waiting and uploads to look through
         cam.Current = false; _player.Camera.Current = true;
         Sim.GodNextAct(); Sim.AdvanceDays(8);
         Sim.State.Customers.First(c => c.Live && c.Installed).HasAccount = false;
         await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
         _board.Open(InterfaceTier.Terminal); await Inside("-terminal"); _board.Press(2); await Inside("-terminal-files"); _board.Close();
+        // Nez: grow past the point it notices you, let a few weeks go by, and look down the street
+        for (int i = 0; Sim.State.LiveSubscribers < Telo.Sim.Nez.NezRules.TerritoryAt + 1 && i < 30; i++) Sim.AddCustomer($"Caller {i}", "family", 30);
+        Sim.AdvanceDays(21); SyncNez();
+        cam.Current = true;
+        if (_nezVan is not null) await Shot("-nez-van", _nezVan.ToGlobal(new Vector3(-6f, 2.4f, 7f)), _nezVan.ToGlobal(new Vector3(0, 1.2f, 0)));
+        if (_nezPlaques.Values.FirstOrDefault() is { } plaque) await Shot("-nez-house", plaque.GetParent<Node3D>().ToGlobal(new Vector3(2.5f, 2.2f, 9f)), plaque.GlobalPosition);
         GD.Print($"SHOTS OK fps={Engine.GetFramesPerSecond()}");
         GetTree().Quit();
     }

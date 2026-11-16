@@ -106,3 +106,54 @@ public partial class StaffFigure : Node3D
         AddChild(Hot);
     }
 }
+
+/// <summary>
+/// The timesheet between the calendar and the bed (spine step 5): tomorrow, hour by hour. E fills it with what fits (a suggestion,
+/// never a lock); R clears it. Jobs where nobody will be in show greyed with the reason. Placeholder: a printed sheet.
+/// </summary>
+public partial class Timesheet : Node3D
+{
+    private readonly Label3D _text;
+    public Interactable Hot { get; }
+
+    public Timesheet()
+    {
+        Name = "Timesheet";
+        AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.62f, 0.86f, 0.02f), new Color(0.93f, 0.95f, 0.9f))
+            .Box(new Vector3(0, 0.37f, 0.012f), new Vector3(0.62f, 0.1f, 0.01f), new Color(0.16f, 0.2f, 0.36f)).Instance());
+        AddChild(new Label3D { Text = "TIMESHEET", Position = new Vector3(0, 0.37f, 0.02f), FontSize = 32, PixelSize = 0.0014f, Modulate = new Color(0.93f, 0.95f, 0.9f), OutlineSize = 0 });
+        _text = new Label3D { Position = new Vector3(-0.28f, -0.04f, 0.014f), FontSize = 32, PixelSize = 0.0009f, Modulate = new Color(0.1f, 0.1f, 0.18f), OutlineSize = 0, Width = 620, AutowrapMode = TextServer.AutowrapMode.WordSmart, HorizontalAlignment = HorizontalAlignment.Left };
+        AddChild(_text);
+        Hot = new Interactable { CollisionLayer = 2, CollisionMask = 0 };
+        Hot.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(0.62f, 0.86f, 0.1f) } });
+        AddChild(Hot);
+    }
+
+    public void Show(string text) => _text.Text = text;
+}
+
+/// <summary>
+/// The ad board on the right-hand wall (D37): the one lever of the booking loop. E puts up the next ad, R takes one down.
+/// Shows what's running, what it costs a week, and bookings against what your people can do. Placeholder: a pinboard.
+/// </summary>
+public partial class AdBoard : Node3D
+{
+    private readonly Label3D _text;
+    public Interactable Hot { get; }
+
+    public AdBoard()
+    {
+        Name = "AdBoard";
+        AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.8f, 0.6f, 0.03f), new Color(0.55f, 0.42f, 0.28f))
+            .Box(new Vector3(-0.22f, 0.08f, 0.02f), new Vector3(0.22f, 0.22f, 0.005f), new Color(0.95f, 0.9f, 0.55f))
+            .Box(new Vector3(0.2f, 0.08f, 0.02f), new Vector3(0.28f, 0.2f, 0.005f), new Color(0.92f, 0.92f, 0.88f)).Instance());
+        AddChild(new Label3D { Text = "ADVERTISING", Position = new Vector3(0, 0.25f, 0.025f), FontSize = 32, PixelSize = 0.0014f, Modulate = new Color(0.15f, 0.1f, 0.06f), OutlineSize = 0 });
+        _text = new Label3D { Position = new Vector3(0, -0.2f, 0.03f), FontSize = 32, PixelSize = 0.001f, Modulate = new Color(0.12f, 0.1f, 0.08f), OutlineSize = 0, Width = 760, AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        AddChild(_text);
+        Hot = new Interactable { CollisionLayer = 2, CollisionMask = 0 };
+        Hot.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(0.8f, 0.6f, 0.1f) } });
+        AddChild(Hot);
+    }
+
+    public void Show(string text) => _text.Text = text;
+}

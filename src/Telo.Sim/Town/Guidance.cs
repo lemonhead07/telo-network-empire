@@ -34,6 +34,17 @@ public static class Guidance
                 return ($"Knock on a door to find a customer. Try {firstDoor.Resident}'s.", firstDoor.Id);
         }
 
+        // a booked window, starting soon or on now: they're staying in for you
+        if (Plan.AppointmentRules.Today(s).FirstOrDefault(a => s.Minute >= a.Start - 45 && s.Minute < a.End) is { } appt)
+            return ($"Booked {Plan.PlanRules.Clock(appt.Start)}-{Plan.PlanRules.Clock(appt.End)}: {appt.Title}.", appt.LotId);
+
+        // a VIP booking: by their day, no bodges, test the line
+        if (s.Customers.FirstOrDefault(x => x.Live && x.VipDay is not null && !x.SocketFitted) is { } vip)
+            return (s.Modems > 0
+                ? $"VIP: connect {vip.Name} by {new Core.GameDate(vip.VipDay!.Value)}. No bodges, and test the line before you sign."
+                : $"VIP: {vip.Name} needs a line by {new Core.GameDate(vip.VipDay!.Value)}. Buy a modem at the electronics shop first.",
+                s.Modems > 0 ? vip.LotId : c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id);
+
         if (s.Faults.FirstOrDefault() is { } fault && s.Customers.FirstOrDefault(x => x.Id == fault.CustomerId) is { } faulty)
             return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
 
@@ -95,12 +106,27 @@ public static class Guidance
         {
             var line = Build.LineRules.ProgressOf(s, far.Id);
             return (line.Strung < line.Planted - 1
-                ? $"Pole line to {far.Name}: string the next span (cable drum and ladder)."
+                ? $"Pole line to {far.Name}: string the span back from the newest pole (cable drum and ladder)."
                 : $"Pole line to {far.Name}: plant pole {line.Planted + 1} along the farm road (poles are on the van, ${far.PoleLine!.PoleCost} each).", null);
+        }
+        // the next thing to build: each project opens the next part of the game (a lane, a village, the dial-up years)
+        if (Build.ProjectRules.Next(s, c) is { } proj && Build.ProjectRules.Step(s, proj) is { } pst
+            && Build.ProjectRules.ProgressOf(s, proj.Id).WaitUntil <= s.Day && (Build.ProjectRules.Started(s, proj.Id) || s.Cash >= proj.Cost))
+            return ($"Project: {proj.Name}: {pst.Verb.ToLowerInvariant()}{(Build.ProjectRules.Started(s, proj.Id) ? "" : $" (${proj.Cost} to start)")}.", Act.Places.Project(proj.Id));
+        // the next project is waiting on something you can do: remember a page, lease the depot
+        if (Build.ProjectRules.Waiting(s, c) is { } wait)
+        {
+            if (Build.ProjectRules.PageToRecall(s, c, wait) is { } pg && s.Archive >= pg.ArchiveCost)
+                return ($"For {wait.Name}: recall \"{pg.Title}\" in PIP's Almanac ({pg.ArchiveCost} Archive).", null);
+            if (wait.RequiresDepot && !s.HasDepot && Work.StaffRules.CanLeaseDepot(s))
+                return ($"For {wait.Name}: lease the depot at 1 Main Street (${Work.StaffRules.DepotDeposit} down).", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Depot)?.Id);
         }
         // this chapter's work is done and the world hasn't caught up: remember the next one early
         if (ActRules.EarlyStartEntry(s, c) is { } page && s.Archive >= page.ArchiveCost)
             return ($"Get ahead: recall \"{page.Title}\" in PIP's Almanac ({page.ArchiveCost} Archive).", null);
+        // bookings are thin and you can afford it: one lever
+        if (s.AdLevel < BookingRules.MaxAdLevel(s, c) && s.Cash >= 200 && BookingRules.Booked(s, c) * 3 < BookingRules.WeeklyCapacity(s))
+            return ($"Bookings are thin. Put up an ad: {BookingRules.Ads[s.AdLevel + 1].Name} (${BookingRules.Ads[s.AdLevel + 1].WeeklyCost} a week), on the board in your room.", null);
         var prospect = TownRules.Prospects(s, c).FirstOrDefault(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay);
         if (prospect is not null) return ($"Knock on doors to find customers. Try {prospect.Resident}'s.", prospect.Id);
         if (BestJob(s, c) is { } any) return ($"Odd job: {any.Title.ToLowerInvariant()} at {Who(c, any)}'s (${any.Pay}).", any.LotId);

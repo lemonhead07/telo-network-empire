@@ -17,7 +17,8 @@ public static class Clock
     public static bool IsWeekend(int day) => Weekday(day) is DayOfWeek.Saturday or DayOfWeek.Sunday;
     public static bool IsWorkingDay(int day) => !IsWeekend(day);
     public static bool WorkingHours(GameState s) => IsWorkingDay(s.Day) && Hour(s) >= WorkStartsHour && Hour(s) < WorkEndsHour;
-    public static bool Dark(GameState s) => Hour(s) is >= 17.5 or < 7.5;
+    /// <summary>Lights-on time. The waking day is mostly daylight: dusk comes late, and the night itself is slept through.</summary>
+    public static bool Dark(GameState s) => Hour(s) is >= 21 or < 6.5;
     public static string Text(GameState s) { double h = Hour(s); return $"{(int)h:00}:{(int)(h * 60) % 60:00}"; }
 }
 
@@ -51,7 +52,8 @@ public static class HomeRules
     {
         if (ShopShut(s, c, lot)) return Clock.Weekday(s.Day) == DayOfWeek.Sunday ? "shut on Sundays" : "shut. Open nine till half past five";
         if (Asleep(s, c, lot)) return "the lights are off. Come back in the morning";
-        if (OutAtWork(s, c, lot)) return "the car's gone. Back after five";
+        // a booked window: they stayed in for you, whatever their usual hours
+        if (OutAtWork(s, c, lot) && Plan.AppointmentRules.Booked(s, lot.Id) is null) return "the car's gone. Back after five";
         return null;
     }
 }

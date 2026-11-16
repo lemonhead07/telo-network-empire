@@ -29,6 +29,8 @@ public sealed class Customer
     public List<string> Products { get; set; } = new();
     /// <summary>They have been let in to the Board (v5). Without an account they can't ring in.</summary>
     public bool HasAccount { get; set; } = true;
+    /// <summary>A VIP booking: the day their line must be in by (v15, see Town/ServiceRules). Null for everyone else.</summary>
+    public int? VipDay { get; set; }
 }
 
 public enum HouseholdStatus { Unknown, Declined, Signed }
@@ -62,6 +64,14 @@ public sealed class LatentDefect
 }
 
 /// <summary>A defect that has surfaced: the customer has a bad line until someone goes and fixes it.</summary>
+public sealed class ProjectProgress
+{
+    public int Step { get; set; }
+    public int Click { get; set; }
+    /// <summary>The day the current step can start (after a wait), or 0.</summary>
+    public int WaitUntil { get; set; }
+}
+
 public sealed class Fault
 {
     public required string Id { get; set; }
@@ -187,13 +197,44 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 7;
+    public const int CurrentVersion = 17;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
     public ulong RngState { get; set; }
     public int Day { get; set; }
+    /// <summary>Sleep you are owed, in minutes, from short nights (v12, see Town/SleepRules).</summary>
+    public int SleepDebt { get; set; }
+    /// <summary>How long last night was, in minutes.</summary>
+    public int LastSleep { get; set; } = Town.SleepRules.Need;
     public int ActIndex { get; set; }
+
+    /// <summary>Everyone who acts in the world, by id: where they are, what they hold, where their kit and van are (v8).</summary>
+    public Dictionary<string, Act.ActorState> Actors { get; set; } = new();
+    /// <summary>PIP's phone: texts in and out, newest last (v9).</summary>
+    public List<Phone.TextMessage> Texts { get; set; } = new();
+    /// <summary>The plot chapter whose opening text has been sent, so each is texted once.</summary>
+    public string? ChapterTexted { get; set; }
+    /// <summary>Timesheets: who does which ticket at what hour, by day (v10).</summary>
+    public List<Plan.DayPlan> Plans { get; set; } = new();
+    /// <summary>Times customers have been asked, or agreed, to be in for a job (v14, see Plan/AppointmentRules).</summary>
+    public List<Plan.Appointment> Appointments { get; set; } = new();
+    /// <summary>Projects under way (v17, see Build/ProjectRules): which step, how many of its actions done, and when a wait ends.</summary>
+    public Dictionary<string, ProjectProgress> Projects { get; set; } = new();
+    public HashSet<string> ProjectsDone { get; set; } = new();
+    /// <summary>Subscribers signed so far in each region a project opened (by project id): towns counted as a block (v17).</summary>
+    public Dictionary<string, int> RegionSigned { get; set; } = new();
+    /// <summary>Line-days up and line-days counted over a rolling month, in thousandths (v15, see Town/ServiceRules).</summary>
+    public long ServiceUp { get; set; }
+    public long ServiceTotal { get; set; }
+    /// <summary>Houses Nez (the monopoly) connected before you got there (v11).</summary>
+    public HashSet<string> NezLots { get; set; } = new();
+    public bool NezNoticed { get; set; }
+    public bool NezCompeting { get; set; }
+    /// <summary>Which ad you're paying for (index into BookingRules.Ads), and jobs you've started today (v13).</summary>
+    public int AdLevel { get; set; }
+    public int PlayerJobsDay { get; set; }
+    public int PlayerJobsToday { get; set; }
 
     // Money is whole period dollars.
     public long Cash { get; set; }
@@ -271,6 +312,9 @@ public sealed class GameState
     public GameDate Date => new(Day);
     public int Archive => (int)(ArchiveMilli / 1000);
     public int LiveSubscribers => Customers.Count(c => c.Live && c.Installed);
+    /// <summary>Everyone on your network: the people you connected one by one, and the towns your projects opened.</summary>
+    public int RegionSubscribers => RegionSigned.Values.Sum();
+    public int TotalSubscribers => LiveSubscribers + RegionSubscribers;
     public int PendingInstalls => Customers.Count(c => c.Live && !c.Installed);
     public int ReadyForFrame => Customers.Count(c => c.Live && !c.Installed && c.SocketFitted);
     public int LedgerServed => Ledger.Values.Count(p => p.Status == PromiseStatus.Served);

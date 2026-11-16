@@ -31,6 +31,27 @@ public static class SaveCodec
             Work.WorkRules.RestoreHires(s, content);
         }
         if (s.Version < 7) { s.Switch ??= new(); Net.SwitchRules.Rebuild(s, content); } // v7: the switchboard is a persistent object
+        if (s.Version < 8) s.Actors ??= new(); // v8: actors (place, hands, kit, van) live in the simulation
+        if (s.Version < 9) s.Texts ??= new(); // v9: texts on PIP's phone
+        if (s.Version < 10) s.Plans ??= new(); // v10: the day planner
+        if (s.Version < 11) s.NezLots ??= new(); // v11: Nez takes territory
+        if (s.Version < 12) { s.SleepDebt = 0; s.LastSleep = Town.SleepRules.Need; } // v12: sleep debt; older saves wake rested
+        // v13: ads and the daily job cap (new fields default to zero: no ads, nothing done today)
+        if (s.Version < 14) s.Appointments ??= new(); // v14: appointments and the job clock
+        // v15: service level (line-days up, counted from now on) and VIP bookings (none yet): new fields default to zero/null
+        if (s.Version < 17)   // v17: projects. A save already past a project's gate gets it as built, so nobody loses a street they had
+        {
+            s.Projects ??= new(); s.ProjectsDone ??= new(); s.RegionSigned ??= new();
+            foreach (var lot in (content?.Lots.Values ?? Enumerable.Empty<Content.LotDef>()).Where(l => l.NeedsProject is not null))
+                if (s.Households.TryGetValue(lot.Id, out var h) && h.Status == HouseholdStatus.Signed) s.ProjectsDone.Add(lot.NeedsProject!);
+        }
+        if (s.Version < 16 && s.Switch is { } board)   // v16: the board grows to 32; the two spare ports move from 16-17 to 40-41
+        {
+            int Move(int port) => port is 16 or 17 ? port - 16 + Net.SwitchRules.SpareBase : port;
+            foreach (var p in board.Positions) p.Jumper = p.Jumper >= 0 ? Move(p.Jumper) : p.Jumper;
+            board.TestedPorts = board.TestedPorts.Select(Move).ToList();
+            board.FaultyPorts = board.FaultyPorts.Select(Move).ToList();
+        }
         s.Version = GameState.CurrentVersion;
         return s;
     }

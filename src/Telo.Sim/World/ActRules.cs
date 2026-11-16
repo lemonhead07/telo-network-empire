@@ -9,12 +9,18 @@ public static class ActRules
 {
     public static long Measure(GameState s, ConditionKind kind) => kind switch
     {
-        ConditionKind.Subscribers => s.LiveSubscribers,
+        ConditionKind.Subscribers => s.TotalSubscribers,
         ConditionKind.Cash => s.Cash,
         ConditionKind.Staff => s.Staff,
         ConditionKind.MonthlyRevenue => s.RevenueLastMonth,
         ConditionKind.LedgerServed => s.LedgerServed,
         ConditionKind.RecalledEntries => s.Entries.Values.Count(e => e is EntryStatus.Recalled or EntryStatus.Drifting),
+        ConditionKind.Customers => s.Customers.Count,
+        ConditionKind.SocketsFitted => s.Customers.Count(c => c.Live && c.SocketFitted),
+        ConditionKind.JobsDone => s.JobsDone,
+        ConditionKind.ProjectsDone => s.ProjectsDone.Count,
+        ConditionKind.ServiceNines => Town.ServiceRules.Nines(Town.ServiceRules.Ppm(s)),
+        ConditionKind.Knocked =>s.Customers.Count >= 2 || s.Households.Values.Any(h => h.RetryDay > 0) ? 1 : 0,
         _ => 0,
     };
 

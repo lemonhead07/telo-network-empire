@@ -51,6 +51,16 @@ public abstract partial class SphereBody : CharacterBody3D
         AlignToPlanet();
     }
 
+    /// <summary>Turn on the spot towards a world direction, at most <paramref name="maxRadians"/>. Used by the walking player.</summary>
+    public void FaceTowards(Vector3 dir, float maxRadians = Mathf.Pi)
+    {
+        var up = Up;
+        var flat = dir - up * dir.Dot(up);
+        if (flat.LengthSquared() < 1e-6f) return;
+        float angle = Forward.SignedAngleTo(flat.Normalized(), up);
+        Turn(Mathf.Clamp(angle, -maxRadians, maxRadians));
+    }
+
     /// <summary>Put the body at a world position, standing upright, facing roughly <paramref name="facing"/>.</summary>
     public void PlaceAt(Vector3 position, Vector3 facing)
     {

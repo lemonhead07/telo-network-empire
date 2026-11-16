@@ -17,6 +17,17 @@ public sealed class Simulation
 {
     public ContentDb Content { get; }
     public GameState State { get; }
+    /// <summary>House installs under way, by lot. Derived: restored from <see cref="GameState.Installs"/> when restarted.</summary>
+    public Dictionary<string, InstallJob> Installs { get; } = new();
+    /// <summary>Odd jobs and orders on the rug, by lot. Not saved: a half-done one is simply started again.</summary>
+    public Dictionary<string, Act.Bench> Benches { get; } = new();
+
+    /// <summary>The actor with this id, created where the player starts if new.</summary>
+    public Act.ActorState Actor(string id = "player")
+    {
+        if (!State.Actors.TryGetValue(id, out var a)) State.Actors[id] = a = new Act.ActorState { Id = id };
+        return a;
+    }
     private readonly DetRng _rng;
 
     public static readonly GameDate StartDate = GameDate.From(1983, 1, 3);
@@ -39,6 +50,7 @@ public sealed class Simulation
         foreach (var w in content.Work.Keys) s.WorkStage[w] = 0;
         s.Emit(EventKind.Info, "PIP: \"…signal. Low battery. Year reads 1983. That can't be right.\"");
         var sim = new Simulation(content, s);
+        Phone.PhoneRules.Morning(s, content);   // the first text: the first chapter
         return sim; // no odd jobs yet: a new player meets one thing at a time (see Town/Onboarding)
     }
 
@@ -53,7 +65,7 @@ public sealed class Simulation
         BoardRules.ApplyEvening(s, Content, s.Day - 1);   // last night at the Board
         BoardService.EndOfDay(s, s.Day - 1);
         BoardService.CoSysopDay(s, Content);
-        if (s.Day % 7 == 0) BoardService.Week(s, Content, _rng);
+        if (s.Day % 7 == 0) { BoardService.Week(s, Content, _rng); Nez.NezRules.Week(s, Content); BookingRules.Week(s); }
         TownRules.Tick(s, Content, _rng);
         OrderRules.Tick(s, Content);
         SwitchRules.Tidy(s);
@@ -61,18 +73,21 @@ public sealed class Simulation
         SurfaceDefects();
         DriftSatisfaction();
         // Word of mouth: happy subscribers bring enquiries.
-        int happy = s.Customers.Count(c => c.Live && c.Installed && c.Satisfaction >= 60);
-        if (Onboarding.PhoneRings(s, Content) && s.MessagesWaiting < 9 && _rng.ChancePermille(Math.Min(900, 250 + 40 * happy + 8 * BoardService.Appeal(s)))) s.MessagesWaiting++;
+        BookingRules.Day(s, Content, _rng);   // word of mouth and ads bring bookings; long waits go to NezTel
+        ServiceRules.Day(s, Content, _rng);   // service in nines, people leaving NezTel, VIP bookings
+        Build.ProjectRules.Day(s, Content);   // towns your projects opened sign up
         if (s.Date.IsFirstOfMonth) MonthEnd();
         while (ActRules.TryAdvance(s, Content)) AlmanacRules.RefreshStatuses(s, Content);
+        Plan.AppointmentRules.Overnight(s, Content, _rng);   // missed windows remembered; today's requests answered
+        Phone.PhoneRules.Morning(s, Content);   // one text in, every morning
         s.RngState = _rng.State;
     }
 
     private void MonthEnd()
     {
         var s = State;
-        long revenue = s.Customers.Where(c => c.Live && c.Installed).Sum(c => c.MonthlyFee);
-        long costs = RentPerMonth + (s.HasDepot ? StaffRules.DepotRentPerMonth : 0) + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s) + BoardService.TakeMonthlyBill(s);
+        long revenue = s.Customers.Where(c => c.Live && c.Installed).Sum(c => c.MonthlyFee) + Build.ProjectRules.MonthlyRevenue(s, Content);
+        long costs = Build.ProjectRules.MonthlyCost(s, Content) + RentPerMonth + (s.HasDepot ? StaffRules.DepotRentPerMonth : 0) + WorkRules.MonthlyUpkeep(s, Content) + BoardRules.MonthlyRental(s) + BoardService.TakeMonthlyBill(s);
         s.RevenueLastMonth = revenue;
         s.RevenueThisMonth = 0;
         s.Cash += revenue - costs;
@@ -110,16 +125,44 @@ public sealed class Simulation
     {
         while (minutes > 0)
         {
-            int step = Math.Min(minutes, Clock.MinutesPerDay - State.Minute);
+            // nobody lives the small hours: at two you fall asleep where you stand (see Town/SleepRules)
+            int limit = State.Minute < SleepRules.Collapse ? SleepRules.Collapse : Clock.MinutesPerDay;
+            int step = Math.Min(minutes, limit - State.Minute);
             State.Minute += step; minutes -= step;
+            if (State.Minute >= SleepRules.Collapse && State.Minute < Clock.MinutesPerDay) { PassOut(); break; }
             if (State.Minute >= Clock.MinutesPerDay) { State.Minute = 0; AdvanceDay(); }
             else StaffRules.Clocked(State, Content, _rng);
         }
+        Plan.AppointmentRules.Tick(State, Content, Installs.Keys.Concat(Benches.Keys).ToHashSet());   // the job clock
         State.RngState = _rng.State;
     }
 
-    /// <summary>Go to bed: it is seven the next morning.</summary>
-    public void Sleep() { AdvanceDay(); State.Minute = 60; }
+    /// <summary>Every morning begins in bed. The presentation puts the player there when this fires (true: they collapsed and were brought home).</summary>
+    public event Action<bool>? Morning;
+
+    /// <summary>Go to bed: you wake after a night's sleep (six at the earliest, nine at the latest), owing whatever the night didn't give you.</summary>
+    public void Sleep() => Sleep(collapsed: false);
+
+    private void Sleep(bool collapsed)
+    {
+        int wake = SleepRules.Sleep(State, collapsed);
+        AdvanceDay();
+        State.Minute = wake;
+        var lvl = SleepRules.Level(State);
+        if (collapsed) State.Emit(EventKind.Info, "You woke up in your own bed with your boots on. PIP: \"You fell asleep standing up. I got you home. Don't do that.\"");
+        else if (lvl >= Tiredness.Exhausted) State.Emit(EventKind.Info, $"PIP: \"{State.SleepDebt / 60} hours of sleep short. Your hands will shake. Early night tonight.\"");
+        Morning?.Invoke(collapsed);
+    }
+
+    private void PassOut() => Sleep(collapsed: true);
+
+    /// <summary>Did tiredness spoil a step that was done properly? Seeded, so the same game slips the same way.</summary>
+    public bool TiredSlip()
+    {
+        bool slip = _rng.ChancePermille(SleepRules.SlipPermille(State));
+        State.RngState = _rng.State;
+        return slip;
+    }
 
     /// <summary>A line goes live: the customer starts paying, beginning with a connection fee in your hand today.</summary>
     private void GoLive(Customer c) => GoLive(State, Content, c);
@@ -159,8 +202,14 @@ public sealed class Simulation
         return ok;
     }
 
-    public OddJobTask? NewOddJobTask(string jobId) =>
-        State.Jobs.FirstOrDefault(j => j.Id == jobId) is { } job ? new OddJobTask(job.Id, job.Title, job.Hours) : null;
+    /// <summary>The job as its assembly says (parts, fasteners, one seeded fault), or the general repair when there is no assembly for it.</summary>
+    public OddJobTask? NewOddJobTask(string jobId)
+    {
+        if (State.Jobs.FirstOrDefault(j => j.Id == jobId) is not { } job) return null;
+        var steps = Minigames.Assembly.AssemblyRules.ForJob(Content, job.Title) is { } asm
+            ? Minigames.Assembly.AssemblyRules.Steps(asm, DetRng.Derive(State.Seed, $"fault:{job.Id}")).Steps : null;
+        return new OddJobTask(job.Id, job.Title, job.Hours, steps);
+    }
 
     // ---- god keys: skip ahead to see later stages (testing and impatient owners) ----------------
     public string GodCash(long amount) { State.Cash += amount; return $"+${amount}."; }
@@ -229,6 +278,32 @@ public sealed class Simulation
     }
 
     /// <summary>Jump to the next act (age), whatever the calendar and the milestones say.</summary>
+    /// <summary>
+    /// Finish one job ticket by decree, as if it had been done properly: a connection fitted and wired in, a fault fixed,
+    /// an order fitted, an odd job done. For sampled auto runs (most jobs skipped, one in a few played in full). Null if
+    /// there is no such open ticket.
+    /// </summary>
+    public string? GodFinishTicket(string key)
+    {
+        var s = State; var c = Content;
+        if (Work.StaffRules.Tickets(s, c).FirstOrDefault(t => t.Key == key) is not { } t) return null;
+        var id = key[(key.IndexOf(':') + 1)..];
+        switch (t.Kind)
+        {
+            case Work.TicketKind.Install when s.Customers.FirstOrDefault(x => x.Id == id) is { } cust:
+                if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); s.Installs.Remove(cust.Id); if (cust.VipDay is not null) ServiceRules.VipWon(s, c, cust); }
+                if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s)) { s.Cash = Math.Max(s.Cash, SwitchRules.PanelPrice); SwitchRules.AddPanel(s); }
+                SwitchRules.AutoWire(s, c, cust, sloppy: false);
+                cust.HasAccount = true;
+                break;
+            case Work.TicketKind.Repair: TownRules.Repair(s, id, Tools.All); break;
+            case Work.TicketKind.Order: CompleteOrder(id, false); break;
+            case Work.TicketKind.OddJob: TownRules.CompleteJob(s, c, id); break;
+        }
+        State.RngState = _rng.State;
+        return t.Title;
+    }
+
     public string GodNextAct()
     {
         var s = State;
@@ -319,7 +394,9 @@ public sealed class Simulation
     {
         var cust = State.Customers.FirstOrDefault(c => c.Id == customerId && c.Live);
         if (cust is null || cust.SocketFitted || State.Modems <= 0) return null;
-        var job = InstallJob.Generate(DetRng.Derive(State.Seed, $"install:{cust.Id}"), cust.Id, cust.Name);
+        // twists (ivy, wasps, an old box...) once the first-hour installs are behind you: the first one you ever do is plain
+        bool twists = Onboarding.Reached(State, Content, OnboardingStep.Free);
+        var job = InstallJob.Generate(DetRng.Derive(State.Seed, $"install:{cust.Id}"), cust.Id, cust.Name, twists: twists);
         return State.Installs.TryGetValue(cust.Id, out var saved) ? job.Restore(saved) : job;
     }
 
@@ -339,6 +416,7 @@ public sealed class Simulation
             s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + Math.Max(3, _rng.Range(10, 45) / o.Defects.Count), Source = "install", CustomerId = o.CustomerId, Text = text });
         if (o.OvertimeMinutes > 0 && s.Customers.FirstOrDefault(c => c.Id == o.CustomerId) is { } cust)
             cust.Satisfaction = Math.Clamp(cust.Satisfaction - Math.Min(5, 1 + o.OvertimeMinutes / 30), 0, 100);
+        if (s.Customers.FirstOrDefault(c => c.Id == o.CustomerId) is { } signed) ServiceRules.InstallSignedOff(s, Content, signed, o.Tested, o.Defects.Count);
         s.RngState = _rng.State;
         return true;
     }

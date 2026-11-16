@@ -117,7 +117,7 @@ public static class AlmanacRules
             }
         }
 
-        s.ArchiveMilli += ArchiveBasePerDay + ArchivePerSubscriber * s.LiveSubscribers + ArchivePerStaff * s.Staff;
+        s.ArchiveMilli += ArchiveBasePerDay + ArchivePerSubscriber * Math.Min(s.TotalSubscribers, s.LiveSubscribers + 200) +ArchivePerStaff * s.Staff;
 
         if (s.Echo > 0 && s.Day % EchoDecayEveryDays == 0) s.Echo--;
 
