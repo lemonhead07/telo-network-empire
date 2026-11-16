@@ -4,6 +4,7 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 ## Inbox
 *(one line each: date, idea, where it came from)*
+- 2026-11-16 · **Upgrades happen in the world, unexplained but always visible.** No screens explaining how things work: when tech improves (an Almanac page built, a stage automated), the change simply appears on the objects (new box on the pole, a different lamp, a faster modem's lights, a tidier frame). The player may not be told, but must always be able to see it. Fits D26 (objects, not panels) and the "world tells" rule in TECH_TREE §4. From the owner.
 
 ## Shaped
 *(talked through, not ready to build; link to TECH_TREE / HANDOFF sections where relevant)*
