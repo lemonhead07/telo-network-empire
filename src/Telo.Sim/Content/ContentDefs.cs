@@ -237,6 +237,8 @@ public sealed record ProjectRewardDef
     public string RegionName { get; init; } = "";
     /// <summary>What each of them pays a month.</summary>
     public long RegionFee { get; init; } = 15;
+    /// <summary>What each of them costs you a month to serve (interconnect, power, billing, the crew's van). Less than the fee: a town has to pay.</summary>
+    public long RegionCost { get; init; }
 }
 
 /// <summary>

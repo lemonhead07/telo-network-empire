@@ -4,6 +4,10 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 ## Inbox
 *(one line each: date, idea, where it came from)*
+- 2026-11-16 · Act 2 stalls ~17 months (Feb 1983–Jul 1984) waiting on Archive for the modem-bank page chain (2400 → BBS → hunt → 14.4k); meanwhile NezTel and churn take the valley from 31 to 21 subscribers. For EA2 (pace). (EA1 session)
+- 2026-11-16 · Once all of Act 5 is built, mobile still nets ~$30k a month with nothing left to buy: Act 6 needs money sinks (or EA ends at the last mast). (EA1 session)
+- 2026-11-16 · `--from=actN` gives cash of 2000×(act+1)², above the D41 band for Act 4; set it from the band. (EA1 session)
+- 2026-11-16 · `DECISIONS.md` lists D34–D40 twice (once mid-table). Tidy. (EA1 session)
 
 ## Shaped
 *(talked through, not ready to build; link to TECH_TREE / HANDOFF sections where relevant)*

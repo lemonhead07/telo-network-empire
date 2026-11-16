@@ -148,6 +148,7 @@ Decision D15 (changed 2026-11-12). Two stages:
 
 ## Gotchas
 
+- `.gitignore` rules match case-insensitively on a Mac: `build/` once hid `src/Telo.Sim/Build/` and a file was never committed. Anchor folder rules (`/build/`) and check `git status` shows new files.
 - Godot C# classes that derive from Godot types must be `partial`.
 - A class named `Sky` clashes with `Godot.Sky`; ours is `PlanetSky`.
 - Vertex colours need `VertexColorIsSrgb = true` or everything looks washed out.

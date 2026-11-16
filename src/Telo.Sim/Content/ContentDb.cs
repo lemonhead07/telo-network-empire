@@ -126,6 +126,7 @@ public sealed class ContentDb
                 if (!Projects.Take(i).Any(x => x.Id == r)) e.Add($"project {p.Id}: requires '{r}', which must be an earlier project");
             if (p.RequiresEntry is { } re && !Almanac.ContainsKey(re)) e.Add($"project {p.Id}: unknown entry '{re}'");
             if (p.Reward.Cancels is { } cx && Project(cx) is null) e.Add($"project {p.Id}: cancels unknown '{cx}'");
+            if (p.Reward.Region > 0 && p.Reward.RegionCost >= p.Reward.RegionFee) e.Add($"project {p.Id}: serving a subscriber (${p.Reward.RegionCost}) must cost less than they pay (${p.Reward.RegionFee})");
             if (p.Act >= Acts.Count && Acts.Count > 0) e.Add($"project {p.Id}: act {p.Act} doesn't exist");
             foreach (var st in p.Steps)
             {

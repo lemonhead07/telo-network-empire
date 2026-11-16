@@ -130,10 +130,14 @@ public static class ProjectRules
         Built(s, c).Sum(p => p.Reward.PerSubscriber * s.LiveSubscribers + p.Reward.MonthlyRevenue
                              + (long)s.RegionSigned.GetValueOrDefault(p.Id) * p.Reward.RegionFee);
 
-    /// <summary>What the projects cost each month, except bills a later project has ended.</summary>
+    /// <summary>What the projects cost each month: their own bills (except those a later project has ended) and serving the towns they opened.</summary>
     public static long MonthlyCost(GameState s, ContentDb c)
     {
         var cancelled = Built(s, c).Select(p => p.Reward.Cancels).Where(x => x is not null).ToHashSet();
-        return Built(s, c).Where(p => !cancelled.Contains(p.Id)).Sum(p => p.Reward.MonthlyCost);
+        return Built(s, c).Sum(p => (cancelled.Contains(p.Id) ? 0 : p.Reward.MonthlyCost) + (long)s.RegionSigned.GetValueOrDefault(p.Id) * p.Reward.RegionCost);
     }
+
+    /// <summary>The next project you can't afford yet, if that's all that's stopping it.</summary>
+    public static ProjectDef? SavingFor(GameState s, ContentDb c) =>
+        Next(s, c) is { } p && !Started(s, p.Id) && s.Cash < p.Cost ? p : null;
 }

@@ -61,12 +61,18 @@ public class ScriptPlayerTests
         var s = sim.State;
         var log = new List<string>();
         var acts = new List<string>();
+        var cashAtStart = new Dictionary<int, long>();
+        long lowest = long.MaxValue;
         var taken = Bot.Play(sim, me, gen, () => s.ActIndex >= 5 || s.Day > Simulation.StartDate.Day + 365 * 30, 400000,
             (id, why) =>
             {
                 log.Add($"{s.Date} {Clock.Text(s)} {id}  ({why})");
+                lowest = Math.Min(lowest, s.Cash);
                 if (acts.Count == 0 || !acts[^1].StartsWith($"act {s.ActIndex}:"))
+                {
                     acts.Add($"act {s.ActIndex}: {s.Date} subs={s.TotalSubscribers} cash={s.Cash} projects={s.ProjectsDone.Count}");
+                    cashAtStart.TryAdd(s.ActIndex, s.Cash);
+                }
             });
         _out.WriteLine(string.Join("\n", acts));
         Assert.True(s.ActIndex >= 5,
@@ -74,7 +80,19 @@ public class ScriptPlayerTests
             $"next: {Guidance.Next(s, sim.Content).Text}\n" + string.Join("\n", acts) + "\nLast actions:\n" + string.Join("\n", log.TakeLast(12)));
         // and through the acts' own work, not around it
         Assert.Contains("proj-first-mast", s.ProjectsDone.Concat(s.Projects.Keys).Append(Telo.Sim.Build.ProjectRules.Next(s, sim.Content)?.Id ?? ""));
+
+        // the economy (D41): at each act's start, enough for its first project and not a fortune; never deep in the red
+        foreach (var (act, (lo, hi)) in CashBand)
+            Assert.True(cashAtStart.TryGetValue(act, out long cash) && cash >= lo && cash <= hi,
+                $"act {act} began with ${cashAtStart.GetValueOrDefault(act)}, outside ${lo}-${hi}\n" + string.Join("\n", acts));
+        Assert.True(lowest >= -1000, $"cash fell to ${lowest}");
     }
+
+    /// <summary>Cash at the start of each act, low to high (DECISIONS.md D41). Change both together.</summary>
+    public static readonly Dictionary<int, (long Lo, long Hi)> CashBand = new()
+    {
+        [1] = (200, 3_000), [2] = (300, 5_000), [3] = (1_000, 20_000), [4] = (2_000, 40_000), [5] = (10_000, 100_000),
+    };
 
     [Fact]
     public void The_same_seed_plays_the_same_game_and_actors_survive_a_save()
