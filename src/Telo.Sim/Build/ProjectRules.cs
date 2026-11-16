@@ -134,7 +134,8 @@ public static class ProjectRules
     public static long MonthlyCost(GameState s, ContentDb c)
     {
         var cancelled = c.Projects.Where(p => Done(s, p.Id) && p.Reward.Cancels is not null).Select(p => p.Reward.Cancels!).ToHashSet();
-        return c.Projects.Where(p => Done(s, p.Id) && !cancelled.Contains(p.Id)).Sum(p => p.Reward.MonthlyCost);
+        return c.Projects.Where(p => Done(s, p.Id) && !cancelled.Contains(p.Id)).Sum(p => p.Reward.MonthlyCost)
+             + c.Projects.Where(p => Done(s, p.Id)).Sum(p => s.RegionSigned.GetValueOrDefault(p.Id) * p.Reward.RegionCost);
     }
 
     private static Tools Needs(ProjectStepDef st) =>

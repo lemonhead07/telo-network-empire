@@ -72,6 +72,18 @@ public class ScriptPlayerTests
         Assert.True(s.ActIndex >= 5,
             $"stuck in act {s.ActIndex} on {s.Date}: subs={s.TotalSubscribers} cash={s.Cash} archive={s.Archive} projects={string.Join(",", s.ProjectsDone)}\n" +
             $"next: {Guidance.Next(s, sim.Content).Text}\n" + string.Join("\n", acts) + "\nLast actions:\n" + string.Join("\n", log.TakeLast(12)));
+        // EA1: money stays tight enough to matter (bands in DECISIONS.md D41), and a year into Act 5 it hasn't run away
+        var bands = new (long Lo, long Hi)[] { (0, long.MaxValue), (300, 3_000), (500, 6_000), (1_500, 20_000), (3_000, 25_000), (10_000, 80_000) };
+        foreach (var line in acts)
+        {
+            int act = int.Parse(line[4..line.IndexOf(':')]);
+            long cash = long.Parse(line[(line.IndexOf("cash=") + 5)..].Split(' ')[0]);
+            Assert.InRange(cash, bands[act].Lo, bands[act].Hi);
+        }
+        int act5 = s.Day;
+        Bot.Play(sim, me, gen, () => s.Day > act5 + 365, 200000);
+        _out.WriteLine($"a year into act 5: {s.Date} subs={s.TotalSubscribers} cash={s.Cash}");
+        Assert.InRange(s.Cash, 0, 300_000);
         // and through the acts' own work, not around it
         Assert.Contains("proj-first-mast", s.ProjectsDone.Concat(s.Projects.Keys).Append(Telo.Sim.Build.ProjectRules.Next(s, sim.Content)?.Id ?? ""));
     }
