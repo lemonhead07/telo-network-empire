@@ -72,6 +72,7 @@ public class CarryTests
         var sim = WholeTown();
         var s = sim.State; var c = sim.Content;
         Assert.Equal(0, s.ActIndex);
+        s.ProjectsDone.Add("proj-church-poles");   // the act's own work is built (D42)
         var page = ActRules.EarlyStartEntry(s, c);
         Assert.NotNull(page);
         s.ArchiveMilli = 100_000;

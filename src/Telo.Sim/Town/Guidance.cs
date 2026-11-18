@@ -49,7 +49,7 @@ public static class Guidance
             return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
 
         // nobody new can be connected until there is room on the board
-        if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s))
+        if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s) && s.Switch.Stage < SwitchRules.MaxStage)
             return (SwitchRules.CanAddPanel(s) ? $"The switchboard is full. Bolt on another panel (${SwitchRules.PanelPrice})." : $"The switchboard is full. Another panel is ${SwitchRules.PanelPrice}.", null);
 
         // someone is waiting for something they ordered
@@ -59,8 +59,10 @@ public static class Guidance
         // the sysop's terminal: callers to let in, uploads to look through, tonight's mail
         if (BoardService.TerminalOpen(s) && !BoardService.Delegated(s, c))
         {
+            if (WorkRules.CanUpgrade(s, c, BoardService.WorkId) == UpgradeResult.Ok)
+                return ($"Hire a co-sysop to run the Board (${WorkRules.Next(s, c, BoardService.WorkId)!.Cost}), in the company notebook in your room.", null);
             if (BoardService.Waiting(s) is { Count: > 0 } waiting) return ($"Let {waiting.Count} new caller(s) in at the Board's terminal.", null);
-            if (BoardService.MailOpen(s) && !BoardService.MailRunToday(s)) return ("Run tonight's mail call at the Board's terminal.", null);
+            if (BoardService.MailOpen(s) && !BoardService.MailRunToday(s) && Clock.Hour(s) >= 17) return ("Run tonight's mail call at the Board's terminal.", null);
             if (BoardService.NewFiles(s).Count >= 3) return ($"The Board has {BoardService.NewFiles(s).Count} new uploads to look through.", null);
         }
 
@@ -72,8 +74,6 @@ public static class Guidance
                 return s.Cash >= BoardRules.CardPrice
                     ? ($"The Board was engaged last night ({eve.GaveUp.Count} gave up). Buy a line card at Sol's (${BoardRules.CardPrice}).", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Shop)?.Id)
                     : ($"The Board was engaged last night. A line card is ${BoardRules.CardPrice}; you have ${s.Cash}.", BestJob(s, c)?.LotId);
-            if (s.Entries.GetValueOrDefault(BoardRules.HuntGroupEntry) == EntryStatus.Readable)
-                return ("The Board can't take a fifth line. PIP's Almanac has a page on hunt groups.", null);
         }
 
         bool tech = c.Work.ContainsKey("install") && WorkRules.Current(s, c, "install").Mode != WorkMode.Manual;
@@ -99,8 +99,6 @@ public static class Guidance
 
         if (!tech && s.ReadyForFrame > 0) return ($"Wire {s.ReadyForFrame} new line(s) at the switchboard in your room.", null);
         if (s.MessagesWaiting > 0) return ($"Play the answering machine in your room ({s.MessagesWaiting} waiting).", null);
-        if (BestJob(s, c) is { } job && (s.Cash < 150 || !TownRules.Prospects(s, c).Any(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay)))
-            return ($"Odd job: {job.Title.ToLowerInvariant()} at {Who(c, job)}'s (${job.Pay}).", job.LotId);
         // hands free: time to build something
         if (tech && c.Premises.Values.FirstOrDefault(p => p.PoleLine is not null && p.Act <= s.ActIndex + 1 && Ledger.LedgerRules.StatusOf(s, p.Id) != PromiseStatus.Served) is { } far)
         {
@@ -111,7 +109,7 @@ public static class Guidance
         }
         // the next thing to build: each project opens the next part of the game (a lane, a village, the dial-up years)
         if (Build.ProjectRules.Next(s, c) is { } proj && Build.ProjectRules.Step(s, proj) is { } pst
-            && Build.ProjectRules.ProgressOf(s, proj.Id).WaitUntil <= s.Day && (Build.ProjectRules.Started(s, proj.Id) || s.Cash >= proj.Cost))
+            && Build.ProjectRules.ProgressOf(s, proj.Id).WaitUntil <= s.Day && (Build.ProjectRules.Started(s, proj.Id) || Build.ProjectRules.CanAffordStart(s, c, proj)))
             return ($"Project: {proj.Name}: {pst.Verb.ToLowerInvariant()}{(Build.ProjectRules.Started(s, proj.Id) ? "" : $" (${proj.Cost} to start)")}.", Act.Places.Project(proj.Id));
         // the next project is waiting on something you can do: remember a page, lease the depot
         if (Build.ProjectRules.Waiting(s, c) is { } wait)
@@ -121,6 +119,13 @@ public static class Guidance
             if (wait.RequiresDepot && !s.HasDepot && Work.StaffRules.CanLeaseDepot(s))
                 return ($"For {wait.Name}: lease the depot at 1 Main Street (${Work.StaffRules.DepotDeposit} down).", c.Lots.Values.FirstOrDefault(l => l.Kind == LotKind.Depot)?.Id);
         }
+        // the Board is still engaged of an evening and only the Almanac can help
+        if (s.LastEvening is { GaveUp.Count: >= 2 } && !BoardRules.CanAddLine(s) && s.Entries.GetValueOrDefault(BoardRules.HuntGroupEntry) == EntryStatus.Readable)
+            return s.Archive >= (c.Almanac.TryGetValue(BoardRules.HuntGroupEntry, out var hunt) ? hunt.ArchiveCost : 0) && hunt is not null
+                ? ($"The Board can't take a fifth line: recall \"{hunt.Title}\" in PIP's Almanac ({hunt.ArchiveCost} Archive).", null)
+                : ("The Board can't take a fifth line. PIP's Almanac has a page on hunt groups.", null);
+        if (BestJob(s, c) is { } job && (s.Cash < 150 || !TownRules.Prospects(s, c).Any(l => s.Day >= TownRules.HouseholdOf(s, l.Id).RetryDay)))
+            return ($"Odd job: {job.Title.ToLowerInvariant()} at {Who(c, job)}'s (${job.Pay}).", job.LotId);
         // this chapter's work is done and the world hasn't caught up: remember the next one early
         if (ActRules.EarlyStartEntry(s, c) is { } page && s.Archive >= page.ArchiveCost)
             return ($"Get ahead: recall \"{page.Title}\" in PIP's Almanac ({page.ArchiveCost} Archive).", null);

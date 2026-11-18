@@ -237,6 +237,8 @@ public sealed record ProjectRewardDef
     public string RegionName { get; init; } = "";
     /// <summary>What each of them pays a month.</summary>
     public long RegionFee { get; init; } = 15;
+    /// <summary>What each of them costs a month to keep: support, power, leased capacity (EA1: towns pay a margin, not their whole fee).</summary>
+    public long RegionCost { get; init; }
 }
 
 /// <summary>
@@ -249,6 +251,8 @@ public sealed record ProjectDef
     public required string Name { get; init; }
     public int Act { get; init; }
     public required string Site { get; init; }
+    /// <summary>The prop id of what stands there once it is built (props.json, e.g. "site.street-cabinet"). Presentation only.</summary>
+    public string? Model { get; init; }
     public double East { get; init; }
     public double South { get; init; }
     public long Cost { get; init; }

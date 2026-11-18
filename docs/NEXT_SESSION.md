@@ -1,10 +1,25 @@
 # Next Session — start here
 
-*Left off: 2026-11-16 (handed to the cloud from a local session). Branch: `feature/gameplay-rapid`. 82 sim tests and `--smoke` pass. Saves are at v17. The owner wants **early access to cover Acts 0–5**, gameplay first, models later.*
+*Left off: 2026-11-18 (cloud dev session, EA2e). Branch: `feature/gameplay-rapid`. 82 sim tests and `--smoke` pass. Saves are at v17. The owner wants **early access to cover Acts 0–5**, gameplay first, models later.*
 
-**Start here:** `BUILD_PLAN.md` → "Early access: Acts 0–5", items EA1–EA6, in order. Before committing a rules change, run `dotnet test tests/Telo.Sim.Tests` (the Act 5 script player is in it) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act5` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front).
+**Start here:** `BUILD_PLAN.md` → "Early access: Acts 0–5". Next up: **EA2f** (Acts 1–2 ask for more), then EA2b (the Yard), EA2c, EA2d, EA3–EA6. Before committing a rules change, run `dotnet test tests/Telo.Sim.Tests` (the Act 5 script player is in it) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act5` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front).
 
-## Newest (2026-11-16, a long local session): the path from the first message into Act 5
+## Newest (2026-11-19): 28 models through Act 5
+
+`tools/models/batch.py -- all` builds every model the player handles through Act 5 (van kit, install parts, the pole, 13 project sites) and keeps `props.json` in step; the game picks each up by prop id (BUILD_PLAN 11b). See them: `docs/img/props/lineup-handheld.png`, `lineup-sites.png`, or `godot --path game res://scenes/Showroom.tscn`. Next model batches: the switchboard (item 11 then 12), houses, residents.
+
+## Side branch (2026-11-18): the model pipeline works`n`n`feature/model-pipeline` (off `feature/gameplay-rapid`) proves Blender-to-game end to end with the van: `game/content/props.json` (briefs; `PropCatalog` validates), `Props.Make(id, placeholder)` loads `game/assets/models/<id>.glb` or falls back to the box, `tools/models/_kit.py` + `tools/models/vehicle.van.py` build the model and preview renders (`docs/img/props/`). Blender 5.3 is installed locally (`C:\Program Files\Blender Foundation\Blender 5.3\blender.exe`). The van's wheels spin (`wheel-*` nodes). Next model work: BUILD_PLAN item 11 (switch the switchboard to `Props.Make`), then the asset list order. Merge this branch into `feature/gameplay-rapid` when the owner says.`n`n## Newest idea (2026-11-18): shop days
+
+`docs/SHOP_DAYS.md` (D45, provisional): days open and close at the shop sign, the clock follows the work, before/after hours are the open world, a cash register later, a Clue Card for the line of progression. Build items SD1–SD3 in `BUILD_PLAN.md`, after EA2f. Ask the owner the five questions in its §11.
+
+## Newest (2026-11-18): the pace is fixed (EA2e)
+
+- **The Act 5 script player now takes 14.3 real hours** of awake play: 0.8 / 1.3 / 1.9 / 5.5 / 4.8 per act. The test fails if any act passes 8 h or the run leaves 12–30 h, and it prints where the hours went (top 15 lines followed). Set `TELO_BOTLOG=/abs/file` to write the bot's whole run to a file.
+- **The old 122 h was wrong twice over:** the meter counted sleep as play (honestly 76 h), and the "what next" line (`Town/Guidance.cs`) wasted the rest. Fixed in the line: hand the Board to Tobi when you can (`invest:board`); the mail call only after 17:00; projects come before filler odd jobs and the hunt-group hint; "switchboard full" only when a panel can be added. Fixed in the bot (`Act/Bot.cs`): trips over 100 m go by van (`LongTripM`); kit the next job needs is taken from the van when you leave it. Fixed in actions: `install:sign` says "no boxed modem" instead of failing silently, and clears a job someone else already finished.
+- **Money:** a project starts only when next month's fixed bills are still covered (`ProjectRules.CanAffordStart`). Broadband $2,500, fibre ring $4,500, ocean cable upkeep $400/month. D41's bands amended (Acts 3–4 begin just after paying for a project).
+- **Left:** Acts 1–2 are short (EA2f); Act 5 now arrives in Dec 1983, so the calendar question is back (IDEAS inbox); a human is slower than the bot (measure once).
+
+## Earlier (2026-11-16, a long local session): the path from the first message into Act 5
 
 - **Projects** (`game/content/projects.json`, `src/Telo.Sim/Build/ProjectRules.cs`, world view `game/scripts/Projects.cs` + `World/ProjectSiteView.cs`): things built in the world, step by step with kit from the van, that open the next part of the game. Gated by act, earlier projects, an Almanac page, the depot, or size. Rewards: lines in, a service on every line, income, a bill (or ending one), or a **region**. 15 projects through Act 5 (Church Lane poles → Eastgate cabinet → modem bank → leased line → microwave hop → Millbrook → cold-store datacentre → Kestrel Point landing → ocean cable → broadband → fibre ring → Farland city → first cell mast → coast cell sites → fibre to every mast). Add more as data; `ContentDb.Validate()` checks requirements come earlier in the file.
 - **Regions**: a project can open a whole town (Millbrook 150, Farland coast 260, Easthaven and the bay 700, Farland city 1000, mobile 1500 + 4000) whose subscribers sign over ~3 weeks, billed as a block. `GameState.TotalSubscribers` is what acts measure. The valley's ~37 households stay individual.

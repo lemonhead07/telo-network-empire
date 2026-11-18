@@ -61,17 +61,52 @@ public class ScriptPlayerTests
         var s = sim.State;
         var log = new List<string>();
         var acts = new List<string>();
+        long lived = 0, lastAbs = (long)s.Day * 1440 + s.Minute;
+        var hours = new List<double>();                 // real hours of awake play when each act began
+        var tally = new Dictionary<string, long>();     // where the awake minutes went, by the line being followed
         var taken = Bot.Play(sim, me, gen, () => s.ActIndex >= 5 || s.Day > Simulation.StartDate.Day + 365 * 30, 400000,
             (id, why) =>
             {
+                // awake time the player lives: every action's own minutes except sleeping (a fade, not play); 3 game minutes are one real second
+                long abs = (long)s.Day * 1440 + s.Minute;
+                if (id is not ("sleep" or "phone:night"))
+                {
+                    long d = Math.Clamp(abs - lastAbs, 0, 18 * 60);
+                    lived += d;
+                    var k = $"act{s.ActIndex} {id.Split(':')[0]} | " + System.Text.RegularExpressions.Regex.Replace(why, @"[0-9$,]+", "#");
+                    tally[k[..Math.Min(k.Length, 90)]] = tally.GetValueOrDefault(k[..Math.Min(k.Length, 90)]) + d;
+                }
+                lastAbs = abs;
                 log.Add($"{s.Date} {Clock.Text(s)} {id}  ({why})");
                 if (acts.Count == 0 || !acts[^1].StartsWith($"act {s.ActIndex}:"))
-                    acts.Add($"act {s.ActIndex}: {s.Date} subs={s.TotalSubscribers} cash={s.Cash} projects={s.ProjectsDone.Count}");
+                {
+                    hours.Add(lived / 3.0 / 3600);
+                    acts.Add($"act {s.ActIndex}: {s.Date} subs={s.TotalSubscribers} cash={s.Cash} projects={s.ProjectsDone.Count} realHours={lived / 3.0 / 3600:0.0}");
+                }
             });
         _out.WriteLine(string.Join("\n", acts));
+        if (Environment.GetEnvironmentVariable("TELO_BOTLOG") is { } path) File.WriteAllLines(path, log);   // the whole run, for reading
+        foreach (var kv in tally.OrderByDescending(k => k.Value).Take(15)) _out.WriteLine($"  {kv.Value / 180.0 / 60:0.0}h  {kv.Key}");
         Assert.True(s.ActIndex >= 5,
             $"stuck in act {s.ActIndex} on {s.Date}: subs={s.TotalSubscribers} cash={s.Cash} archive={s.Archive} projects={string.Join(",", s.ProjectsDone)}\n" +
             $"next: {Guidance.Next(s, sim.Content).Text}\n" + string.Join("\n", acts) + "\nLast actions:\n" + string.Join("\n", log.TakeLast(12)));
+        // EA2e: the pace (D42). A perfect player: no act drags past 8 real hours, the whole run stays under 30, and no
+        // shortcut skips the work (the floor). Acts 1-2 are still short: more asks come with the Yard and the far towns.
+        for (int i = 1; i < hours.Count; i++) Assert.True(hours[i] - hours[i - 1] <= 8, $"act {i - 1} took {hours[i] - hours[i - 1]:0.0} real hours\n" + string.Join("\n", acts));
+        Assert.InRange(hours[^1], 12, 30);
+        // EA1: money stays tight enough to matter (bands in DECISIONS.md D41), and a year into Act 5 it hasn't run away.
+        // Acts 3 and 4 begin the day the last project is paid for, so their floor is "not in debt" rather than savings.
+        var bands = new (long Lo, long Hi)[] { (0, long.MaxValue), (300, 3_000), (500, 6_000), (0, 20_000), (1_500, 25_000), (8_000, 80_000) };
+        foreach (var line in acts)
+        {
+            int act = int.Parse(line[4..line.IndexOf(':')]);
+            long cash = long.Parse(line[(line.IndexOf("cash=") + 5)..].Split(' ')[0]);
+            Assert.InRange(cash, bands[act].Lo, bands[act].Hi);
+        }
+        int act5 = s.Day;
+        Bot.Play(sim, me, gen, () => s.Day > act5 + 365, 200000);
+        _out.WriteLine($"a year into act 5: {s.Date} subs={s.TotalSubscribers} cash={s.Cash}");
+        Assert.InRange(s.Cash, 0, 300_000);
         // and through the acts' own work, not around it
         Assert.Contains("proj-first-mast", s.ProjectsDone.Concat(s.Projects.Keys).Append(Telo.Sim.Build.ProjectRules.Next(s, sim.Content)?.Id ?? ""));
     }

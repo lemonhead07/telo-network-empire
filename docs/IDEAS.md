@@ -4,6 +4,8 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 ## Inbox
 *(one line each: date, idea, where it came from)*
+- 2026-11-18 · **The calendar now runs fast again: Act 5 arrives in Dec 1983.** With the pace fixed, a year of play covers the whole early access. Decide whether the dates should lag (each act's page only readable from a real year, or Echo biting harder when you build early) or whether racing ahead of history is the time-travel joke. From EA2e.
+- 2026-11-18 · **The bot is a perfect player.** Measure a human against it once (one evening of the owner playing, timed per act) so the 20–30 h target can be set for people, not the script. From EA2e.
 - 2026-11-16 · **Upgrades happen in the world, unexplained but always visible.** No screens explaining how things work: when tech improves (an Almanac page built, a stage automated), the change simply appears on the objects (new box on the pole, a different lamp, a faster modem's lights, a tidier frame). The player may not be told, but must always be able to see it. Fits D26 (objects, not panels) and the "world tells" rule in TECH_TREE §4. From the owner.
 
 ## Shaped
@@ -14,6 +16,8 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 - 2026-11-15 · **The Ages** shaped into `docs/AGES.md`: Acts 0–7 at planet scale, 128 jobs in the seven verbs, places per age, Nez per age, and the systems to prepare (§6). Open questions A1–A6 in its §8.
 
 - 2026-11-15 · **Bookings, service and NezTel** shaped into `docs/BOOKINGS_AND_NEZTEL.md` (D35–D39). Open: B1–B3 in its §6. Story amended same day: you are Nez (amnesiac, time running backwards), PIP's notes are your own invention, NezTel is your worse future, the stakes are the Blackout (D35, D40).
+
+- 2026-11-18 · **Shop days and the Clue Card** shaped into `docs/SHOP_DAYS.md` (D45, provisional): the day opens and closes at the shop sign, the clock follows the work, before/after hours are the open world, cash register at the counter, the shift grows day → week → month, a Clue Card for the line of progression (33 steps through Act 5). Owner questions in its §11.
 
 ## Parked
 *(decided not now; say why)*

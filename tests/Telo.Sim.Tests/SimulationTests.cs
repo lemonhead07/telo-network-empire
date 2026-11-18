@@ -40,6 +40,9 @@ public class SimulationTests
         sim.AdvanceDays(30);
         Assert.Equal(0, sim.State.ActIndex); // milestone met, but the world hasn't announced hobbyist networks yet
         sim.AdvanceDays(600);
+        Assert.Equal(0, sim.State.ActIndex); // announced, but the act's own work isn't built (D42)
+        sim.State.ProjectsDone.Add("proj-church-poles");
+        sim.AdvanceDay();
         Assert.Equal(1, sim.State.ActIndex);
     }
 
