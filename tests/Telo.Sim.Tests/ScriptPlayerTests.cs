@@ -61,12 +61,17 @@ public class ScriptPlayerTests
         var s = sim.State;
         var log = new List<string>();
         var acts = new List<string>();
+        long lived = 0, lastAbs = (long)s.Day * 1440 + s.Minute; string lastId = "";
         var taken = Bot.Play(sim, me, gen, () => s.ActIndex >= 5 || s.Day > Simulation.StartDate.Day + 365 * 30, 400000,
             (id, why) =>
             {
+                // awake time the player lives (sleep skips); 3 game minutes are one real second
+                long abs = (long)s.Day * 1440 + s.Minute;
+                if (lastId is not ("sleep" or "phone:night")) lived += Math.Clamp(abs - lastAbs, 0, 18 * 60);
+                lastAbs = abs; lastId = id;
                 log.Add($"{s.Date} {Clock.Text(s)} {id}  ({why})");
                 if (acts.Count == 0 || !acts[^1].StartsWith($"act {s.ActIndex}:"))
-                    acts.Add($"act {s.ActIndex}: {s.Date} subs={s.TotalSubscribers} cash={s.Cash} projects={s.ProjectsDone.Count}");
+                    acts.Add($"act {s.ActIndex}: {s.Date} subs={s.TotalSubscribers} cash={s.Cash} projects={s.ProjectsDone.Count} realHours={lived / 3.0 / 3600:0.0}");
             });
         _out.WriteLine(string.Join("\n", acts));
         Assert.True(s.ActIndex >= 5,
