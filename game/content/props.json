@@ -1384,6 +1384,19 @@
    "pivot": "room origin",
    "tris": 676,
    "status": "modelled"
+  },
+  {
+   "id": "nez.nadir",
+   "name": "Nadir exchange",
+   "what": "The national phone company's grand exchange at the antipode: concrete hall on a sea pier, bronze doors and crest, flags, and a tower crowded with dishes and horns.",
+   "size": [
+    40.6,
+    46.3,
+    30.6
+   ],
+   "pivot": "pier top, centre",
+   "tris": 2576,
+   "status": "modelled"
   }
  ]
 }

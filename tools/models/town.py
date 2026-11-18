@@ -680,7 +680,7 @@ def street_lamp():
 k.PALETTE.update({
     "car-teal": (0.24, 0.50, 0.52), "car-mustard": (0.80, 0.62, 0.20), "car-maroon": (0.50, 0.16, 0.18), "car-cream": (0.88, 0.84, 0.70),
     "car-glass": (0.28, 0.38, 0.46), "chrome": (0.80, 0.81, 0.82), "headlamp": (1.0, 0.95, 0.75), "tail": (0.70, 0.08, 0.06),
-    "nez-blue": (0.12, 0.20, 0.50), "nez-letter": (0.95, 0.88, 0.45), "plate": (0.95, 0.94, 0.88), "wood-panel": (0.55, 0.38, 0.22),
+    "nez-blue": (0.12, 0.20, 0.50), "nez-letter": (0.95, 0.88, 0.45), "dish": (0.88, 0.88, 0.86), "plate": (0.95, 0.94, 0.88), "wood-panel": (0.55, 0.38, 0.22),
 })
 
 
@@ -1016,6 +1016,91 @@ def room_clutter():
     gbox("map-pin", (2.3, 1.5, 2.42), (0.025, 0.025, 0.02), "book-1")
 
 
+# ======================================================================================== Nadir (Nez's exchange)
+# NezView places it at the antipode: pivot at ground level on the pier top; front (+Z) has the doors at z = 9.
+# Footprint of the old boxes: pier 40 x 30 (top at 0), hall 30 x 12 x 18, tower at (10, -4) 28 m high.
+k.PALETTE.update({"nez-concrete": (0.66, 0.66, 0.64), "nez-concrete-dark": (0.50, 0.50, 0.50), "nez-glass": (0.20, 0.27, 0.36),
+                  "nez-gold": (0.85, 0.72, 0.35), "sea-stain": (0.32, 0.36, 0.34)})
+
+
+def nez_nadir():
+    # the pier: a stepped concrete block down into the sea, stained where the waves reach
+    gbox("pier", (0, -4.0, 0), (40, 8, 30), "nez-concrete-dark")
+    gbox("pier-stain", (0, -6.5, 0), (40.2, 3.0, 30.2), "sea-stain")
+    gbox("pier-lip", (0, -0.15, 0), (40.6, 0.3, 30.6), "nez-concrete")
+    for sx in (-1, 1):
+        for i in range(4):
+            gbox(f"bollard{sx}{i}", (sx * 19.5, 0.4, -12 + i * 8), (0.5, 0.8, 0.5), "ink")
+    # the hall: plinth, tall window strips between fins, the blue band and a cornice
+    gbox("hall-plinth", (0, 0.6, 0), (31, 1.2, 19), "nez-concrete-dark")
+    gbox("hall", (0, 6.6, 0), (30, 10.8, 18), "nez-concrete")
+    for i in range(13):
+        x = -13.2 + i * 2.2
+        for sz in (-1, 1):
+            if sz == 1 and abs(x) < 3.6:
+                continue  # the doors
+            gbox(f"strip{i}{sz}", (x, 6.8, sz * 9.03), (1.2, 8.4, 0.06), "nez-glass")
+            gbox(f"fin{i}{sz}", (x + 1.1, 6.8, sz * 9.25), (0.3, 9.6, 0.5), "nez-concrete")
+    for i in range(7):
+        z = -6.9 + i * 2.3
+        for sx in (-1, 1):
+            gbox(f"side-strip{i}{sx}", (sx * 15.03, 6.8, z), (0.06, 8.4, 1.2), "nez-glass")
+    gbox("band", (0, 12.4, 0), (31, 0.8, 19), "nez-blue")
+    gbox("cornice", (0, 12.95, 0), (31.6, 0.3, 19.6), "nez-concrete")
+    gbox("roof", (0, 13.1, 0), (29.5, 0.2, 17.5), "roof-charcoal")
+    for i in range(4):
+        gbox(f"plant{i}", (-10 + i * 5, 13.9, -4), (3.0, 1.4, 2.5), "nez-concrete-dark")
+        gcyl(f"fan{i}", (-10 + i * 5, 14.6, -4), 0.9, 0.1, "ink", sides=12)
+    # the entrance: steps up the plinth, a canopy, bronze doors, the crest
+    for i in range(4):
+        gbox(f"step{i}", (0, 0.15 + i * 0.3, 9.5 + (3 - i) * 0.45), (9.0 - i * 0.4, 0.3, 0.45), "nez-concrete")
+    gbox("doors", (0, 3.0, 9.05), (6, 4.8, 0.2), "nez-gold")
+    for i in range(3):
+        gbox(f"door-seam{i}", (-2 + i * 2, 3.0, 9.16), (0.06, 4.8, 0.02), "ink")
+    slab("canopy", (-5, 6.0, 9), (5, 6.0, 9), (5, 5.8, 12), (-5, 5.8, 12), 0.3, "nez-concrete")
+    for sx in (-1, 1):
+        gcyl(f"canopy-col{sx}", (sx * 4.5, 1.2, 11.6), 0.25, 4.6, "nez-concrete", sides=10)
+    gcyl("crest", (0, 9.6, 9.1), 1.4, 0.15, "nez-gold", sides=16)
+    k.cylinder("crest-disc", G(0, 9.6, 9.18), 1.4, 0.12, M("nez-gold"), axis="Y", sides=16)
+    k.cylinder("crest-inner", G(0, 9.6, 9.26), 1.0, 0.06, M("nez-blue"), axis="Y", sides=16)
+    for i in range(3):  # three lightning-ish bolts: the national lines
+        k.beam(f"crest-bolt{i}", G(-0.6 + i * 0.6, 10.2, 9.3), G(-0.4 + i * 0.6, 9.0, 9.3), 0.12, M("nez-gold"))
+    # flagpoles either side of the steps
+    for sx in (-1, 1):
+        gcyl(f"flagpole{sx}", (sx * 7, 1.2, 12), 0.08, 10.0, "steel", sides=8)
+        gbox(f"flag{sx}", (sx * 7 + sx * 0.9, 10.2, 12), (1.8, 1.1, 0.04), "nez-blue")
+        gbox(f"flag-stripe{sx}", (sx * 7 + sx * 0.9, 10.2, 12.025), (1.8, 0.2, 0.01), "nez-letter")
+    # the tower: a tapering concrete shaft with a lattice top, platforms, dishes and horns all round
+    tx, tz = 10.0, -4.0
+    gcyl("tower-shaft", (tx, 13.2, tz), 2.0, 12.0, "nez-concrete", sides=12, r2=1.5)
+    for i, y in enumerate((25.2, 29.5)):
+        gcyl(f"platform{i}", (tx, y, tz), 3.2, 0.4, "nez-concrete-dark", sides=12)
+        for j in range(12):
+            a = j * math.tau / 12
+            gbox(f"rail{i}-{j}", (tx + math.cos(a) * 3.1, y + 0.9, tz + math.sin(a) * 3.1), (0.06, 1.0, 0.06), "steel")
+    gcyl("tower-upper", (tx, 25.6, tz), 1.3, 3.9, "nez-concrete", sides=12, r2=1.2)
+    gcyl("tower-mast", (tx, 29.9, tz), 0.25, 8.0, "steel", sides=8, r2=0.1)
+    gcyl("beacon", (tx, 37.9, tz), 0.3, 0.4, "led-red", sides=8)
+    for i in range(6):
+        a = i * math.tau / 6 + 0.3
+        y = 26.8 if i % 2 else 28.2
+        cx, cz = tx + math.cos(a) * 2.4, tz + math.sin(a) * 2.4
+        dish = k.empty(f"dish{i}", G(cx, y, cz))
+        dish.rotation_euler = (math.radians(90), 0, -a + math.pi / 2)
+        k.cone(f"dish{i}-bowl", (0, 0, 0), 1.1, 0.35, 0.45, M("dish") if "dish" in k.PALETTE else M("paper"), sides=12, parent=dish)
+        k.beam(f"dish{i}-arm", G(tx, y, tz), G(cx, y, cz), 0.15, M("steel"))
+    for i in range(4):  # horn antennas, squarer and older
+        a = i * math.tau / 4 + 0.8
+        cx, cz = tx + math.cos(a) * 1.9, tz + math.sin(a) * 1.9
+        horn = k.empty(f"horn{i}", G(cx, 31.0, cz))
+        horn.rotation_euler = (0, 0, -a)
+        k.cone(f"horn{i}-body", (0.8, 0, 0), 0.25, 0.9, 1.8, M("nez-concrete"), sides=4, parent=horn, rot=(0, math.pi / 2, 0))
+    # waveguides down the shaft
+    for i in range(3):
+        a = i * 0.5 + 2.6
+        k.beam(f"guide{i}", G(tx + math.cos(a) * 1.95, 1.3, tz + math.sin(a) * 1.95), G(tx + math.cos(a) * 1.55, 25.0, tz + math.sin(a) * 1.55), 0.18, M("nez-concrete-dark"))
+
+
 # ======================================================================================== registry
 PROPS = {}
 for v in HOUSES:
@@ -1052,6 +1137,8 @@ PROPS["room.camp-bed"] = (room_camp_bed, "Camp bed", "A folding camp bed with a 
 PROPS["room.terminal"] = (room_terminal, "The Board's terminal", "A cream terminal on a side table, keyboard and floppy box; the game draws the screen.", "floor, centre", False)
 
 PROPS["room.clutter"] = (room_clutter, "Room clutter", "A rug, a filing cabinet with the kettle on it, a coat on a hook, a paraffin heater, a map of the lines.", "room origin", False)
+
+PROPS["nez.nadir"] = (nez_nadir, "Nadir exchange", "The national phone company's grand exchange at the antipode: concrete hall on a sea pier, bronze doors and crest, flags, and a tower crowded with dishes and horns.", "pier top, centre", False)
 
 
 def bounds():

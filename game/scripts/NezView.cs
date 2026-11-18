@@ -29,7 +29,8 @@ public partial class GameRoot
         if (fwd.LengthSquared() < 0.1f) fwd = dir.Cross(Vector3.Right).Normalized();
         var basis = new Basis(fwd.Cross(dir).Normalized(), dir, fwd);
         var root = new Node3D { Name = "Nadir", Transform = new Transform3D(basis, _nadir) };
-        root.AddChild(new LowPoly()
+        if (Props.HasModel("nez.nadir")) root.AddChild(Props.Make("nez.nadir"));
+        else root.AddChild(new LowPoly()
             .Box(new Vector3(0, -4f, 0), new Vector3(40, 8, 30), NezGrey * 0.8f)                     // plinth / pier
             .Box(new Vector3(0, 6f, 0), new Vector3(30, 12, 18), NezGrey)                          // the exchange hall
             .Box(new Vector3(0, 12.4f, 0), new Vector3(31, 0.8f, 19), NezBlue)                     // roof band
