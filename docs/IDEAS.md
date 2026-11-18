@@ -4,6 +4,8 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 ## Inbox
 *(one line each: date, idea, where it came from)*
+- 2026-11-18 · **The calendar now runs fast again: Act 5 arrives in Dec 1983.** With the pace fixed, a year of play covers the whole early access. Decide whether the dates should lag (each act's page only readable from a real year, or Echo biting harder when you build early) or whether racing ahead of history is the time-travel joke. From EA2e.
+- 2026-11-18 · **The bot is a perfect player.** Measure a human against it once (one evening of the owner playing, timed per act) so the 20–30 h target can be set for people, not the script. From EA2e.
 - 2026-11-16 · **Upgrades happen in the world, unexplained but always visible.** No screens explaining how things work: when tech improves (an Almanac page built, a stage automated), the change simply appears on the objects (new box on the pole, a different lamp, a faster modem's lights, a tidier frame). The player may not be told, but must always be able to see it. Fits D26 (objects, not panels) and the "world tells" rule in TECH_TREE §4. From the owner.
 
 ## Shaped

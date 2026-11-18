@@ -38,7 +38,7 @@ A day is not a stretch of real time. **A day is a shift you open and close.** No
 Three things fall out of this:
 
 1. **Game time never runs away from a slow player.** You can stand in the shop reading for an hour; the sun won't move.
-2. **The calendar moves at the speed of progress**, not the speed of the planet. That is what fixes the pace problem in `BUILD_PLAN.md` EA2e (122 hours to Act 5 against 20–30): a day that is all milestones can't be wasted.
+2. **The calendar moves at the speed of progress**, not the speed of the planet. EA2e already cut the wasted hours (the script player now reaches Act 5 in ~14 real hours, and Act 5 arrives in Dec 1983, too soon on the calendar). Shop days answer the other half: the calendar only moves when a shift is opened, and the shift grows with the business, so the years pass at a believable rate without adding idle play.
 3. **There's always more to do than the day asks.** Before and after hours are open-ended, so every new thing on the planet (a village, a dock, a hill to survey, a stranger at the antipode) is something to do *between* shifts, and it doesn't crowd the shift.
 
 ---
