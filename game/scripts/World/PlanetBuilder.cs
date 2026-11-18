@@ -162,6 +162,7 @@ public static class PlanetBuilder
                 float scale = 0.75f + rng.Next(1000) / 1000f * 0.9f;
                 int spin = rng.Next(628);
                 if ((dir - town).Length() * R < gen.Town.RadiusM * 1.25f) continue;
+                if (TownDressing.InField(gen, dir)) continue;  // no trees in the middle of a ploughed field
                 var sd = ToSim(dir);
                 Mesh? pick = gen.BiomeAt(sd) switch
                 {

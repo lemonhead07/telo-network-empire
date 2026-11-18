@@ -109,6 +109,7 @@ public static class TownBuilder
             float poleDist = Mathf.Abs((float)lot.South - (street is null ? PoleLineSouth : street.PoleLine));
             town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist, palette[(i + 2) % palette.Length], street));
         }
+        TownDressing.Gardens(root, gen, town);
 
         // --- the streets: Main Street, Church Lane and Mill Row in town, the High Street in Eastgate -----------
         var road = new LowPoly().Box(Vector3.Zero, new Vector3(6.3f, 0.08f, StreetHalfWidth * 2), new Color(0.27f, 0.27f, 0.29f))
@@ -143,14 +144,14 @@ public static class TownBuilder
     }
 
     /// <summary>Main Street: its centre line is this far south of the town centre, it is this wide, and runs this far east and west.</summary>
-    public const float StreetSouth = 16.5f, StreetHalfWidth = 3.25f, StreetEnd = 96f;
+    public const float StreetSouth = 16.5f, StreetHalfWidth = 3.25f, StreetEnd = 112f;
 
     public static readonly Street[] Streets =
     {
         new("town-start", false, StreetSouth, -StreetEnd, StreetEnd, "Main Street"),
-        new("town-start", false, -30f, -72f, 60f, "Church Lane"),
-        new("town-start", true, -72f, -30f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
-        new("eastgate", false, 8f, -48f, 48f, "Eastgate High Street"),
+        new("town-start", false, -40f, -86f, 62f, "Church Lane"),
+        new("town-start", true, -86f, -40f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
+        new("eastgate", false, 8f, -64f, 64f, "Eastgate High Street"),
     };
 
     /// <summary>The east-west street a building fronts on: the nearest one on its site that runs past it. Null for the farm.</summary>
@@ -158,11 +159,12 @@ public static class TownBuilder
         lot.Kind == LotKind.Farm ? null : Streets.Where(s => !s.NorthSouth && s.Site == lot.Site && lot.East >= s.From - 10 && lot.East <= s.To + 10)
             .OrderBy(s => Mathf.Abs(s.At - (float)lot.South)).FirstOrDefault();
 
-    private const float HqDriveEast = 8f, DriveOffset = 5.7f;
+    private const float HqDriveEast = 8f;
+    internal const float DriveOffset = 5.7f;
     private static readonly Color Concrete = new(0.52f, 0.51f, 0.48f);
 
     /// <summary>Which side of a house its driveway goes: the right (+1) unless that would run through a street pole.</summary>
-    private static int DriveSide(LotDef lot, bool facingSouth, Street street)
+    internal static int DriveSide(LotDef lot, bool facingSouth, Street street)
     {
         if (!facingSouth) return 1; // the pole line is on the north side of the street only
         float east = (float)lot.East + DriveOffset;

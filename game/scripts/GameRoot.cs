@@ -174,6 +174,7 @@ public partial class GameRoot : Node3D
     {
         for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
         TownBuilder.BuildRoads(_town.Root, _planet, GetWorld3D().DirectSpaceState);
+        TownDressing.Fields(_town.Root, _planet, GetWorld3D().DirectSpaceState);
         foreach (var p in _content.Premises.Values) BuildPoleLine(p);
         BuildNadir();
         if (!Onboarding.RoadOpen(Sim.State, _content)) BuildRoadBarrier();
@@ -1230,8 +1231,10 @@ public partial class GameRoot : Node3D
         await Frames(30);
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
-        await Shot("-shop", TownBuilder.Place(_planet, 66, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 72, 1, 0, 2).Origin);
+        await Shot("-shop", TownBuilder.Place(_planet, 78, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 84, 1, 0, 2).Origin);
         await Shot("-aerial", TownBuilder.Place(_planet, 250, 500, 0, 420).Origin, hq);
+        await Shot("-gardens", TownBuilder.Place(_planet, -40, -18, 0, 11).Origin, TownBuilder.Place(_planet, -20, -10, 0, 0).Origin);
+        await Shot("-fields", TownBuilder.Place(_planet, 140, 190, 0, 22).Origin, TownBuilder.Place(_planet, 230, 290, 0, 0).Origin);
         if (_nadir != Vector3.Zero)
         {
             var nu = _nadir.Normalized(); var side = nu.Cross(Vector3.Up).Normalized();
