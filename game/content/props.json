@@ -1527,6 +1527,32 @@
    "pivot": "road centre, ground",
    "tris": 1836,
    "status": "modelled"
+  },
+  {
+   "id": "room.pip-handset",
+   "name": "PIP's handset",
+   "what": "A chunky handset on a little stand: bezel round the screen the game draws, aerial, lamp, coiled lead.",
+   "size": [
+    0.496,
+    0.57,
+    0.209
+   ],
+   "pivot": "box centre",
+   "tris": 416,
+   "status": "modelled"
+  },
+  {
+   "id": "room.notebook",
+   "name": "Company notebook",
+   "what": "An open red hardback with a ribbon and a pencil; the game draws the page.",
+   "size": [
+    0.606,
+    0.02,
+    0.41
+   ],
+   "pivot": "box centre",
+   "tris": 112,
+   "status": "modelled"
   }
  ]
 }

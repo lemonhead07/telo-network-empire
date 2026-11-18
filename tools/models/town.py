@@ -1199,6 +1199,41 @@ def world_road_barrier():
     gbox("thermos", (4.6, 0.2, 0.6), (0.12, 0.4, 0.12), "shutter-green")
 
 
+# ======================================================================================== PIP's handset and the notebook
+# Both replace a box in GameRoot (pivot at the box centre, in the box's own tilted frame). The game draws their screens:
+# the handset's is 0.34 wide at z = +0.025 (the box face is at +0.015); the notebook's page lies flat 0.013 above centre.
+k.PALETTE.update({"pip-case": (0.20, 0.21, 0.24), "pip-bezel": (0.30, 0.31, 0.34), "notebook-red": (0.55, 0.13, 0.11),
+                  "page": (0.94, 0.92, 0.84), "ribbon": (0.85, 0.70, 0.25), "pencil": (0.92, 0.75, 0.20)})
+
+
+def room_pip_handset():
+    gbox("shell", (0, -0.005, -0.012), (0.42, 0.33, 0.05), "pip-case", bevel=0.012)
+    for sy in (-1, 1):
+        gbox(f"bezel-h{sy}", (0, sy * 0.145, 0.016), (0.4, 0.03, 0.012), "pip-bezel")
+    for sx in (-1, 1):
+        gbox(f"bezel-v{sx}", (sx * 0.19, 0, 0.016), (0.03, 0.26, 0.012), "pip-bezel")
+    for i in range(5):
+        gbox(f"grille{i}", (-0.12 + i * 0.025, -0.15, 0.024), (0.012, 0.012, 0.004), "ink")
+    gcyl("lamp", (0.16, 0.152, 0.02), 0.009, 0.01, "led-green", sides=8)
+    label("brand", "PIP", (0.1, -0.151, 0.024), 0.022, "ribbon")
+    gbox("antenna-base", (0.17, 0.17, -0.015), (0.04, 0.03, 0.03), "pip-case")
+    gcyl("antenna", (0.17, 0.18, -0.015), 0.008, 0.2, "steel", sides=6)
+    gcyl("antenna-tip", (0.17, 0.38, -0.015), 0.014, 0.02, "ink", sides=6)
+    k.beam("stand", G(0, 0.05, -0.04), G(0, -0.1, -0.16), 0.03, M("pip-case"))
+    gbox("stand-foot", (0, -0.115, -0.15), (0.2, 0.02, 0.06), "pip-case")
+    k.beam("coil", G(-0.2, -0.1, -0.03), G(-0.28, -0.12, -0.15), 0.015, M("ink"), round_=True)
+
+
+def room_notebook():
+    for sx in (-1, 1):
+        gbox(f"cover{sx}", (sx * 0.135, -0.004, 0), (0.27, 0.008, 0.36), "notebook-red")
+        gbox(f"pages{sx}", (sx * 0.128, 0.004, 0), (0.25, 0.01, 0.33), "page")
+    gbox("spine", (0, -0.002, 0), (0.025, 0.012, 0.36), "notebook-red")
+    gbox("ribbon", (0.02, 0.0095, 0.19), (0.012, 0.002, 0.08), "ribbon")
+    k.beam("pencil", G(0.3, 0.002, -0.12), G(0.33, 0.002, 0.12), 0.012, M("pencil"), round_=True)
+    gcyl("pencil-tip", (0.333, 0.0, 0.135), 0.004, 0.012, "ink", sides=6)
+
+
 # ======================================================================================== registry
 PROPS = {}
 for v in HOUSES:
@@ -1257,6 +1292,9 @@ PROPS["person.sol"] = (lambda: person("shop-coat", "trouser-grey", "skin-2", "ha
                        "Sol", "Sol of Sol's Electronics: brown shop coat with pens in the pocket, glasses, not much hair.", "feet, facing +Z", False)
 
 PROPS["world.road-barrier"] = (world_road_barrier, "Council road barrier", "Striped boards on trestles with lamps, a ROAD CLOSED board, cones, sandbags, and a council worker with tea, not working.", "road centre, ground", False)
+
+PROPS["room.pip-handset"] = (room_pip_handset, "PIP's handset", "A chunky handset on a little stand: bezel round the screen the game draws, aerial, lamp, coiled lead.", "box centre", False)
+PROPS["room.notebook"] = (room_notebook, "Company notebook", "An open red hardback with a ribbon and a pencil; the game draws the page.", "box centre", False)
 
 
 def bounds():

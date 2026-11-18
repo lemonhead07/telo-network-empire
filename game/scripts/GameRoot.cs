@@ -309,14 +309,17 @@ public partial class GameRoot : Node3D
             () => Sim.State.MessagesWaiting > 0 ? $"Play messages ({Sim.State.MessagesWaiting} waiting)" : "No new messages", PlayMessages);
         Dress(answering, "room.answering-machine");
 
-        RoomBuilder.Prop(room, "Handset", new Vector3(1.3f, 0.86f, back + 0.36f), new Vector3(0.38f, 0.26f, 0.03f), new Color(0.1f, 0.11f, 0.14f),
+        var handset = RoomBuilder.Prop(room, "Handset", new Vector3(1.3f, 0.86f, back + 0.36f), new Vector3(0.38f, 0.26f, 0.03f), new Color(0.1f, 0.11f, 0.14f),
             () => Onboarding.DeskOpen(Sim.State, _content) ? "Read PIP's Almanac" : "PIP's handset. It has more to show you once you know the round",
-            () => { if (Onboarding.DeskOpen(Sim.State, _content)) _almanac.Open(InterfaceTier.Terminal); }).RotationDegrees = new Vector3(-18, 0, 0);
+            () => { if (Onboarding.DeskOpen(Sim.State, _content)) _almanac.Open(InterfaceTier.Terminal); });
+        handset.RotationDegrees = new Vector3(-18, 0, 0);
+        Dress(handset, "room.pip-handset");
         _pipScreen = Screen(room, _almanac, 0.34f, new Vector3(1.3f, 0.865f, back + 0.385f), new Vector3(-18, 0, 0), glows: true);
 
-        RoomBuilder.Prop(room, "Notebook", new Vector3(1.85f, 0.745f, back + 0.5f), new Vector3(0.52f, 0.02f, 0.34f), new Color(0.5f, 0.12f, 0.1f),
+        var notebook = RoomBuilder.Prop(room, "Notebook", new Vector3(1.85f, 0.745f, back + 0.5f), new Vector3(0.52f, 0.02f, 0.34f), new Color(0.5f, 0.12f, 0.1f),
             () => Onboarding.DeskOpen(Sim.State, _content) ? "Read the company notebook" : "The company notebook. Nothing in it yet: there is no company",
             () => { if (Onboarding.DeskOpen(Sim.State, _content)) _notebook.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing")); });
+        Dress(notebook, "room.notebook");
         _notebookScreen = Screen(room, _notebook, 0.48f, new Vector3(1.85f, 0.758f, back + 0.5f), new Vector3(-90, 0, 0), glows: false);
 
         // The Board's terminal, on a side table. It turns up with your first hire. Worked with the number keys.
@@ -1247,6 +1250,7 @@ public partial class GameRoot : Node3D
         await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);
         await Shot("-aerial", TownBuilder.Place(_planet, 250, 500, 0, 420).Origin, hq);
         await Shot("-hq", _town.Hq.ToGlobal(new Vector3(-2.4f, 1.75f, 2.1f)), _town.Hq.ToGlobal(new Vector3(1.2f, 0.7f, -1.9f)));
+        await Shot("-desk", _town.Hq.ToGlobal(new Vector3(1.0f, 1.45f, -0.5f)), _town.Hq.ToGlobal(new Vector3(1.4f, 0.8f, -2.05f)));
         await Shot("-gardens", TownBuilder.Place(_planet, -40, -18, 0, 11).Origin, TownBuilder.Place(_planet, -20, -10, 0, 0).Origin);
         await Shot("-fields", TownBuilder.Place(_planet, 140, 190, 0, 22).Origin, TownBuilder.Place(_planet, 230, 290, 0, 0).Origin);
         if (_nadir != Vector3.Zero)
