@@ -73,6 +73,7 @@ public static class TownBuilder
         var hq = new Node3D { Name = "HQ", Transform = Place(gen, 0, 0, 0, 0.1f) };
         root.AddChild(hq);
         RoomBuilder.BuildShell(hq);
+        if (Props.HasModel("room.hq")) hq.AddChild(Props.Make("room.hq"));   // the outside of the room: walls, roof, sign board
 
         var town = new Town
         {

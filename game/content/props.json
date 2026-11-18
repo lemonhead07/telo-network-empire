@@ -1293,6 +1293,45 @@
    "pivot": "ground, centre",
    "tris": 1940,
    "status": "modelled"
+  },
+  {
+   "id": "person.engineer",
+   "name": "Engineer (Jory)",
+   "what": "A line engineer in blue overalls and cap, clipboard in hand.",
+   "size": [
+    0.685,
+    1.815,
+    0.488
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 792,
+   "status": "modelled"
+  },
+  {
+   "id": "person.sysop",
+   "name": "Sysop (Tobi)",
+   "what": "Runs the Board: hoodie, jeans, headphones round the neck, a floppy disk in hand.",
+   "size": [
+    0.685,
+    1.808,
+    0.58
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 780,
+   "status": "modelled"
+  },
+  {
+   "id": "room.hq",
+   "name": "Your room (outside)",
+   "what": "The rented workshop seen from the street: rendered walls round RoomBuilder's room, pitched roof, sign board, open door, aerial, bins, a bicycle.",
+   "size": [
+    7.189,
+    6.05,
+    6.095
+   ],
+   "pivot": "room origin",
+   "tris": 1002,
+   "status": "modelled"
   }
  ]
 }

@@ -93,7 +93,9 @@ public partial class StaffFigure : Node3D
     {
         Name = "Staff";
         var skin = new Color(0.82f, 0.62f, 0.48f);
-        AddChild(new LowPoly()
+        string model = name.Contains("Tobi") ? "person.sysop" : "person.engineer";   // whoever runs the Board dresses for it
+        if (Props.HasModel(model)) AddChild(Props.Make(model));
+        else AddChild(new LowPoly()
             .Box(new Vector3(-0.1f, 0.42f, 0), new Vector3(0.16f, 0.84f, 0.2f), overalls * 0.8f).Box(new Vector3(0.1f, 0.42f, 0), new Vector3(0.16f, 0.84f, 0.2f), overalls * 0.8f)   // legs
             .Box(new Vector3(0, 1.14f, 0), new Vector3(0.46f, 0.62f, 0.26f), overalls)                                                                                     // body
             .Box(new Vector3(-0.3f, 1.1f, 0), new Vector3(0.12f, 0.58f, 0.14f), overalls).Box(new Vector3(0.3f, 1.1f, 0), new Vector3(0.12f, 0.58f, 0.14f), overalls)       // arms

@@ -746,6 +746,151 @@ def nez_van():
     gbox("plate-f", (0, 0.55, -L / 2 - 0.07), (0.5, 0.12, 0.02), "plate")
 
 
+# ======================================================================================== people (stand at the origin, face +Z)
+k.PALETTE.update({
+    "skin-1": (0.86, 0.66, 0.52), "skin-2": (0.55, 0.38, 0.27), "hair-dark": (0.16, 0.12, 0.10), "hair-brown": (0.40, 0.26, 0.15),
+    "overalls": (0.25, 0.40, 0.60), "overalls-dark": (0.19, 0.31, 0.47), "cap-blue": (0.20, 0.25, 0.40), "shoe": (0.14, 0.11, 0.09),
+    "hoodie": (0.48, 0.22, 0.42), "jeans": (0.24, 0.30, 0.44), "tee": (0.92, 0.90, 0.84), "headphones": (0.15, 0.15, 0.16),
+    "clipboard": (0.50, 0.35, 0.20), "paper": (0.95, 0.93, 0.86), "hi-vis": (0.95, 0.75, 0.15),
+})
+
+
+def person(top, legs, skin, hair, cap=None, bib=False, clipboard=False, headphones=False, hood=False):
+    # shoes and legs
+    for s in (-1, 1):
+        gbox(f"shoe{s}", (s * 0.1, 0.05, 0.04), (0.13, 0.1, 0.28), "shoe", bevel=0.02)
+        gcyl(f"shin{s}", (s * 0.1, 0.1, 0), 0.065, 0.42, legs, sides=6, r2=0.075)
+        gcyl(f"thigh{s}", (s * 0.1, 0.5, 0), 0.08, 0.42, legs, sides=6, r2=0.09)
+    gbox("hips", (0, 0.95, 0), (0.36, 0.16, 0.22), legs, bevel=0.03)
+    # torso, a little wider at the shoulders
+    k.cone("torso", G(0, 1.25, 0), 0.19, 0.23, 0.5, M(top), sides=8)
+    o = bpy.context.active_object
+    o.scale = (1.0, 0.62, 1.0)
+    if bib:
+        gbox("bib", (0, 1.2, 0.12), (0.22, 0.3, 0.02), legs)
+        for sx in (-1, 1):
+            k.beam(f"strap{sx}", G(sx * 0.09, 1.34, 0.125), G(sx * 0.12, 1.5, 0.06), 0.035, M(legs))
+            gcyl(f"button{sx}", (sx * 0.09, 1.33, 0.13), 0.015, 0.01, "steel", sides=6)
+        gbox("pocket", (0.0, 1.17, 0.135), (0.1, 0.08, 0.01), "overalls-dark")
+    if hood:
+        k.cone("hood", G(0, 1.47, -0.1), 0.17, 0.12, 0.16, M(top), sides=8)
+        gbox("pouch", (0, 1.1, 0.13), (0.24, 0.12, 0.02), top)
+        for sx in (-1, 1):
+            k.beam(f"cord{sx}", G(sx * 0.04, 1.47, 0.12), G(sx * 0.05, 1.3, 0.14), 0.012, M("tee"))
+    gcyl("neck", (0, 1.48, 0), 0.05, 0.07, skin, sides=6)
+    # arms: upper arm down, forearm forward (holding something at waist height)
+    for s in (-1, 1):
+        sh = (s * 0.25, 1.46, 0)
+        el = (s * 0.27, 1.17, 0.02)
+        wr = (s * 0.2, 1.05, 0.24) if (clipboard and s == 1) or s == -1 else (s * 0.28, 0.92, 0.04)
+        k.beam(f"upper{s}", G(*sh), G(*el), 0.11, M(top), round_=True)
+        k.beam(f"fore{s}", G(*el), G(*wr), 0.095, M(top), round_=True)
+        gbox(f"hand{s}", (wr[0], wr[1], wr[2] + 0.03), (0.07, 0.09, 0.08), skin, bevel=0.02)
+    # head: face, nose, ears, hair (or a cap)
+    gbox("head", (0, 1.64, 0), (0.2, 0.25, 0.22), skin, bevel=0.05)
+    gbox("nose", (0, 1.62, 0.12), (0.04, 0.06, 0.04), skin)
+    for s in (-1, 1):
+        gbox(f"ear{s}", (s * 0.105, 1.63, 0), (0.025, 0.06, 0.05), skin)
+        gbox(f"eye{s}", (s * 0.05, 1.67, 0.111), (0.03, 0.02, 0.01), "ink")
+    gbox("mouth", (0, 1.57, 0.111), (0.06, 0.012, 0.01), "skin-2" if skin == "skin-1" else "ink")
+    gbox("hair", (0, 1.74, -0.02), (0.22, 0.08, 0.24), hair, bevel=0.03)
+    gbox("hair-back", (0, 1.66, -0.1), (0.21, 0.16, 0.05), hair)
+    if cap:
+        gbox("cap", (0, 1.78, 0.0), (0.23, 0.07, 0.24), cap, bevel=0.03)
+        gbox("peak", (0, 1.75, 0.15), (0.2, 0.02, 0.12), cap)
+        gbox("badge", (0, 1.785, 0.122), (0.06, 0.03, 0.005), "hi-vis")
+    if headphones:
+        k.beam("band", G(-0.115, 1.66, 0), G(0, 1.8, 0), 0.025, M("headphones"))
+        k.beam("band2", G(0, 1.8, 0), G(0.115, 1.66, 0), 0.025, M("headphones"))
+        for s in (-1, 1):
+            gcyl(f"cup{s}", (s * 0.12, 1.6, 0), 0.05, 0.05, "headphones", sides=8)
+        k.beam("lead", G(0.12, 1.58, 0), G(0.15, 1.1, 0.12), 0.01, M("headphones"))
+    if clipboard:
+        gbox("clipboard", (0.12, 1.08, 0.3), (0.24, 0.32, 0.02), "clipboard", rot_y=0.3)
+        gbox("clip-paper", (0.12, 1.06, 0.312), (0.2, 0.26, 0.005), "paper", rot_y=0.3)
+        gbox("pen", (-0.18, 1.1, 0.28), (0.01, 0.12, 0.01), "ink")
+    else:
+        gbox("floppy", (-0.2, 1.08, 0.3), (0.13, 0.13, 0.005), "headphones")
+        gbox("floppy-label", (-0.2, 1.11, 0.304), (0.09, 0.05, 0.003), "paper")
+
+
+# ======================================================================================== your room (the HQ), outside only
+# RoomBuilder's walls are 0.1 thick on the 6 x 5 boundary, 2.7 high, doorway 1.0 wide at x = 1.2 on the +Z wall,
+# a window 1.2 x 0.9 at z = 0.8, y = 1.6 on the +X wall. This model is a skin just outside them, so everything inside
+# (switchboard, desk, bed) is untouched. The shop sign is a Label3D at z = 2.57: the board sits just behind it.
+k.PALETTE.update({"render": (0.74, 0.66, 0.52), "bike-red": (0.70, 0.15, 0.12), "bin": (0.30, 0.34, 0.30)})
+
+
+def room_hq():
+    W2, D2, H = 3.0, 2.5, 2.7
+    o = 0.06          # skin sits this far outside the boundary
+    top = 3.0
+    dx0, dx1 = 0.7, 1.7
+    gbox("plinth", (0, 0.1, 0), (2 * W2 + 0.2, 0.3, 2 * D2 + 0.2), "plinth")
+    # back and left walls: whole
+    gbox("skin-back", (0, top / 2, -D2 - o), (2 * W2 + 2 * o, top, 0.02), "render")
+    gbox("skin-left", (-W2 - o, top / 2, 0), (0.02, top, 2 * D2 + 2 * o), "render")
+    # right wall, round the window (z 0.2..1.4, y 1.15..2.05)
+    zx0, zx1, wy0, wy1 = 0.2, 1.4, 1.15, 2.05
+    x = W2 + o
+    gbox("skin-right-a", (x, top / 2, (-D2 - o + zx0) / 2), (0.02, top, zx0 + D2 + o), "render")
+    gbox("skin-right-b", (x, top / 2, (zx1 + D2 + o) / 2), (0.02, top, D2 + o - zx1), "render")
+    gbox("skin-right-c", (x, wy0 / 2, (zx0 + zx1) / 2), (0.02, wy0, zx1 - zx0), "render")
+    gbox("skin-right-d", (x, (wy1 + top) / 2, (zx0 + zx1) / 2), (0.02, top - wy1, zx1 - zx0), "render")
+    gbox("win-frame-t", (x + 0.03, wy1 + 0.04, 0.8), (0.06, 0.08, 1.36), "trim")
+    gbox("win-frame-b", (x + 0.05, wy0 - 0.05, 0.8), (0.12, 0.07, 1.45), "trim")
+    for zz in (zx0 - 0.04, zx1 + 0.04):
+        gbox(f"win-frame-s{zz}", (x + 0.03, (wy0 + wy1) / 2, zz), (0.06, wy1 - wy0 + 0.16, 0.08), "trim")
+    # front wall, round the doorway
+    z = D2 + 0.055
+    gbox("skin-front-l", (( -W2 - o + dx0) / 2, top / 2, z), (dx0 + W2 + o, top, 0.01), "render")
+    gbox("skin-front-r", ((dx1 + W2 + o) / 2, top / 2, z), (W2 + o - dx1, top, 0.01), "render")
+    gbox("skin-front-top", (1.2, (2.1 + top) / 2, z), (1.0, top - 2.1, 0.01), "render")
+    for xx in (dx0 - 0.05, dx1 + 0.05):
+        gbox(f"door-post{xx}", (xx, 1.08, z + 0.03), (0.1, 2.16, 0.06), "trim")
+    gbox("door-head", (1.2, 2.17, z + 0.03), (1.2, 0.1, 0.06), "trim")
+    # the door, standing open flat against the wall to the left of the doorway
+    gbox("door-leaf", (dx0 - 0.58, 1.05, z + 0.06), (0.95, 2.05, 0.05), "door-green")
+    gbox("door-knob", (dx0 - 0.98, 1.0, z + 0.1), (0.05, 0.05, 0.05), "brass")
+    gbox("letter-slot", (dx0 - 0.58, 1.2, z + 0.09), (0.25, 0.04, 0.01), "brass")
+    # the sign board behind the painted lettering, a lamp over the door
+    gbox("sign-board", (1.2, 2.42, z + 0.0085), (3.2, 0.42, 0.007), "label")   # front at 2.567, the lettering at 2.57
+    gbox("sign-edge", (1.2, 2.42, z + 0.0065), (3.32, 0.52, 0.003), "ink")
+    k.beam("lamp-arm", G(2.1, 2.2, z), G(2.1, 2.3, z + 0.35), 0.03, M("ink"))
+    gcyl("lamp-shade", (2.1, 2.12, z + 0.4), 0.14, 0.16, "ink", sides=8, r2=0.04)
+    gbox("lamp-bulb", (2.1, 2.1, z + 0.4), (0.08, 0.05, 0.08), "lampshade")
+    # a pitched roof (ridge along X) over the old flat slab, with gables, gutters and a downpipe
+    gable_roof("roof", 0, 0, 2.95, 2 * W2 + 0.8, 2 * D2 + 0.8, 1.6, "roof-red", end_colour="render", wall_w=2 * W2 + 2 * o + 0.02, wall_d=2 * D2 + 2 * o)
+    for sz in (-1, 1):
+        gbox(f"gutter{sz}", (0, 2.9, sz * (D2 + 0.45)), (2 * W2 + 0.8, 0.1, 0.1), "gutter")
+    gbox("downpipe", (W2 + 0.2, 1.45, D2 + 0.4), (0.08, 2.9, 0.08), "gutter")
+    gbox("chimney", (-1.8, 3.9, -0.8), (0.5, 1.4, 0.5), "brick")
+    gcyl("chimney-pot", (-1.8, 4.6, -0.8), 0.08, 0.28, "chimney-pot", sides=8)
+    # the aerial the whole business started with
+    k.beam("aerial-mast", G(1.8, 3.5, -0.6), G(1.8, 6.0, -0.6), 0.05, M("steel"), round_=True)
+    for i, y in enumerate((5.2, 5.7)):
+        k.beam(f"aerial-boom{i}", G(1.8, y, -1.4), G(1.8, y, 0.2), 0.025, M("steel"))
+        for j in range(5):
+            zz = -1.3 + j * 0.35
+            k.beam(f"aerial-el{i}{j}", G(1.8 - 0.45 + j * 0.05, y, zz), G(1.8 + 0.45 - j * 0.05, y, zz), 0.012, M("steel"))
+    k.beam("aerial-lead", G(1.8, 4.0, -0.6), G(W2 + 0.07, 2.4, -1.2), 0.012, M("ink"))
+    # bins and a bicycle against the left wall
+    for i, zz in enumerate((-0.6, 0.2)):
+        gcyl(f"bin{i}", (-W2 - 0.45, 0, zz), 0.28, 0.85, "bin", sides=10, r2=0.31)
+        gcyl(f"bin-lid{i}", (-W2 - 0.45, 0.85, zz), 0.33, 0.06, "bin", sides=10)
+    bx, bz = -W2 - 0.25, 1.6
+    for zz in (bz - 0.55, bz + 0.55):
+        k.cylinder(f"bike-wheel{zz}", G(bx, 0.34, zz), 0.34, 0.03, M("tyre"), axis="X", sides=14)
+    k.beam("bike-top", G(bx, 0.8, bz - 0.35), G(bx, 0.8, bz + 0.3), 0.04, M("bike-red"), round_=True)
+    k.beam("bike-down", G(bx, 0.8, bz + 0.3), G(bx, 0.34, bz), 0.04, M("bike-red"), round_=True)
+    k.beam("bike-seat-tube", G(bx, 0.34, bz), G(bx, 0.85, bz - 0.4), 0.04, M("bike-red"), round_=True)
+    k.beam("bike-stay", G(bx, 0.34, bz), G(bx, 0.34, bz - 0.55), 0.03, M("bike-red"), round_=True)
+    k.beam("bike-fork", G(bx, 0.8, bz + 0.3), G(bx, 0.34, bz + 0.55), 0.03, M("steel"), round_=True)
+    gbox("bike-saddle", (bx, 0.9, bz - 0.42), (0.1, 0.05, 0.22), "ink")
+    k.beam("bike-bars", G(bx - 0.22, 0.98, bz + 0.33), G(bx + 0.22, 0.98, bz + 0.33), 0.03, M("steel"), round_=True)
+    gbox("bike-basket", (bx, 0.92, bz + 0.5), (0.3, 0.2, 0.25), "wood-light")
+
+
 # ======================================================================================== registry
 PROPS = {}
 for v in HOUSES:
@@ -768,6 +913,13 @@ PROPS["car.estate"] = (lambda: car("car-cream", length=4.2, estate=True, wood=Tr
 PROPS["car.hatch"] = (lambda: car("car-mustard", length=3.5, hatch=True), "Hatchback", "A small mustard hatchback.", "ground, centre", False)
 PROPS["car.coupe"] = (lambda: car("car-maroon", length=4.0, roof_len=1.5, roof_shift=0.3), "Coupe", "A maroon two-door with a short roof.", "ground, centre", False)
 PROPS["vehicle.nez-van"] = (nez_van, "National Telephone van", "The monopoly's blue van, lettered on both sides, ladder on the roof.", "ground, centre", False)
+
+PROPS["person.engineer"] = (lambda: person("overalls", "overalls", "skin-1", "hair-brown", cap="cap-blue", bib=True, clipboard=True),
+                            "Engineer (Jory)", "A line engineer in blue overalls and cap, clipboard in hand.", "feet, facing +Z", False)
+PROPS["person.sysop"] = (lambda: person("hoodie", "jeans", "skin-2", "hair-dark", headphones=True, hood=True),
+                         "Sysop (Tobi)", "Runs the Board: hoodie, jeans, headphones round the neck, a floppy disk in hand.", "feet, facing +Z", False)
+
+PROPS["room.hq"] = (room_hq, "Your room (outside)", "The rented workshop seen from the street: rendered walls round RoomBuilder's room, pitched roof, sign board, open door, aerial, bins, a bicycle.", "room origin", False)
 
 
 def bounds():
