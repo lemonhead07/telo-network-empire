@@ -133,10 +133,26 @@ public static class ProjectRules
     /// <summary>What built projects cost each month, except bills another built project has ended (your own link replaces the lease).</summary>
     public static long MonthlyCost(GameState s, ContentDb c)
     {
-        var cancelled = c.Projects.Where(p => Done(s, p.Id) && p.Reward.Cancels is not null).Select(p => p.Reward.Cancels!).ToHashSet();
-        return c.Projects.Where(p => Done(s, p.Id) && !cancelled.Contains(p.Id)).Sum(p => p.Reward.MonthlyCost)
+        return FixedBills(s, c)
              + c.Projects.Where(p => Done(s, p.Id)).Sum(p => s.RegionSigned.GetValueOrDefault(p.Id) * p.Reward.RegionCost);
     }
+
+    /// <summary>
+    /// What to keep back when starting a project: a month of the bills you already pay, plus the new one this project adds,
+    /// so building never leaves you unable to pay rent (EA2e).
+    /// </summary>
+    public static long Reserve(GameState s, ContentDb c, ProjectDef p) =>
+        FixedBills(s, c) + World.Simulation.RentPerMonth + (s.HasDepot ? Work.StaffRules.DepotRentPerMonth : 0) + Work.WorkRules.MonthlyUpkeep(s, c) + p.Reward.MonthlyCost;
+
+    /// <summary>Bills built projects run up whatever their towns pay (power, leases, upkeep); a town's own running cost is covered by its fees.</summary>
+    private static long FixedBills(GameState s, ContentDb c)
+    {
+        var cancelled = c.Projects.Where(p => Done(s, p.Id) && p.Reward.Cancels is not null).Select(p => p.Reward.Cancels!).ToHashSet();
+        return c.Projects.Where(p => Done(s, p.Id) && !cancelled.Contains(p.Id)).Sum(p => p.Reward.MonthlyCost);
+    }
+
+    /// <summary>Enough cash to start this project and still pay next month's bills.</summary>
+    public static bool CanAffordStart(GameState s, ContentDb c, ProjectDef p) => s.Cash >= p.Cost + Reserve(s, c, p);
 
     private static Tools Needs(ProjectStepDef st) =>
         st.Needs.Aggregate(Tools.None, (t, n) => t | (Enum.TryParse<Tools>(n, true, out var x) ? x : Tools.None));

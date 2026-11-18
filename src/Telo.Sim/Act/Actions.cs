@@ -260,9 +260,11 @@ public static class Actions
         if (!job.Tested || job.KnownFault is not null)
             list.Add(new("install:test", "Lift the handset and listen for dial tone", InstallJob.TestMinutes, null, () => job.Test()));
         if (job.Tested && job.KnownFault is null)
-            list.Add(new("install:sign", "Sign the job sheet", 2, null, () =>
+            list.Add(new("install:sign", "Sign the job sheet", 2, sim.State.Modems > 0 ? null : "no boxed modem left in stock: buy one at the electronics shop", () =>
             {
-                if (sim.ApplyInstallOutcome(job.Evaluate())) foreach (var k in sim.Installs.Where(x => x.Value == job).Select(x => x.Key).ToList()) sim.Installs.Remove(k);
+                // already connected by someone else while we were away (or they left): the job sheet is void
+                bool moot = sim.State.Customers.FirstOrDefault(x => x.Id == job.CustomerId) is not { Live: true, SocketFitted: false };
+                if (moot || sim.ApplyInstallOutcome(job.Evaluate())) foreach (var k in sim.Installs.Where(x => x.Value == job).Select(x => x.Key).ToList()) sim.Installs.Remove(k);
             }));
     }
 

@@ -17,6 +17,22 @@ public static class Bot
     /// <summary>The next action this actor should take, and why (the line it is following).</summary>
     public static (string ActionId, string Why) Choose(Simulation sim, ActorState a, PlanetGen gen)
     {
+        var (id, why) = ChooseStep(sim, a, gen);
+        // a long trip goes by van: walk to it (if it's on the way), put down what you're carrying in it, and drive
+        if (id.StartsWith("go:") && id[3..] is var place && place != a.VanAt
+            && Places.DistanceM(gen, sim.Content, a.Place, place) is var trip && trip > LongTripM)
+        {
+            if (a.VanAt == a.Place) { if (a.Holding != Tools.None) return ($"stow:{a.Holding}", $"{why} (by van)"); }
+            else if (Places.DistanceM(gen, sim.Content, a.Place, a.VanAt) < trip * 0.6) return ($"go:{a.VanAt}", $"{why} (walk to the van)");
+        }
+        return (id, why);
+    }
+
+    /// <summary>Further than this, walk to the van and drive rather than walk all the way (a real second is three game minutes).</summary>
+    public const double LongTripM = 100;
+
+    private static (string ActionId, string Why) ChooseStep(Simulation sim, ActorState a, PlanetGen gen)
+    {
         var acts = Actions.For(sim, a, gen);
         var s = sim.State; var c = sim.Content;
         string Go(string place) => $"go:{place}";
@@ -97,6 +113,17 @@ public static class Bot
             // tidy up before leaving: kit lying here goes back on the van
             if (a.Kit.Any(k => k.Value == a.Place) && a.VanAt == a.Place && !NeededHere(sim, a, gen))
                 return (a.Holding != Tools.None ? $"stow:{a.Holding}" : $"take:{a.Kit.First(k => k.Value == a.Place).Key}", "pack the van");
+            // standing at the van and the job over there needs something on it (close enough to carry): take it along
+            if (a.VanAt == a.Place && Places.DistanceM(gen, c, a.Place, place) <= Places.DriveOverM)
+            {
+                var there = Actions.For(sim, new ActorState { Id = a.Id, Place = place, VanAt = a.VanAt, IgnoreHours = a.IgnoreHours }, gen);
+                var goal = want.SelectMany(prefix => there.Where(x => x.Id.StartsWith(prefix))).FirstOrDefault(x => NeededKit(x.Blocked) is not null);
+                if (goal is not null && NeededKit(goal.Blocked) is { } carry && !a.Kit.ContainsKey(carry))
+                {
+                    if (a.Holding == carry) return (Go(place), $"{text} (carrying the {Actions.Cargo(carry)})");
+                    return (a.Holding != Tools.None ? $"stow:{a.Holding}" : $"take:{carry}", $"take the {Actions.Cargo(carry)} along");
+                }
+            }
             if (a.Holding != Tools.None && a.VanAt == a.Place) return ($"stow:{a.Holding}", "pack the van");
             // far away and the van is nearer than the job: fetch the van first
             if (a.Holding == Tools.None && a.VanAt != a.Place && Places.DistanceM(gen, c, a.Place, place) > Places.DriveOverM
@@ -160,6 +187,7 @@ public static class Bot
             : text.Contains("switchboard is full") ? new[] { "switch:panel" }
             : text.Contains("switchboard") || text.Contains("Wire") ? new[] { "switch:read:", "switch:test:", "switch:jumper:", "switch:throw" }
             : text.Contains("ticket") ? new[] { "ticket:" }
+            : text.Contains("co-sysop") ? new[] { "invest:board" }
             : text.Contains("Hire") ? new[] { "invest:install" }
             : text.Contains("Put up an ad") ? new[] { "ads:up" }
             : text.Contains("terminal") || text.Contains("uploads") ? new[] { "board:letin:", "board:mail", "board:file:" }
