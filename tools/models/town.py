@@ -748,6 +748,10 @@ def nez_van():
 
 # ======================================================================================== people (stand at the origin, face +Z)
 k.PALETTE.update({
+    "skin-3": (0.72, 0.52, 0.38), "hair-grey": (0.72, 0.72, 0.70), "hair-blond": (0.82, 0.68, 0.40), "hair-red": (0.62, 0.30, 0.15),
+    "cardigan": (0.55, 0.40, 0.26), "jumper-yellow": (0.88, 0.74, 0.30), "shirt-blue": (0.62, 0.72, 0.85), "trouser-grey": (0.40, 0.40, 0.42),
+    "tweed": (0.42, 0.42, 0.28), "denim": (0.32, 0.42, 0.60), "black-tee": (0.15, 0.15, 0.17), "waistcoat": (0.30, 0.22, 0.30),
+    "dress-green": (0.30, 0.50, 0.38), "shop-coat": (0.56, 0.42, 0.28),
     "skin-1": (0.86, 0.66, 0.52), "skin-2": (0.55, 0.38, 0.27), "hair-dark": (0.16, 0.12, 0.10), "hair-brown": (0.40, 0.26, 0.15),
     "overalls": (0.25, 0.40, 0.60), "overalls-dark": (0.19, 0.31, 0.47), "cap-blue": (0.20, 0.25, 0.40), "shoe": (0.14, 0.11, 0.09),
     "hoodie": (0.48, 0.22, 0.42), "jeans": (0.24, 0.30, 0.44), "tee": (0.92, 0.90, 0.84), "headphones": (0.15, 0.15, 0.16),
@@ -755,7 +759,9 @@ k.PALETTE.update({
 })
 
 
-def person(top, legs, skin, hair, cap=None, bib=False, clipboard=False, headphones=False, hood=False):
+def person(top, legs, skin, hair, cap=None, bib=False, clipboard=False, headphones=False, hood=False, holding=True, extras=()):
+    """A low-poly person. `holding` bends both forearms forward (carrying something); otherwise arms hang.
+    extras: glasses, apron, tie, scarf, flatcap, waistcoat, cardigan, bald, long-hair, stripes, coat."""
     # shoes and legs
     for s in (-1, 1):
         gbox(f"shoe{s}", (s * 0.1, 0.05, 0.04), (0.13, 0.1, 0.28), "shoe", bevel=0.02)
@@ -782,7 +788,7 @@ def person(top, legs, skin, hair, cap=None, bib=False, clipboard=False, headphon
     for s in (-1, 1):
         sh = (s * 0.25, 1.46, 0)
         el = (s * 0.27, 1.17, 0.02)
-        wr = (s * 0.2, 1.05, 0.24) if (clipboard and s == 1) or s == -1 else (s * 0.28, 0.92, 0.04)
+        wr = ((s * 0.2, 1.05, 0.24) if (clipboard and s == 1) or s == -1 else (s * 0.28, 0.92, 0.04)) if holding else (s * 0.29, 0.9, 0.05)
         k.beam(f"upper{s}", G(*sh), G(*el), 0.11, M(top), round_=True)
         k.beam(f"fore{s}", G(*el), G(*wr), 0.095, M(top), round_=True)
         gbox(f"hand{s}", (wr[0], wr[1], wr[2] + 0.03), (0.07, 0.09, 0.08), skin, bevel=0.02)
@@ -793,8 +799,49 @@ def person(top, legs, skin, hair, cap=None, bib=False, clipboard=False, headphon
         gbox(f"ear{s}", (s * 0.105, 1.63, 0), (0.025, 0.06, 0.05), skin)
         gbox(f"eye{s}", (s * 0.05, 1.67, 0.111), (0.03, 0.02, 0.01), "ink")
     gbox("mouth", (0, 1.57, 0.111), (0.06, 0.012, 0.01), "skin-2" if skin == "skin-1" else "ink")
-    gbox("hair", (0, 1.74, -0.02), (0.22, 0.08, 0.24), hair, bevel=0.03)
-    gbox("hair-back", (0, 1.66, -0.1), (0.21, 0.16, 0.05), hair)
+    if "bald" in extras:
+        for sx in (-1, 1):
+            gbox(f"hair-side{sx}", (sx * 0.1, 1.66, -0.03), (0.03, 0.1, 0.16), hair)
+        gbox("hair-back", (0, 1.64, -0.1), (0.21, 0.1, 0.05), hair)
+    else:
+        gbox("hair", (0, 1.74, -0.02), (0.22, 0.08, 0.24), hair, bevel=0.03)
+        gbox("hair-back", (0, 1.66 if "long-hair" not in extras else 1.55, -0.1), (0.21, 0.16 if "long-hair" not in extras else 0.36, 0.05), hair)
+    if "glasses" in extras:
+        for sx in (-1, 1):
+            gbox(f"lens{sx}", (sx * 0.05, 1.67, 0.115), (0.06, 0.045, 0.01), "glass-in")
+            gbox(f"rim{sx}", (sx * 0.05, 1.67, 0.113), (0.07, 0.055, 0.008), "ink")
+        gbox("bridge", (0, 1.675, 0.116), (0.03, 0.01, 0.01), "ink")
+    if "apron" in extras:
+        gbox("apron", (0, 1.05, 0.135), (0.3, 0.6, 0.02), "pillow")
+        gbox("apron-pocket", (0, 0.95, 0.147), (0.16, 0.1, 0.01), "rug-edge")
+        k.beam("apron-tie", G(-0.15, 1.3, 0.13), G(0.15, 1.3, 0.13), 0.02, M("pillow"))
+    if "tie" in extras:
+        gbox("collar", (0, 1.46, 0.08), (0.16, 0.05, 0.06), "tee")
+        gbox("tie", (0, 1.28, 0.135), (0.06, 0.32, 0.015), "book-1")
+    if "scarf" in extras:
+        gcyl("scarf", (0, 1.43, 0), 0.11, 0.08, "book-4", sides=8)
+        for i in range(4):
+            gbox(f"scarf-tail{i}", (0.07, 1.36 - i * 0.09, 0.13), (0.07, 0.09, 0.02), "book-4" if i % 2 == 0 else "book-1")
+    if "flatcap" in extras:
+        gbox("flatcap", (0, 1.785, 0.02), (0.24, 0.05, 0.26), "roof-brown", bevel=0.02)
+        gbox("flatcap-peak", (0, 1.77, 0.15), (0.22, 0.02, 0.08), "roof-brown")
+    if "waistcoat" in extras:
+        gbox("shirt-front", (0, 1.3, 0.125), (0.1, 0.32, 0.01), "tee")
+        for i in range(3):
+            gcyl(f"wc-button{i}", (0.06, 1.15 + i * 0.08, 0.13), 0.01, 0.008, "brass", sides=6)
+    if "cardigan" in extras:
+        gbox("cardigan-edge", (0.0, 1.22, 0.128), (0.04, 0.46, 0.01), "rug-edge")
+        for i in range(4):
+            gcyl(f"cg-button{i}", (0.0, 1.05 + i * 0.1, 0.133), 0.012, 0.008, "wood-light", sides=6)
+    if "stripes" in extras:
+        for i in range(4):
+            gcyl(f"stripe{i}", (0, 1.06 + i * 0.1, 0), 0.215 - i * 0.008, 0.035, "book-2", sides=8)
+    if "coat" in extras:  # a long shopkeeper's coat over the trousers
+        k.cone("coat-skirt", G(0, 0.82, 0), 0.24, 0.2, 0.36, M(top), sides=8)
+        for i in range(3):
+            gcyl(f"coat-button{i}", (0, 0.85 + i * 0.15, 0.15), 0.012, 0.008, "ink", sides=6)
+        gbox("coat-pocket", (0.11, 1.38, 0.125), (0.08, 0.06, 0.01), "ink")
+        gbox("coat-pens", (0.11, 1.42, 0.13), (0.02, 0.06, 0.01), "book-1")
     if cap:
         gbox("cap", (0, 1.78, 0.0), (0.23, 0.07, 0.24), cap, bevel=0.03)
         gbox("peak", (0, 1.75, 0.15), (0.2, 0.02, 0.12), cap)
@@ -805,11 +852,13 @@ def person(top, legs, skin, hair, cap=None, bib=False, clipboard=False, headphon
         for s in (-1, 1):
             gcyl(f"cup{s}", (s * 0.12, 1.6, 0), 0.05, 0.05, "headphones", sides=8)
         k.beam("lead", G(0.12, 1.58, 0), G(0.15, 1.1, 0.12), 0.01, M("headphones"))
-    if clipboard:
+    if not holding:
+        pass
+    elif clipboard:
         gbox("clipboard", (0.12, 1.08, 0.3), (0.24, 0.32, 0.02), "clipboard", rot_y=0.3)
         gbox("clip-paper", (0.12, 1.06, 0.312), (0.2, 0.26, 0.005), "paper", rot_y=0.3)
         gbox("pen", (-0.18, 1.1, 0.28), (0.01, 0.12, 0.01), "ink")
-    else:
+    elif headphones:
         gbox("floppy", (-0.2, 1.08, 0.3), (0.13, 0.13, 0.005), "headphones")
         gbox("floppy-label", (-0.2, 1.11, 0.304), (0.09, 0.05, 0.003), "paper")
 
@@ -1140,6 +1189,24 @@ PROPS["room.clutter"] = (room_clutter, "Room clutter", "A rug, a filing cabinet 
 
 PROPS["nez.nadir"] = (nez_nadir, "Nadir exchange", "The national phone company's grand exchange at the antipode: concrete hall on a sea pier, bronze doors and crest, flags, and a tower crowded with dishes and horns.", "pier top, centre", False)
 
+RESIDENTS = {
+    # archetype: (top, legs, skin, hair, extras)
+    "tech-inexperienced": ("cardigan", "trouser-grey", "skin-1", "hair-grey", ("glasses", "cardigan")),
+    "curious": ("jumper-yellow", "denim", "skin-2", "hair-dark", ("glasses", "stripes")),
+    "family": ("dress-green", "jeans", "skin-3", "hair-red", ("apron", "long-hair")),
+    "gamer": ("black-tee", "jeans", "skin-1", "hair-blond", ()),
+    "reliability-sensitive": ("shirt-blue", "trouser-grey", "skin-3", "hair-brown", ("tie",)),
+    "price-sensitive": ("tweed", "trouser-grey", "skin-1", "hair-grey", ("flatcap",)),
+    "small-business": ("waistcoat", "trouser-grey", "skin-2", "hair-dark", ("waistcoat", "tie")),
+    "student": ("denim", "black-tee", "skin-3", "hair-brown", ("scarf", "long-hair")),
+}
+for arch, (top, legs, skin, hair, extras) in RESIDENTS.items():
+    PROPS[f"person.res-{arch}"] = ((lambda t=top, l=legs, sk=skin, h=hair, e=extras: person(t, l, sk, h, holding=False, headphones=(arch == "gamer"), extras=e))
+                                   if arch != "gamer" else (lambda: person("black-tee", "jeans", "skin-1", "hair-blond", holding=False, headphones=True)),
+                                   f"Resident ({arch})", f"A householder of the '{arch}' kind, arms at their sides.", "feet, facing +Z", False)
+PROPS["person.sol"] = (lambda: person("shop-coat", "trouser-grey", "skin-2", "hair-grey", holding=False, extras=("glasses", "bald", "coat")),
+                       "Sol", "Sol of Sol's Electronics: brown shop coat with pens in the pocket, glasses, not much hair.", "feet, facing +Z", False)
+
 
 def bounds():
     from mathutils import Vector
@@ -1166,7 +1233,10 @@ def build(pid):
     centre = (lo + hi) / 2
     span = max(size.x, size.y, size.z)
     # front view from the street side (Blender -Y), a little to the right and above
-    k.preview(pid, distance=span * 1.7 + 0.25, height=centre.z + span * 0.45, target=tuple(centre), views=((200, "front"),))
+    if pid.startswith("person."):  # whole figure, from the front, at eye height
+        k.preview(pid, distance=span * 2.4, height=centre.z + 0.3, target=tuple(centre), views=((160, "front"),))
+    else:
+        k.preview(pid, distance=span * 1.7 + 0.25, height=centre.z + span * 0.45, target=tuple(centre), views=((200, "front"),))
     k.export(pid)
     os.replace(os.path.join(k.PREVIEWS, pid + "-front.png"), os.path.join(k.PREVIEWS, pid + ".png"))
     return {"id": pid, "name": name, "what": what, "size": [round(size.x, 3), round(size.z, 3), round(size.y, 3)],

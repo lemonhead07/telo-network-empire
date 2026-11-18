@@ -21,6 +21,8 @@ public sealed class LotView
     public Node3D? Lights { get; init; }
     /// <summary>The household's car. Gone when they are out at work.</summary>
     public Node3D? Car { get; init; }
+    /// <summary>Whoever lives or works here, standing indoors (by the front window; Sol behind his counter). Shown while they are in.</summary>
+    public Node3D? Resident { get; init; }
     /// <summary>Where a visiting van parks: on the driveway (or the shop's forecourt, the farmyard), off the street.</summary>
     public Vector3? Park { get; init; }
     /// <summary>Where the driveway meets the middle of Main Street. Null for places not on Main Street.</summary>
@@ -274,6 +276,19 @@ public static class TownBuilder
             }
         }
 
+        // the person who lives or works here, when there's a model for them
+        Node3D? resident = null;
+        string? who = house ? $"person.res-{lot.Archetype}" : shop ? "person.sol" : null;
+        if (who is not null && Props.HasModel(who))
+        {
+            resident = Props.Make(who);
+            resident.Name = "Resident";
+            // in the front room by the left window, turned a little towards the door; Sol behind the counter hatch
+            resident.Position = house ? new Vector3(-2.3f, HouseFloor, 2.2f) : new Vector3(3.0f, 0.02f, 2.75f);
+            resident.RotationDegrees = new Vector3(0, house ? 25 : 0, 0);
+            body.AddChild(resident);
+        }
+
         Interactable Hotspot(Vector3 pos, Vector3 size)
         {
             var it = new Interactable { Position = pos };
@@ -300,7 +315,7 @@ public static class TownBuilder
             Visible = false,
         };
         body.AddChild(marker);
-        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor, Lights = lights, Car = car, Park = park, DriveEntry = entry };
+        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor, Lights = lights, Car = car, Park = park, DriveEntry = entry, Resident = resident };
     }
 
     /// <summary>The road surface, laid onto the real terrain by ray-casting down. Call once physics has the terrain.</summary>

@@ -934,6 +934,7 @@ public partial class GameRoot : Node3D
             {
                 if (lot.Lights is not null) lot.Lights.Visible = Clock.Dark(Sim.State) && HomeRules.IsHome(Sim.State, _content, lot.Lot);
                 if (lot.Car is not null) lot.Car.Visible = !HomeRules.OutAtWork(Sim.State, _content, lot.Lot);
+                if (lot.Resident is not null) lot.Resident.Visible = HomeRules.IsHome(Sim.State, _content, lot.Lot);
             }
             _cargo.Refresh();
             foreach (var refresh in _lineRefresh) refresh();

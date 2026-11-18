@@ -1397,6 +1397,123 @@
    "pivot": "pier top, centre",
    "tris": 2576,
    "status": "modelled"
+  },
+  {
+   "id": "person.res-tech-inexperienced",
+   "name": "Resident (tech-inexperienced)",
+   "what": "A householder of the 'tech-inexperienced' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 752,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-curious",
+   "name": "Resident (curious)",
+   "what": "A householder of the 'curious' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.43
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 772,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-family",
+   "name": "Resident (family)",
+   "what": "A householder of the 'family' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 636,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-gamer",
+   "name": "Resident (gamer)",
+   "what": "A householder of the 'gamer' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.808,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 692,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-reliability-sensitive",
+   "name": "Resident (reliability-sensitive)",
+   "what": "A householder of the 'reliability-sensitive' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 624,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-price-sensitive",
+   "name": "Resident (price-sensitive)",
+   "what": "A householder of the 'price-sensitive' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.81,
+    0.333
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 656,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-small-business",
+   "name": "Resident (small-business)",
+   "what": "A householder of the 'small-business' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 696,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-student",
+   "name": "Resident (student)",
+   "what": "A householder of the 'student' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "person.sol",
+   "name": "Sol",
+   "what": "Sol of Sol's Electronics: brown shop coat with pens in the pocket, glasses, not much hair.",
+   "size": [
+    0.701,
+    1.765,
+    0.48
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 752,
+   "status": "modelled"
   }
  ]
 }
