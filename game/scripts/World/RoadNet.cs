@@ -78,7 +78,7 @@ public sealed class RoadNet
             var ids = new List<int>();
             foreach (var p in road.Points)
             {
-                if (gen.Sites.Any(s => (p - s.Dir).Length * gen.RadiusM < s.RadiusM * 0.5)) continue;
+                if (gen.Sites.Any(s => (p - s.Dir).Length * gen.RadiusM < s.RadiusM * 0.75)) continue;
                 var d = PlanetBuilder.ToGodot(p).Normalized();
                 ids.Add(Add(d * (R + (float)gen.Height(p) + 0.3f)));
             }

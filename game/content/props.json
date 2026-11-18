@@ -5,29 +5,73 @@
    "id": "vehicle.van",
    "name": "The service van",
    "what": "Your first company vehicle: a second-hand cream panel van with a rust-red stripe, a roof rack for the ladder and a fold-down tailboard for the drum, toolbox and modems. Front faces -Z.",
-   "size": [1.96, 2.06, 4.96],
+   "size": [
+    1.96,
+    2.06,
+    4.96
+   ],
    "pivot": "ground under the middle of the body (x 0, z 0)",
    "tris": 5400,
-   "colours": ["van-cream", "van-stripe", "van-glass", "van-tyre", "van-chrome", "van-rack"],
+   "colours": [
+    "van-cream",
+    "van-stripe",
+    "van-glass",
+    "van-tyre",
+    "van-chrome",
+    "van-rack"
+   ],
    "charm": "A hand-painted TELO on the side in slightly uneven letters, over the ghost of the previous owner's bakery name.",
    "anchors": {
-    "roof-rack": [0, 2.04, 0.3],
-    "tailboard": [0, 0.54, 2.42],
-    "driver-door": [-0.98, 1.0, -1.5],
-    "wheel-fl": [-0.95, 0.38, -1.5],
-    "wheel-fr": [0.95, 0.38, -1.5],
-    "wheel-rl": [-0.95, 0.38, 1.4],
-    "wheel-rr": [0.95, 0.38, 1.4]
+    "roof-rack": [
+     0,
+     2.04,
+     0.3
+    ],
+    "tailboard": [
+     0,
+     0.54,
+     2.42
+    ],
+    "driver-door": [
+     -0.98,
+     1.0,
+     -1.5
+    ],
+    "wheel-fl": [
+     -0.95,
+     0.38,
+     -1.5
+    ],
+    "wheel-fr": [
+     0.95,
+     0.38,
+     -1.5
+    ],
+    "wheel-rl": [
+     -0.95,
+     0.38,
+     1.4
+    ],
+    "wheel-rr": [
+     0.95,
+     0.38,
+     1.4
+    ]
    },
    "nodes": "Wheels are separate objects named wheel-fl, wheel-fr, wheel-rl, wheel-rr with their origin at the hub, so the game can spin them.",
-   "states": ["parked", "driving"],
+   "states": [
+    "parked",
+    "driving"
+   ],
    "takes": {
     "plain": "Cream panel van, rust-red stripe, chrome bumpers, round headlamps.",
     "old": "Faded paint, one primer-grey wing.",
     "bodge": "A roof rack made of scaffold pole and rope."
    },
    "replaces": "Van.cs _Ready (the LowPoly boxes)",
-   "usedBy": ["van"],
+   "usedBy": [
+    "van"
+   ],
    "status": "modelled"
   },
   {
@@ -599,12 +643,12 @@
    "name": "Line card",
    "what": "A circuit card you buy at Sol's ($60), carry from the van and slot into the rack: one more line into the Board.",
    "size": [
-    0.3,
-    0.06,
+    0.321,
+    0.061,
     0.2
    ],
    "pivot": "bottom-centre",
-   "tris": 120,
+   "tris": 232,
    "colours": [
     "card-board",
     "card-chip",
@@ -637,7 +681,358 @@
    "usedBy": [
     "room.bbs"
    ],
-   "status": "box"
+   "status": "modelled"
+  },
+  {
+   "id": "kit.ladder",
+   "name": "Ladder",
+   "what": "Wooden two-section ladder, rubber feet. Rides on the van's roof rack.",
+   "size": [
+    0.47,
+    3.0,
+    0.09
+   ],
+   "pivot": "foot, centre",
+   "tris": 328,
+   "status": "modelled"
+  },
+  {
+   "id": "kit.pole",
+   "name": "Line pole",
+   "what": "A 6 m creosoted pole with climbing steps, carried on the rack and planted along a road.",
+   "size": [
+    0.42,
+    6.07,
+    0.25
+   ],
+   "pivot": "base, centre",
+   "tris": 190,
+   "status": "modelled"
+  },
+  {
+   "id": "kit.cable-drum",
+   "name": "Cable drum",
+   "what": "Wooden spool of black drop wire, standing on its flange.",
+   "size": [
+    0.553,
+    0.36,
+    0.48
+   ],
+   "pivot": "bottom, centre",
+   "tris": 408,
+   "status": "modelled"
+  },
+  {
+   "id": "kit.toolbox",
+   "name": "Toolbox",
+   "what": "Red metal toolbox with a cantilever lid.",
+   "size": [
+    0.47,
+    0.282,
+    0.217
+   ],
+   "pivot": "bottom, centre",
+   "tris": 192,
+   "status": "modelled"
+  },
+  {
+   "id": "kit.modem-box",
+   "name": "Boxed modem",
+   "what": "A carton with a printed label and a picture of the modem inside.",
+   "size": [
+    0.36,
+    0.146,
+    0.287
+   ],
+   "pivot": "bottom, centre",
+   "tris": 616,
+   "status": "modelled"
+  },
+  {
+   "id": "install.wall-clip",
+   "name": "Wall clip",
+   "what": "Drop-wire fixing screwed to the outside wall.",
+   "size": [
+    0.06,
+    0.06,
+    0.068
+   ],
+   "pivot": "centre",
+   "tris": 88,
+   "status": "modelled"
+  },
+  {
+   "id": "install.junction-box",
+   "name": "Junction box",
+   "what": "Where the drop wire meets the house wiring, by the front door.",
+   "size": [
+    0.2,
+    0.285,
+    0.072
+   ],
+   "pivot": "centre",
+   "tris": 240,
+   "status": "modelled"
+  },
+  {
+   "id": "install.junction-cover",
+   "name": "Junction box cover",
+   "what": "The cream lid that goes on last.",
+   "size": [
+    0.22,
+    0.28,
+    0.033
+   ],
+   "pivot": "centre",
+   "tris": 240,
+   "status": "modelled"
+  },
+  {
+   "id": "install.socket-back",
+   "name": "Socket backplate",
+   "what": "Screwed to the skirting-height wall indoors; faces +X.",
+   "size": [
+    0.035,
+    0.1,
+    0.1
+   ],
+   "pivot": "centre",
+   "tris": 52,
+   "status": "modelled"
+  },
+  {
+   "id": "install.socket-face",
+   "name": "Socket faceplate",
+   "what": "The cream faceplate with the plug slot; faces +X.",
+   "size": [
+    0.023,
+    0.12,
+    0.12
+   ],
+   "pivot": "centre",
+   "tris": 96,
+   "status": "modelled"
+  },
+  {
+   "id": "install.modem",
+   "name": "Modem",
+   "what": "Beige 300-baud modem with acoustic coupler cups and four lights.",
+   "size": [
+    0.3,
+    0.081,
+    0.225
+   ],
+   "pivot": "centre",
+   "tris": 340,
+   "status": "modelled"
+  },
+  {
+   "id": "install.telephone",
+   "name": "Telephone",
+   "what": "The customer's red rotary phone; lift the handset to test the line.",
+   "size": [
+    0.275,
+    0.138,
+    0.221
+   ],
+   "pivot": "centre of the base",
+   "tris": 608,
+   "status": "modelled"
+  },
+  {
+   "id": "install.job-sheet",
+   "name": "Job sheet",
+   "what": "Clipboard by the door with the job's ticked steps.",
+   "size": [
+    0.3,
+    0.407,
+    0.05
+   ],
+   "pivot": "centre",
+   "tris": 184,
+   "status": "modelled"
+  },
+  {
+   "id": "world.line-pole",
+   "name": "Telephone pole",
+   "what": "7.2 m pole with crossarm (along Godot Z), insulators and steps. One mesh, shared by every pole.",
+   "size": [
+    0.46,
+    7.2,
+    1.8
+   ],
+   "pivot": "base, centre",
+   "tris": 404,
+   "status": "modelled"
+  },
+  {
+   "id": "site.parts-crate",
+   "name": "Parts crate",
+   "what": "A slatted crate of project parts; a pile of them marks a site under way.",
+   "size": [
+    0.83,
+    0.6,
+    0.619
+   ],
+   "pivot": "ground, centre",
+   "tris": 544,
+   "status": "modelled"
+  },
+  {
+   "id": "site.pole-stack",
+   "name": "Stack of poles",
+   "what": "Poles on chocks, ready for Church Lane.",
+   "size": [
+    2.14,
+    0.83,
+    6.0
+   ],
+   "pivot": "ground, centre",
+   "tris": 800,
+   "status": "modelled"
+  },
+  {
+   "id": "site.street-cabinet",
+   "name": "Street cabinet",
+   "what": "Green roadside cabinet on a plinth.",
+   "size": [
+    1.1,
+    1.84,
+    0.55
+   ],
+   "pivot": "ground, centre",
+   "tris": 452,
+   "status": "modelled"
+  },
+  {
+   "id": "site.modem-bank",
+   "name": "Modem bank",
+   "what": "An open rack of beige modems with blinking lights and too many leads.",
+   "size": [
+    1.769,
+    2.02,
+    0.973
+   ],
+   "pivot": "ground, centre",
+   "tris": 2080,
+   "status": "modelled"
+  },
+  {
+   "id": "site.leased-line",
+   "name": "Leased line handover",
+   "what": "NezTel's blue pillar, your cabinet, and an orange cord between them.",
+   "size": [
+    1.35,
+    1.21,
+    0.45
+   ],
+   "pivot": "ground, centre",
+   "tris": 424,
+   "status": "modelled"
+  },
+  {
+   "id": "site.microwave-tower",
+   "name": "Microwave tower",
+   "what": "12 m lattice tower with a dish pointing over the ridge, hut at its foot.",
+   "size": [
+    3.875,
+    12.171,
+    2.55
+   ],
+   "pivot": "ground, centre",
+   "tris": 1168,
+   "status": "modelled"
+  },
+  {
+   "id": "site.exchange-hut",
+   "name": "Exchange hut",
+   "what": "A small brick exchange with a green door and a sign.",
+   "size": [
+    3.2,
+    2.71,
+    3.02
+   ],
+   "pivot": "ground, centre",
+   "tris": 804,
+   "status": "modelled"
+  },
+  {
+   "id": "site.cold-store",
+   "name": "Cold store data room",
+   "what": "A corrugated cold store, the ice company's name still showing under TELO DATA.",
+   "size": [
+    3.8,
+    3.52,
+    3.21
+   ],
+   "pivot": "ground, centre",
+   "tris": 1576,
+   "status": "modelled"
+  },
+  {
+   "id": "site.cable-landing",
+   "name": "Cable landing",
+   "what": "Concrete pad, a manhole marked CABLE, a hut, the cable heading into the sea.",
+   "size": [
+    3.0,
+    2.908,
+    4.215
+   ],
+   "pivot": "ground, centre",
+   "tris": 608,
+   "status": "modelled"
+  },
+  {
+   "id": "site.cable-reel",
+   "name": "Ocean cable reel",
+   "what": "A huge yellow reel of sea cable on a stand, and a marker buoy.",
+   "size": [
+    2.435,
+    2.325,
+    3.125
+   ],
+   "pivot": "ground, centre",
+   "tris": 692,
+   "status": "modelled"
+  },
+  {
+   "id": "site.dslam-cabinet",
+   "name": "Broadband cabinet",
+   "what": "A tall grey cabinet with fans and a BROADBAND sticker.",
+   "size": [
+    1.3,
+    1.79,
+    0.7
+   ],
+   "pivot": "ground, centre",
+   "tris": 948,
+   "status": "modelled"
+  },
+  {
+   "id": "site.fibre-joint",
+   "name": "Fibre joint",
+   "what": "An open chamber, orange ducts, a splice closure on a tripod, cones.",
+   "size": [
+    2.257,
+    1.015,
+    2.414
+   ],
+   "pivot": "ground, centre",
+   "tris": 300,
+   "status": "modelled"
+  },
+  {
+   "id": "site.cell-mast",
+   "name": "Cell mast",
+   "what": "15 m monopole with three panel antennas, a link dish and a fenced compound.",
+   "size": [
+    3.452,
+    15.16,
+    3.467
+   ],
+   "pivot": "ground, centre",
+   "tris": 1096,
+   "status": "modelled"
   }
  ]
 }

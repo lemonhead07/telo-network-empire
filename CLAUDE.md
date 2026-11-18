@@ -34,7 +34,9 @@ godot --path game -- --shot=/abs/path/x.png             # saves x-town, x-instal
 xvfb-run -a godot --path game -- --shot=/abs/path/x.png # the same in a cloud session (no screen or graphics card there)
 godot --path game                                       # play
 godot --editor --path game                              # open editor
-blender -b --factory-startup --python tools/models/<id>.py  # build one model: game/assets/models/<id>.glb + previews in docs/img/props/ (then --import)
+blender -b --factory-startup --python tools/models/batch.py -- all   # build every model (or name ids): game/assets/models/<id>.glb, docs/img/props/<id>.png, briefs in props.json (then --import)
+blender -b --factory-startup --python tools/models/lineup.py -- site. --out sites  # contact sheet of models by id prefix → docs/img/props/lineup-sites.png
+godot --path game res://scenes/Showroom.tscn [-- --shot=/abs/x.png]  # every model on a lawn in the real renderer (orbit with the mouse)
 ```
 
 ## Testing policy: develop lots, test little
@@ -109,7 +111,7 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 - **Faults**: a latent defect that surfaces at a real address becomes a `Fault` in `GameState.Faults`. The line stays bad (satisfaction −2 a day) until the player drives out with the toolbox and fixes it at the door (`TownRules.Repair`). `!` marks the house.
 - **Pole lines** (`Telo.Sim/Build/LineRules.cs`, `game/scripts/World/PoleLineView.cs`): a premise with `poleLine` in `premises.json` can't be bought, only built. Pole sites run beside a `PlanetGen` road; plant each pole (hold E; needs a pole from the van, $15), then string each span (hold E; cable drum + ladder). The last span connects the premise. Progress is `GameState.Lines`.
 - Houses (`LotKind.House`) are hollow and enterable: the door opens when the resident lets you in for an install. The shop and farm are still solid boxes.
-- **Set dressing** (`game/scripts/World/TownDressing.cs`, looks only, no collision): every house gets a garden sized from its neighbours (striped lawn, side and back fences, a front hedge/picket/wall with gaps for path and drive, flower beds, letterbox, a tree and some of shed/veg patch/washing line), plus street lamps and a phone box outside Sol's. Outside each settlement a patchwork of fields with hedgerows, sheep and hay bales is laid on the terrain after physics (`TownDressing.Fields`); scattered trees skip fields (`InField`). Houses are 22 m apart; moving a lot changes travel times, so rerun the Act 5 script player.
+- **Set dressing** (`game/scripts/World/TownDressing.cs`, looks only, no collision): every house gets a garden sized from its neighbours (striped lawn, side and back fences, a front hedge/picket/wall with gaps for path and drive, flower beds, letterbox, a tree and some of shed/veg patch/washing line), plus street lamps and a phone box outside Sol's. Outside each settlement a patchwork of fields with hedgerows, sheep and hay bales is laid on the terrain after physics (`TownDressing.Fields`); scattered trees skip fields (`InField`). Houses are 20 m apart (the Act 5 script player's cash bands are on a knife-edge: 21 and 22 m both failed it, so rerun it whenever a lot moves). Drawn roads start at 0.75 × a site's radius, where the streets end.
 - `PlanetGen.Roads`: graded routes that cut/fill terrain; `IsPaved` makes the van full speed on roads and in settlements, half speed off-road. Road surfaces are ray-cast onto the terrain (`TownBuilder.BuildRoads`).
 
 ## Assets: prototype in code, then model in Blender

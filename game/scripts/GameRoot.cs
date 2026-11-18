@@ -185,7 +185,7 @@ public partial class GameRoot : Node3D
     {
         if (_planet.Roads.Count == 0) return;
         var pts = _planet.Roads[0].Points; float R = (float)_planet.RadiusM;
-        int i = Enumerable.Range(0, pts.Count).FirstOrDefault(k => (pts[k] - _planet.Town.Dir).Length * _planet.RadiusM > _planet.Town.RadiusM * 0.7);
+        int i = Enumerable.Range(0, pts.Count).FirstOrDefault(k => (pts[k] - _planet.Town.Dir).Length * _planet.RadiusM > _planet.Town.RadiusM * 0.8);
         if (i <= 0 || i >= pts.Count - 1) return;
         var dir = PlanetBuilder.ToGodot(pts[i]);
         var hit = GetWorld3D().DirectSpaceState.IntersectRay(PhysicsRayQueryParameters3D.Create(dir * (R + 400), dir * (R - 100), 1));
@@ -1231,7 +1231,7 @@ public partial class GameRoot : Node3D
         await Frames(30);
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
-        await Shot("-shop", TownBuilder.Place(_planet, 78, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 84, 1, 0, 2).Origin);
+        await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);
         await Shot("-aerial", TownBuilder.Place(_planet, 250, 500, 0, 420).Origin, hq);
         await Shot("-gardens", TownBuilder.Place(_planet, -40, -18, 0, 11).Origin, TownBuilder.Place(_planet, -20, -10, 0, 0).Origin);
         await Shot("-fields", TownBuilder.Place(_planet, 140, 190, 0, 22).Origin, TownBuilder.Place(_planet, 230, 290, 0, 0).Origin);

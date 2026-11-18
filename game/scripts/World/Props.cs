@@ -39,6 +39,35 @@ public static class Props
         return root;
     }
 
+    /// <summary>The model's first mesh, for props drawn many times from one shared mesh (poles). Null if there is no model.</summary>
+    public static Mesh? MeshOf(string id)
+    {
+        if (!HasModel(id) || GD.Load<PackedScene>(ModelPath(id)) is not { } scene) return null;
+        var root = scene.Instantiate<Node>();
+        Mesh? mesh = null;
+        void Walk(Node n) { foreach (var c in n.GetChildren()) { if (mesh is null && c is MeshInstance3D mi) mesh = mi.Mesh; Walk(c); } }
+        Walk(root);
+        root.Free();
+        return mesh;
+    }
+
+    /// <summary>Box around everything drawn under <paramref name="root"/>, in root's own space (works before it is in the tree).</summary>
+    public static Aabb Bounds(Node3D root)
+    {
+        Aabb? box = null;
+        void Walk(Node n, Transform3D xf)
+        {
+            foreach (var c in n.GetChildren())
+            {
+                var cx = c is Node3D n3 ? xf * n3.Transform : xf;
+                if (c is VisualInstance3D vi) { var b = cx * vi.GetAabb(); box = box is { } a ? a.Merge(b) : b; }
+                Walk(c, cx);
+            }
+        }
+        Walk(root, Transform3D.Identity);
+        return box ?? new Aabb(Vector3.Zero, Vector3.Zero);
+    }
+
     /// <summary>Child nodes whose names start with <paramref name="prefix"/> (e.g. the van's "wheel-" nodes), searched at any depth.</summary>
     public static List<Node3D> Parts(Node root, string prefix)
     {

@@ -149,9 +149,9 @@ public static class TownBuilder
     public static readonly Street[] Streets =
     {
         new("town-start", false, StreetSouth, -StreetEnd, StreetEnd, "Main Street"),
-        new("town-start", false, -40f, -86f, 62f, "Church Lane"),
+        new("town-start", false, -40f, -86f, 84f, "Church Lane"),          // its east end meets the road out to the farm
         new("town-start", true, -86f, -40f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
-        new("eastgate", false, 8f, -64f, 64f, "Eastgate High Street"),
+        new("eastgate", false, 8f, -64f, 48f, "Eastgate High Street"),  // west end reaches the two houses moved off the town road (2026-11-19)
     };
 
     /// <summary>The east-west street a building fronts on: the nearest one on its site that runs past it. Null for the farm.</summary>
@@ -176,7 +176,7 @@ public static class TownBuilder
     public static Mesh PoleMesh()
     {
         var brown = new Color(0.33f, 0.24f, 0.16f);
-        return _pole ??= new LowPoly().Cylinder(Vector3.Zero, 0.13f, 0.09f, 7.2f, 6, brown)
+        return _pole ??= Props.MeshOf("world.line-pole") ?? new LowPoly().Cylinder(Vector3.Zero, 0.13f, 0.09f, 7.2f, 6, brown)
             .Box(new Vector3(0, 6.6f, 0), new Vector3(0.12f, 0.12f, 1.8f), brown)
             .Box(new Vector3(0, 6.75f, -0.7f), new Vector3(0.08f, 0.18f, 0.08f), new Color(0.75f, 0.8f, 0.78f))
             .Box(new Vector3(0, 6.75f, 0.7f), new Vector3(0.08f, 0.18f, 0.08f), new Color(0.75f, 0.8f, 0.78f)).Build();
@@ -318,7 +318,7 @@ public static class TownBuilder
                 var along = (centre[Math.Min(i + 1, centre.Count - 1)] - centre[Math.Max(i - 1, 0)]).Normalized();
                 var side = along.Cross(c).Normalized();
                 Vector3? l = Ground((c * R - side * 3.2f).Normalized()), r = Ground((c * R + side * 3.2f).Normalized()), m = Ground(c);
-                bool skip = gen.Sites.Any(s => (PlanetBuilder.ToGodot(s.Dir) - c).Length() * R < s.RadiusM * 0.5f);
+                bool skip = gen.Sites.Any(s => (PlanetBuilder.ToGodot(s.Dir) - c).Length() * R < s.RadiusM * 0.75f); // the drawn road starts where the streets end
                 if (!skip && l is { } L && r is { } Rr && m is { } M && pl is { } PL && pr is { } PR && pc is { } PC)
                 {
                     lp.Quad(PL, PR, Rr, L, asphalt, c);
