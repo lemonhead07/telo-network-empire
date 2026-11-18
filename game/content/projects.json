@@ -67,7 +67,7 @@
       { "verb": "Cut Millbrook's lines over", "clicks": 2, "minutes": 20, "needs": ["cableDrum"] }
     ] },
 
-  { "id": "proj-cold-store", "model": "site.cold-store", "name": "Fit out the old cold store", "act": 3, "site": "eastgate", "east": -56, "south": 4, "cost": 1500,
+  { "id": "proj-cold-store", "model": "site.cold-store", "name": "Fit out the old cold store", "act": 3, "site": "eastgate", "east": -64, "south": -1, "cost": 1500,
     "requiresProjects": ["proj-microwave"],
     "story": "The boom: everybody wants a web page and somewhere to keep it. Eastgate's old cold store is cold, has power, and nobody wants it. A datacentre, then.",
     "doneText": "Racks hum in the old cold store. Hosting pays $400 a month, and the first customer is Sol, who wants his shop on the web.",

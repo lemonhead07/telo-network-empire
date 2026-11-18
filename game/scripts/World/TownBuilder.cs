@@ -150,7 +150,7 @@ public static class TownBuilder
         new("town-start", false, StreetSouth, -StreetEnd, StreetEnd, "Main Street"),
         new("town-start", false, -30f, -72f, 60f, "Church Lane"),
         new("town-start", true, -72f, -30f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
-        new("eastgate", false, 8f, -48f, 48f, "Eastgate High Street"),
+        new("eastgate", false, 8f, -64f, 48f, "Eastgate High Street"),  // west end reaches the two houses moved off the town road (2026-11-19)
     };
 
     /// <summary>The east-west street a building fronts on: the nearest one on its site that runs past it. Null for the farm.</summary>
