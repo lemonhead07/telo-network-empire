@@ -1033,6 +1033,84 @@
    "pivot": "ground, centre",
    "tris": 1096,
    "status": "modelled"
+  },
+  {
+   "id": "house.a",
+   "name": "House (a)",
+   "what": "A small 1980s house, style a: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.48,
+    8.252
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2186,
+   "status": "modelled"
+  },
+  {
+   "id": "house.b",
+   "name": "House (b)",
+   "what": "A small 1980s house, style b: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.98,
+    9.107
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2630,
+   "status": "modelled"
+  },
+  {
+   "id": "house.c",
+   "name": "House (c)",
+   "what": "A small 1980s house, style c: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    9.12,
+    6.48,
+    8.252
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2278,
+   "status": "modelled"
+  },
+  {
+   "id": "house.d",
+   "name": "House (d)",
+   "what": "A small 1980s house, style d: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.98,
+    8.252
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2078,
+   "status": "modelled"
+  },
+  {
+   "id": "house.e",
+   "name": "House (e)",
+   "what": "A small 1980s house, style e: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.48,
+    7.98
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2830,
+   "status": "modelled"
+  },
+  {
+   "id": "house.f",
+   "name": "House (f)",
+   "what": "A small 1980s house, style f: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.98,
+    9.107
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2450,
+   "status": "modelled"
   }
  ]
 }

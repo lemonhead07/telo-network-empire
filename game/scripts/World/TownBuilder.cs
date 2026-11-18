@@ -96,6 +96,12 @@ public static class TownBuilder
             var xf = Place(gen, site, (float)lot.East, (float)lot.South, (float)lot.Yaw);
             float wallH = 3f + (i % 2) * 0.5f;
             var solids = new List<(Vector3 Pos, Vector3 Size)>();
+            // a house's look comes from one of six models (house.a-f) when they exist; its walls still come from HouseMesh
+            string? model = lot.Kind switch
+            {
+                LotKind.House => $"house.{(char)('a' + i % 6)}",
+                _ => null,
+            };
             Mesh mesh = lot.Kind switch
             {
                 LotKind.Shop => ShopMesh(),
@@ -107,7 +113,8 @@ public static class TownBuilder
             // how far the street's pole line is from this front door (the drop wire comes from there)
             var street = StreetOf(lot);
             float poleDist = Mathf.Abs((float)lot.South - (street is null ? PoleLineSouth : street.PoleLine));
-            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist, palette[(i + 2) % palette.Length], street));
+            var look = model is not null && Props.HasModel(model) ? Props.Make(model) : null;
+            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist, palette[(i + 2) % palette.Length], street, look));
         }
         TownDressing.Gardens(root, gen, town);
 
@@ -186,12 +193,12 @@ public static class TownBuilder
     /// <summary>Height of a house's floor above its lot origin (keeps the lawn from poking through the carpet).</summary>
     public const float HouseFloor = 0.15f;
 
-    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist, Color carColour, Street? street)
+    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist, Color carColour, Street? street, Node3D? look = null)
     {
         bool shop = lot.Kind == LotKind.Shop, house = lot.Kind == LotKind.House;
         float w = shop ? 10 : 8, d = shop ? 8 : 7, front = d / 2;
         var body = new StaticBody3D { Name = lot.Id, Transform = xf };
-        body.AddChild(new MeshInstance3D { Mesh = mesh });
+        body.AddChild(look ?? new MeshInstance3D { Mesh = mesh });
         if (!house) body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(w, 4, d) }, Position = new Vector3(0, 1.5f, 0) });
         foreach (var (pos, size) in solids) body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = size }, Position = pos });
         root.AddChild(body);
