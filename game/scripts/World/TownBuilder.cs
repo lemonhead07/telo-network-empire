@@ -265,7 +265,8 @@ public static class TownBuilder
                 var lp = new LowPoly().Box(new Vector3(0, 0.55f, 0), new Vector3(1.7f, 0.6f, 3.9f), carColour).Box(new Vector3(0, 1.05f, 0.2f), new Vector3(1.5f, 0.5f, 2.0f), carColour * 0.9f)
                     .Box(new Vector3(0, 1.07f, -0.82f), new Vector3(1.4f, 0.4f, 0.04f), new Color(0.3f, 0.42f, 0.52f));
                 foreach (var (wx, wz) in new[] { (-0.85f, -1.25f), (0.85f, -1.25f), (-0.85f, 1.25f), (0.85f, 1.25f) }) lp.Box(new Vector3(wx, 0.3f, wz), new Vector3(0.22f, 0.6f, 0.6f), dark);
-                car = lp.Instance("Car");
+                var carModel = $"car.{new[] { "saloon", "estate", "hatch", "coupe" }[(lot.Id.Sum(ch => ch) + lot.Resident.Length) % 4]}";
+                car = Props.HasModel(carModel) ? Props.Make(carModel) : lp.Instance("Car");
                 car.Position = new Vector3(park is null ? DriveOffset : driveX, 0.06f, 1.2f); // at the top of the driveway, by the house
                 body.AddChild(car);
             }

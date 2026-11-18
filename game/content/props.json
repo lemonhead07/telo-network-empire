@@ -1150,6 +1150,149 @@
    "pivot": "foot, centre",
    "tris": 1000,
    "status": "modelled"
+  },
+  {
+   "id": "nature.oak",
+   "name": "Oak",
+   "what": "A broad faceted oak, three canopy lumps. Scattered on grassland and in hedgerows.",
+   "size": [
+    3.572,
+    4.6,
+    3.232
+   ],
+   "pivot": "foot of the trunk",
+   "tris": 108,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.pine",
+   "name": "Pine",
+   "what": "Four tiers of needles on a dark trunk. Forests and cold places.",
+   "size": [
+    3.12,
+    5.4,
+    3.042
+   ],
+   "pivot": "foot of the trunk",
+   "tris": 64,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.rock",
+   "name": "Rock",
+   "what": "A boulder with a smaller one beside it and a cap of moss.",
+   "size": [
+    1.838,
+    0.98,
+    1.632
+   ],
+   "pivot": "ground, centre",
+   "tris": 44,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.cactus",
+   "name": "Cactus",
+   "what": "A desert cactus with two arms and one red flower.",
+   "size": [
+    1.391,
+    2.51,
+    0.532
+   ],
+   "pivot": "foot",
+   "tris": 144,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.fruit-tree",
+   "name": "Apple tree",
+   "what": "A small garden apple tree with fruit on it and a stick propping up a branch.",
+   "size": [
+    2.5,
+    3.1,
+    2.5
+   ],
+   "pivot": "foot of the trunk",
+   "tris": 248,
+   "status": "modelled"
+  },
+  {
+   "id": "street.lamp",
+   "name": "Street lamp",
+   "what": "Grey column with an arm reaching over the road (towards -Z), a warm lens.",
+   "size": [
+    0.32,
+    5.284,
+    1.91
+   ],
+   "pivot": "foot, centre",
+   "tris": 144,
+   "status": "modelled"
+  },
+  {
+   "id": "car.saloon",
+   "name": "Saloon car",
+   "what": "A household's four-door saloon, teal.",
+   "size": [
+    2.02,
+    1.345,
+    4.02
+   ],
+   "pivot": "ground, centre",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "car.estate",
+   "name": "Estate car",
+   "what": "A long estate with wood panels down the sides.",
+   "size": [
+    2.02,
+    1.345,
+    4.32
+   ],
+   "pivot": "ground, centre",
+   "tris": 700,
+   "status": "modelled"
+  },
+  {
+   "id": "car.hatch",
+   "name": "Hatchback",
+   "what": "A small mustard hatchback.",
+   "size": [
+    2.02,
+    1.345,
+    3.62
+   ],
+   "pivot": "ground, centre",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "car.coupe",
+   "name": "Coupe",
+   "what": "A maroon two-door with a short roof.",
+   "size": [
+    2.02,
+    1.345,
+    4.12
+   ],
+   "pivot": "ground, centre",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "vehicle.nez-van",
+   "name": "National Telephone van",
+   "what": "The monopoly's blue van, lettered on both sides, ladder on the roof.",
+   "size": [
+    2.34,
+    2.17,
+    4.75
+   ],
+   "pivot": "ground, centre",
+   "tris": 1940,
+   "status": "modelled"
   }
  ]
 }

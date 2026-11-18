@@ -603,6 +603,149 @@ def farm_hollow():
     label("sign-text", "HOLLOW FARM\nEGGS", (-9.5, 1.6, 12.42), 0.13, "barn-red")
 
 
+# ======================================================================================== nature (single meshes, drawn
+# thousands of times by PlanetBuilder.Scatter and TownDressing: kept within ~1.5x the old code-built triangle counts)
+k.PALETTE.update({
+    "bark": (0.38, 0.27, 0.17), "bark-dark": (0.30, 0.21, 0.13), "leaf-1": (0.34, 0.56, 0.23), "leaf-2": (0.29, 0.50, 0.20),
+    "leaf-3": (0.40, 0.62, 0.27), "needle-1": (0.19, 0.38, 0.21), "needle-2": (0.23, 0.44, 0.25), "needle-3": (0.27, 0.50, 0.29),
+    "rock-1": (0.52, 0.50, 0.48), "rock-2": (0.44, 0.42, 0.41), "moss": (0.36, 0.48, 0.26), "cactus": (0.33, 0.52, 0.30),
+    "cactus-dark": (0.27, 0.45, 0.25), "apple": (0.80, 0.16, 0.12), "blossom": (0.95, 0.85, 0.88),
+})
+
+
+def blob(n, c, rx, ry_up, ry_down, colour, sides=7, rot=0.0):
+    """A faceted canopy lump: two cones base to base (like LowPoly.Gem), centred at c (Godot)."""
+    x, y, z = c
+    a = k.cone(f"{n}-u", G(x, y + ry_up / 2, z), rx, 0.0, ry_up, M(colour), sides=sides, rot=(0, 0, rot))
+    b = k.cone(f"{n}-d", G(x, y - ry_down / 2, z), 0.0, rx, ry_down, M(colour), sides=sides, rot=(0, 0, rot))
+    return a, b
+
+
+def nature_oak():
+    gcyl("trunk", (0, 0, 0), 0.24, 2.0, "bark", sides=6, r2=0.15)
+    k.beam("branch-a", G(0, 1.6, 0), G(0.7, 2.5, 0.3), 0.14, M("bark"))
+    k.beam("branch-b", G(0, 1.7, 0), G(-0.6, 2.6, -0.3), 0.12, M("bark"))
+    blob("crown", (0, 3.1, 0), 1.7, 1.5, 1.1, "leaf-1", sides=7)
+    blob("crown-r", (0.85, 2.7, 0.4), 1.05, 0.9, 0.6, "leaf-2", sides=6, rot=0.4)
+    blob("crown-l", (-0.75, 2.85, -0.35), 1.0, 0.9, 0.6, "leaf-3", sides=6, rot=0.9)
+
+
+def nature_pine():
+    gcyl("trunk", (0, 0, 0), 0.2, 1.4, "bark-dark", sides=5, r2=0.13)
+    for i, (y, r, h, c) in enumerate(((0.9, 1.6, 2.4, "needle-1"), (2.0, 1.25, 2.1, "needle-2"), (3.1, 0.9, 1.8, "needle-3"), (4.1, 0.5, 1.3, "needle-3"))):
+        k.cone(f"tier{i}", G(0, y + h / 2, 0), r, 0.0, h, M(c), sides=7, rot=(0, 0, i * 0.45))
+
+
+def nature_rock():
+    blob("rock", (0, 0.25, 0), 0.9, 0.55, 0.4, "rock-1", sides=5)
+    blob("rock-b", (0.6, 0.12, 0.35), 0.5, 0.35, 0.3, "rock-2", sides=4, rot=0.7)
+    blob("moss", (-0.15, 0.62, -0.1), 0.45, 0.12, 0.05, "moss", sides=5)
+
+
+def nature_cactus():
+    gcyl("stem", (0, 0, 0), 0.28, 2.3, "cactus", sides=7, r2=0.22)
+    gcyl("stem-top", (0, 2.3, 0), 0.22, 0.2, "cactus", sides=7, r2=0.1)
+    k.beam("arm-r", G(0.15, 1.2, 0), G(0.65, 1.3, 0), 0.22, M("cactus-dark"), round_=True)
+    gcyl("arm-r-up", (0.68, 1.2, 0), 0.12, 0.75, "cactus", sides=6, r2=0.09)
+    k.beam("arm-l", G(-0.15, 0.9, 0), G(-0.5, 0.95, 0.1), 0.18, M("cactus-dark"), round_=True)
+    gcyl("arm-l-up", (-0.52, 0.9, 0.1), 0.1, 0.5, "cactus", sides=6, r2=0.07)
+    gcyl("flower", (0, 2.45, 0), 0.08, 0.06, "apple", sides=5)
+
+
+def nature_fruit_tree():
+    gcyl("trunk", (0, 0, 0), 0.13, 1.3, "bark", sides=6, r2=0.1)
+    k.beam("fork-a", G(0, 1.1, 0), G(0.45, 1.8, 0.2), 0.09, M("bark"))
+    k.beam("fork-b", G(0, 1.15, 0), G(-0.4, 1.85, -0.15), 0.08, M("bark"))
+    blob("crown", (0, 2.2, 0), 1.25, 0.9, 0.7, "leaf-3", sides=8)
+    blob("crown-b", (0.5, 2.0, 0.35), 0.75, 0.6, 0.4, "leaf-1", sides=6, rot=0.5)
+    for i in range(9):
+        a = i * 2.39
+        r = 0.9 + (i % 3) * 0.12
+        gcyl(f"apple{i}", (math.cos(a) * r, 1.75 + (i % 4) * 0.18, math.sin(a) * r), 0.07, 0.12, "apple", sides=5)
+    gbox("prop", (0.5, 0.6, 0.0), (0.05, 1.2, 0.05), "wood-light")  # a stick holding up the heavy branch
+
+
+# ======================================================================================== street things
+def street_lamp():
+    """Concrete-grey column, arm reaching over the road (-Z), the head lit warm."""
+    gcyl("base", (0, 0, 0), 0.16, 0.5, "steel", sides=8, r2=0.11)
+    gcyl("column", (0, 0.5, 0), 0.09, 4.6, "steel", sides=8, r2=0.06)
+    k.beam("arm", G(0, 5.0, 0), G(0, 5.25, -1.3), 0.07, M("steel"), round_=True)
+    gbox("head", (0, 5.18, -1.45), (0.32, 0.16, 0.6), "steel", bevel=0.03)
+    gbox("lens", (0, 5.08, -1.45), (0.24, 0.04, 0.48), "lampshade")
+    gbox("door", (0, 0.9, 0.095), (0.1, 0.3, 0.02), "ink")
+
+
+# ======================================================================================== cars and vans (front faces -Z)
+k.PALETTE.update({
+    "car-teal": (0.24, 0.50, 0.52), "car-mustard": (0.80, 0.62, 0.20), "car-maroon": (0.50, 0.16, 0.18), "car-cream": (0.88, 0.84, 0.70),
+    "car-glass": (0.28, 0.38, 0.46), "chrome": (0.80, 0.81, 0.82), "headlamp": (1.0, 0.95, 0.75), "tail": (0.70, 0.08, 0.06),
+    "nez-blue": (0.12, 0.20, 0.50), "nez-letter": (0.95, 0.88, 0.45), "plate": (0.95, 0.94, 0.88), "wood-panel": (0.55, 0.38, 0.22),
+})
+
+
+def car(body, length=3.9, roof_len=2.0, roof_shift=0.15, estate=False, wood=False, hatch=False):
+    w = 1.7
+    gbox("body", (0, 0.58, 0), (w, 0.55, length), body, bevel=0.06)
+    gbox("sill", (0, 0.32, 0), (w + 0.02, 0.06, length - 0.6), "ink")
+    if estate:
+        roof_len, roof_shift = length * 0.62, 0.45
+    if hatch:
+        roof_len, roof_shift = length * 0.5, 0.35
+    rz = roof_shift
+    # cabin: glass band then roof
+    gbox("glass", (0, 1.07, rz), (w - 0.12, 0.42, roof_len), "car-glass")
+    gbox("roof", (0, 1.31, rz), (w - 0.1, 0.07, roof_len - 0.05), body, bevel=0.02)
+    for sx in (-1, 1):
+        gbox(f"pillar-a{sx}", (sx * (w / 2 - 0.08), 1.07, rz - roof_len / 2 + 0.05), (0.07, 0.42, 0.08), body)
+        gbox(f"pillar-b{sx}", (sx * (w / 2 - 0.07), 1.07, rz), (0.07, 0.42, 0.08), body)
+        gbox(f"pillar-c{sx}", (sx * (w / 2 - 0.08), 1.07, rz + roof_len / 2 - 0.05), (0.07, 0.42, 0.1), body)
+        if wood:
+            gbox(f"wood{sx}", (sx * (w / 2 + 0.005), 0.62, 0.2), (0.01, 0.3, length - 1.2), "wood-panel")
+        gbox(f"handle{sx}", (sx * (w / 2 + 0.01), 0.75, -0.2), (0.02, 0.04, 0.16), "chrome")
+        gbox(f"mirror{sx}", (sx * (w / 2 + 0.1), 0.95, rz - roof_len / 2 + 0.2), (0.12, 0.1, 0.06), "ink")
+    for zz, name in ((-length / 2 - 0.02, "front"), (length / 2 + 0.02, "back")):
+        gbox(f"bumper-{name}", (0, 0.42, zz), (w + 0.06, 0.12, 0.08), "chrome")
+        gbox(f"plate-{name}", (0, 0.55, zz - 0.02 * (1 if zz < 0 else -1)), (0.5, 0.12, 0.02), "plate")
+    for sx in (-1, 1):
+        gbox(f"headlamp{sx}", (sx * 0.58, 0.7, -length / 2 - 0.005), (0.3, 0.16, 0.02), "headlamp")
+        gbox(f"tail{sx}", (sx * 0.62, 0.7, length / 2 + 0.005), (0.25, 0.14, 0.02), "tail")
+    gbox("grille", (0, 0.68, -length / 2 - 0.006), (0.7, 0.16, 0.02), "ink")
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            zz = sz * (length / 2 - 0.7)
+            k.cylinder(f"wheel{sx}{sz}", G(sx * 0.78, 0.31, zz), 0.31, 0.2, M("tyre"), axis="X", sides=12)
+            k.cylinder(f"hub{sx}{sz}", G(sx * 0.89, 0.31, zz), 0.16, 0.02, M("chrome"), axis="X", sides=8)
+            gbox(f"arch{sx}{sz}", (sx * (w / 2 + 0.005), 0.62, zz), (0.02, 0.1, 0.75), "ink")
+
+
+def nez_van():
+    """The national phone company's van: same size as yours (2.0 x 1.9 x 4.6), blue, lettered both sides."""
+    L, Wd = 4.6, 2.0
+    gbox("body", (0, 1.15, 0.25), (Wd, 1.7, L - 0.5), "nez-blue", bevel=0.05)
+    gbox("cab", (0, 0.95, -L / 2 + 0.35), (Wd, 1.3, 0.7), "nez-blue", bevel=0.08)
+    gbox("windscreen", (0, 1.5, -L / 2 + 0.34), (1.7, 0.5, 0.65), "car-glass")
+    gbox("stripe", (0, 0.85, 0.1), (Wd + 0.02, 0.18, L - 0.2), "nez-letter")
+    for sx in (-1, 1):
+        gbox(f"side-window{sx}", (sx * (Wd / 2 + 0.005), 1.5, -L / 2 + 0.95), (0.01, 0.45, 0.6), "car-glass")
+        label(f"letter{sx}", "NATIONAL TELEPHONE", (sx * (Wd / 2 + 0.012), 1.45, 0.6), 0.2, "nez-letter", face="+X" if sx > 0 else "-X")
+        gbox(f"mirror{sx}", (sx * (Wd / 2 + 0.12), 1.4, -L / 2 + 0.6), (0.1, 0.2, 0.06), "ink")
+    gbox("bumper-f", (0, 0.4, -L / 2 - 0.02), (Wd + 0.06, 0.16, 0.1), "ink")
+    gbox("bumper-b", (0, 0.4, L / 2 + 0.02), (Wd + 0.06, 0.16, 0.1), "ink")
+    for sx in (-1, 1):
+        gbox(f"headlamp{sx}", (sx * 0.7, 0.72, -L / 2 - 0.005), (0.3, 0.18, 0.02), "headlamp")
+        gbox(f"tail{sx}", (sx * 0.85, 0.8, L / 2 + 0.005), (0.15, 0.3, 0.02), "tail")
+        for sz in (-1, 1):
+            zz = sz * (L / 2 - 0.8)
+            k.cylinder(f"wheel{sx}{sz}", G(sx * 0.9, 0.36, zz), 0.36, 0.24, M("tyre"), axis="X", sides=12)
+            k.cylinder(f"hub{sx}{sz}", G(sx * 1.03, 0.36, zz), 0.18, 0.02, M("chrome"), axis="X", sides=8)
+    gbox("back-door-seam", (0, 1.15, L / 2 + 0.005), (0.02, 1.5, 0.01), "ink")
+    gbox("roof-rack", (0, 2.05, 0.5), (1.6, 0.06, 2.6), "steel")
+    gbox("ladder", (0.3, 2.13, 0.5), (0.45, 0.08, 2.8), "steel")
+    gcyl("beacon", (-0.5, 2.0, -1.2), 0.1, 0.15, "car-mustard", sides=8)
+    gbox("plate-f", (0, 0.55, -L / 2 - 0.07), (0.5, 0.12, 0.02), "plate")
+
+
 # ======================================================================================== registry
 PROPS = {}
 for v in HOUSES:
@@ -613,6 +756,18 @@ PROPS["shop.sols"] = (shop_sols, "Sol's Electronics", "The town's electronics sh
 PROPS["depot.yard"] = (depot_yard, "1 Main Street (the depot)", "A brick workshop with a roller door and a sign board; the yard you lease for your staff.", "ground, centre of footprint", False)
 PROPS["farm.hollow"] = (farm_hollow, "Hollow Farm", "Farmhouse with a porch, red barn with X-braced doors and hay loft, silo, tractor, hay bales, the fence toward the road.", "farmhouse ground centre", False)
 PROPS["street.phone-box"] = (street_phone_box, "Phone box", "The national phone company's red kiosk outside Sol's.", "foot, centre", False)
+
+PROPS["nature.oak"] = (nature_oak, "Oak", "A broad faceted oak, three canopy lumps. Scattered on grassland and in hedgerows.", "foot of the trunk", True)
+PROPS["nature.pine"] = (nature_pine, "Pine", "Four tiers of needles on a dark trunk. Forests and cold places.", "foot of the trunk", True)
+PROPS["nature.rock"] = (nature_rock, "Rock", "A boulder with a smaller one beside it and a cap of moss.", "ground, centre", True)
+PROPS["nature.cactus"] = (nature_cactus, "Cactus", "A desert cactus with two arms and one red flower.", "foot", True)
+PROPS["nature.fruit-tree"] = (nature_fruit_tree, "Apple tree", "A small garden apple tree with fruit on it and a stick propping up a branch.", "foot of the trunk", True)
+PROPS["street.lamp"] = (street_lamp, "Street lamp", "Grey column with an arm reaching over the road (towards -Z), a warm lens.", "foot, centre", True)
+PROPS["car.saloon"] = (lambda: car("car-teal"), "Saloon car", "A household's four-door saloon, teal.", "ground, centre", False)
+PROPS["car.estate"] = (lambda: car("car-cream", length=4.2, estate=True, wood=True), "Estate car", "A long estate with wood panels down the sides.", "ground, centre", False)
+PROPS["car.hatch"] = (lambda: car("car-mustard", length=3.5, hatch=True), "Hatchback", "A small mustard hatchback.", "ground, centre", False)
+PROPS["car.coupe"] = (lambda: car("car-maroon", length=4.0, roof_len=1.5, roof_shift=0.3), "Coupe", "A maroon two-door with a short roof.", "ground, centre", False)
+PROPS["vehicle.nez-van"] = (nez_van, "National Telephone van", "The monopoly's blue van, lettered on both sides, ladder on the roof.", "ground, centre", False)
 
 
 def bounds():

@@ -51,7 +51,7 @@ public static class TownDressing
                 continue;
             }
             if (view.Lot.Kind != LotKind.House || TownBuilder.StreetOf(view.Lot) is not { } street) continue;
-            var garden = Garden(view.Lot, street, lots);
+            var garden = Garden(view.Lot, street, lots, view.Body);
             if (garden.TriangleCount > 0) view.Body.AddChild(garden.Instance("Garden"));
         }
         StreetLamps(root, gen, lots);
@@ -60,7 +60,7 @@ public static class TownDressing
     /// <summary>World east of a point at local x in a lot (yaw 0 faces south, so +x is east; yaw 180 turns it round).</summary>
     private static int EastSign(LotDef lot) => Mathf.Abs(Mathf.Wrap((float)lot.Yaw, -180f, 180f)) < 90 ? 1 : -1;
 
-    private static LowPoly Garden(LotDef lot, TownBuilder.Street street, List<LotView> all)
+    private static LowPoly Garden(LotDef lot, TownBuilder.Street street, List<LotView> all, Node3D body)
     {
         var lp = new LowPoly();
         uint h = Hash(lot.Id);
@@ -159,7 +159,18 @@ public static class TownDressing
         // --- the back garden: a tree, then some of a shed, a vegetable patch, a washing line ---------
         int side = (h >> 9) % 2 == 0 ? 1 : -1;
         float treeX = side * Mathf.Min(6.5f + Frac(h, 12) * 2f, (side > 0 ? hwR : hwL) - 2f);
-        Tree(lp, new Vector3(treeX, 0, Mathf.Min(-6.5f, BackZ + 4.5f + Frac(h, 20) * 2f)), 0.85f + Frac(h, 6) * 0.45f);
+        var treeAt = new Vector3(treeX, 0, Mathf.Min(-6.5f, BackZ + 4.5f + Frac(h, 20) * 2f));
+        float treeScale = 0.85f + Frac(h, 6) * 0.45f;
+        string treeId = (h >> 25) % 3 == 0 ? "nature.oak" : "nature.fruit-tree";   // most gardens have an apple tree
+        if (Props.HasModel(treeId))
+        {
+            var tree = Props.Make(treeId);
+            tree.Position = treeAt;
+            tree.Scale = Vector3.One * (treeId == "nature.oak" ? treeScale : treeScale * 1.2f);
+            tree.RotationDegrees = new Vector3(0, Frac(h, 14) * 360f, 0);
+            body.AddChild(tree);
+        }
+        else Tree(lp, treeAt, treeScale);
         if ((h >> 13) % 5 < 3)
         {
             float sx = -side * ((side > 0 ? hwL : hwR) - 1.7f);
@@ -219,7 +230,7 @@ public static class TownDressing
     private static void StreetLamps(Node3D root, PlanetGen gen, List<LotView> lots)
     {
         var grey = new Color(0.42f, 0.43f, 0.45f);
-        var lamp = new LowPoly().Cylinder(Vector3.Zero, 0.09f, 0.06f, 5.2f, 6, grey)
+        var lamp = Props.MeshOf("street.lamp") ?? new LowPoly().Cylinder(Vector3.Zero, 0.09f, 0.06f, 5.2f, 6, grey)
             .Box(new Vector3(0, 5.15f, -0.7f), new Vector3(0.08f, 0.08f, 1.5f), grey)
             .Box(new Vector3(0, 5.05f, -1.35f), new Vector3(0.3f, 0.14f, 0.55f), grey * 0.8f)
             .Box(new Vector3(0, 4.96f, -1.35f), new Vector3(0.22f, 0.04f, 0.42f), new Color(1f, 0.9f, 0.62f)).Build();
@@ -348,7 +359,7 @@ public static class TownDressing
         var hedge = new LowPoly().Box(new Vector3(0, 0.6f, 0), new Vector3(1.0f, 1.2f, 3.3f), Hedge)
             .Gem(new Vector3(0, 1.15f, 0.6f), 0.6f, 0.35f, 0.2f, 5, Hedge * 1.08f).Build();
         var oak = new LowPoly(); Tree(oak, Vector3.Zero, 1.3f);
-        var oakMesh = oak.Build();
+        var oakMesh = Props.MeshOf("nature.oak") ?? oak.Build();
         var bale = new LowPoly().Cylinder(Vector3.Zero, 0.65f, 0.65f, 1.2f, 8, new Color(0.85f, 0.74f, 0.42f)).Build();
         var sheep = new LowPoly().Box(new Vector3(0, 0.55f, 0), new Vector3(0.6f, 0.5f, 1.0f), new Color(0.93f, 0.92f, 0.86f))
             .Box(new Vector3(0, 0.7f, 0.6f), new Vector3(0.28f, 0.3f, 0.32f), new Color(0.15f, 0.14f, 0.13f))
