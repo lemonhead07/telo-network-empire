@@ -4,6 +4,12 @@
 
 **Start here:** `BUILD_PLAN.md` → "Early access: Acts 0–5". Next up: **EA2f** (Acts 1–2 ask for more), then EA2b (the Yard), EA2c, EA2d, EA3–EA6. Before committing a rules change, run `dotnet test tests/Telo.Sim.Tests` (the Act 5 script player is in it) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act5` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front).
 
+## Newest (2026-11-19, cloud, branch `claude/friendly-volta-0c3lcj`): the town modelled, and opened up
+
+- **Town layout:** houses 20 m apart with gardens (lawns, fences, hedges, sheds, apple trees, washing lines), street lamps, a phone box, and patchwork fields with hedgerows round every settlement (`World/TownDressing.cs`). Church Lane at −40. The Act 5 script player's cash bands are on a knife-edge: 21 and 22 m spacing both failed it.
+- **~45 models in `tools/models/town.py`:** six houses (`house.a–f`, furnished front rooms), Sol's shop, the depot, Hollow Farm (with tractor), the outside of your room plus its desk, answering machine, camp bed, terminal, PIP's handset, notebook and clutter; Jory, Tobi, Sol and eight residents (one per archetype; they stand in their front room while home); four cars, Nez's van, Nadir; oak, pine, rock, cactus, apple tree, street lamp; the council barrier with its worker. See `docs/img/props/lineup-buildings.png` and `lineup-town-life.png`.
+- **Not done:** the switchboard and line rack (BUILD_PLAN 11/12, left to avoid clashing with the model branch), the wall boards (tickets, calendar, timesheet, ads), Eastgate shops, animation.
+
 ## Newest (2026-11-19): 28 models through Act 5
 
 `tools/models/batch.py -- all` builds every model the player handles through Act 5 (van kit, install parts, the pole, 13 project sites) and keeps `props.json` in step; the game picks each up by prop id (BUILD_PLAN 11b). See them: `docs/img/props/lineup-handheld.png`, `lineup-sites.png`, or `godot --path game res://scenes/Showroom.tscn`. Next model batches: the switchboard (item 11 then 12), houses, residents.

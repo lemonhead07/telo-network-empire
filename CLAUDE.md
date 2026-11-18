@@ -35,6 +35,7 @@ xvfb-run -a godot --path game -- --shot=/abs/path/x.png # the same in a cloud se
 godot --path game                                       # play
 godot --editor --path game                              # open editor
 blender -b --factory-startup --python tools/models/batch.py -- all   # build every model (or name ids): game/assets/models/<id>.glb, docs/img/props/<id>.png, briefs in props.json (then --import)
+blender -b --factory-startup --python tools/models/town.py -- all   # houses, shop, depot, farm, your room and its furniture, people, cars, trees, street things, Nadir, the barrier ("person.*" for a group)
 blender -b --factory-startup --python tools/models/lineup.py -- site. --out sites  # contact sheet of models by id prefix → docs/img/props/lineup-sites.png
 godot --path game res://scenes/Showroom.tscn [-- --shot=/abs/x.png]  # every model on a lawn in the real renderer (orbit with the mouse)
 ```
@@ -123,6 +124,7 @@ Decision D15 (changed 2026-11-12). Two stages:
 - Style: low-poly, early-1980s small town, a few colours per object, small readable details (nameplate, dial, sticker).
 - **Sound is synthesised in code** (tones, clicks, noise) when audio work starts.
 - Room interiors still use `RoomBuilder.Box` primitives; migrate them when touched.
+- **`tools/models/town.py`** writes its builders in **Godot coordinates** (`G()`/`S()`/`gbox`) so models line up with code that places doors, windows, install points and collision. A model replaces only the *look*: collision and click areas stay code-built (`TownBuilder` takes `look`; `GameRoot.Dress(node, id)` swaps a box's mesh for a model). Everything falls back to the old shapes if a `.glb` is missing. In a cloud session Blender needs `apt-get install -y libegl1`. Previews: `docs/img/props/<id>.png`, sheets `lineup-buildings.png`, `lineup-town-life.png`.
 
 ## Sim architecture cheatsheet
 
