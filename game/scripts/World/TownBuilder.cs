@@ -100,6 +100,9 @@ public static class TownBuilder
             string? model = lot.Kind switch
             {
                 LotKind.House => $"house.{(char)('a' + i % 6)}",
+                LotKind.Shop => "shop.sols",
+                LotKind.Depot => "depot.yard",
+                LotKind.Farm => "farm.hollow",
                 _ => null,
             };
             Mesh mesh = lot.Kind switch

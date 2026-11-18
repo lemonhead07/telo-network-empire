@@ -1111,6 +1111,45 @@
    "pivot": "ground, centre of footprint",
    "tris": 2450,
    "status": "modelled"
+  },
+  {
+   "id": "depot.yard",
+   "name": "1 Main Street (the depot)",
+   "what": "A brick workshop with a roller door and a sign board; the yard you lease for your staff.",
+   "size": [
+    9.8,
+    4.3,
+    8.14
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 798,
+   "status": "modelled"
+  },
+  {
+   "id": "farm.hollow",
+   "name": "Hollow Farm",
+   "what": "Farmhouse with a porch, red barn with X-braced doors and hay loft, silo, tractor, hay bales, the fence toward the road.",
+   "size": [
+    41.5,
+    11.1,
+    26.323
+   ],
+   "pivot": "farmhouse ground centre",
+   "tris": 3380,
+   "status": "modelled"
+  },
+  {
+   "id": "street.phone-box",
+   "name": "Phone box",
+   "what": "The national phone company's red kiosk outside Sol's.",
+   "size": [
+    1.05,
+    2.73,
+    1.05
+   ],
+   "pivot": "foot, centre",
+   "tris": 1000,
+   "status": "modelled"
   }
  ]
 }

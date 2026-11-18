@@ -35,7 +35,7 @@ k.PALETTE.update({
     "tv": (0.15, 0.15, 0.16), "tv-screen": (0.30, 0.40, 0.42), "lampshade": (0.95, 0.86, 0.62), "brass": (0.78, 0.62, 0.25),
     "book-1": (0.60, 0.15, 0.12), "book-2": (0.18, 0.30, 0.50), "book-3": (0.25, 0.42, 0.25), "book-4": (0.85, 0.75, 0.40),
     "ink": (0.12, 0.12, 0.14), "label": (0.95, 0.94, 0.88), "steel": (0.62, 0.64, 0.66), "concrete": (0.68, 0.67, 0.64),
-    "door-green": (0.24, 0.34, 0.22),
+    "door-green": (0.24, 0.34, 0.22), "corrugated": (0.70, 0.72, 0.72), "beige-box": (0.82, 0.74, 0.56),
 })
 M = k.mat
 
@@ -313,11 +313,306 @@ def _house(v):
     return lambda: house(v)
 
 
+# ======================================================================================== shared pieces
+def gable_roof(n, cx, cz, y, w, d, rise, colour, end_colour=None, thick=0.12, ends_inset=0.0, wall_w=None, wall_d=None):
+    """A gable roof with its ridge along X over a w x d rectangle centred at (cx, cz), eaves at height y.
+    With end_colour, the triangles under it are closed in that colour at the wall line (wall_w)."""
+    hw, hd = w / 2, d / 2
+    slab(f"{n}-f", (cx - hw, y, cz + hd), (cx + hw, y, cz + hd), (cx + hw, y + rise, cz), (cx - hw, y + rise, cz), thick, colour)
+    slab(f"{n}-b", (cx + hw, y, cz - hd), (cx - hw, y, cz - hd), (cx - hw, y + rise, cz), (cx + hw, y + rise, cz), thick, colour)
+    gbox(f"{n}-ridge", (cx, y + rise + 0.03, cz), (w + 0.05, 0.1, 0.2), "roof-charcoal")
+    if end_colour:
+        ww = wall_w if wall_w else w
+        wd = wall_d if wall_d else d
+        for s in (-1, 1):
+            x = cx + s * ww / 2
+            ey = y + rise * (1 - (wd / 2) / hd) - thick
+            poly(f"{n}-gable{s}", [(x, y - 0.3, cz - wd / 2), (x, y - 0.3, cz + wd / 2), (x, ey, cz + wd / 2), (x, y + rise - thick, cz), (x, ey, cz - wd / 2)],
+                 [(0, 1, 2, 3, 4)], end_colour)
+
+
+def framed_window(n, x, y, z, w, h, out=1, glass="glass", frame="trim"):
+    """A window on a wall facing +Z (out=1) or -Z (out=-1)."""
+    gbox(f"{n}-frame", (x, y, z + out * 0.02), (w + 0.16, h + 0.16, 0.05), frame)
+    gbox(f"{n}-glass", (x, y, z + out * 0.045), (w, h, 0.02), glass)
+    gbox(f"{n}-bar", (x, y, z + out * 0.06), (0.05, h, 0.02), frame)
+    gbox(f"{n}-sill", (x, y - h / 2 - 0.06, z + out * 0.08), (w + 0.25, 0.06, 0.15), frame)
+
+
+def crt(n, x, y, z, size, screen, case="tv", face=1):
+    """A television of the period, facing +Z (face=1) or -Z."""
+    gbox(f"{n}-case", (x, y + size * 0.4, z), (size, size * 0.8, size * 0.85), case, bevel=0.02)
+    gbox(f"{n}-screen", (x - size * 0.08, y + size * 0.42, z + face * size * 0.43), (size * 0.7, size * 0.55, 0.01), screen)
+    for i in range(2):
+        gcyl(f"{n}-knob{i}", (x + size * 0.38, y + size * 0.25 + i * 0.12 * size, z + face * size * 0.43), 0.02 * size * 2, 0.01, "steel", sides=6)
+
+
+# ======================================================================================== Sol's Electronics
+# Footprint 10 x 8, collision box 10 x 4 x 8 (TownBuilder.Building). The sign text is a Label3D at (0, 3.25, 4.12)
+# over the navy board; the counter hotspot is the hatch at x = 3, the door at x = 0.
+k.PALETTE.update({
+    "shop-wall": (0.80, 0.74, 0.62), "shop-navy": (0.14, 0.18, 0.34), "awning-red": (0.78, 0.18, 0.15), "awning-cream": (0.95, 0.92, 0.82),
+    "shop-floor": (0.55, 0.52, 0.48), "screen-blue": (0.35, 0.55, 0.75), "screen-green": (0.35, 0.75, 0.45), "screen-orange": (0.90, 0.60, 0.30),
+    "poster-yellow": (0.98, 0.85, 0.25), "radio-wood": (0.52, 0.34, 0.20), "cardboard": (0.72, 0.57, 0.38), "pipe-grey": (0.45, 0.46, 0.48),
+})
+
+
+def shop_sols():
+    w, d, h = 10.0, 8.0, 3.7
+    gbox("plinth", (0, -0.15, 0), (w + 0.1, 0.3, d + 0.1), "plinth")
+    # walls with openings in the front: window (x -3), door (x 0), counter hatch (x 3)
+    gbox("wall-back", (0, h / 2, -d / 2 + 0.1), (w, h, 0.2), "shop-wall")
+    for s in (-1, 1):
+        gbox(f"wall-side{s}", (s * (w / 2 - 0.1), h / 2, 0), (0.2, h, d - 0.4), "shop-wall")
+    zf = d / 2 - 0.1
+    for x0, x1 in ((-5.0, -4.3), (-1.7, -0.55), (0.55, 1.7), (4.3, 5.0)):  # piers between the openings
+        gbox(f"pier{x0}", ((x0 + x1) / 2, h / 2, zf), (x1 - x0, h, 0.2), "shop-wall")
+    gbox("stallriser-l", (-3.0, 0.375, zf), (2.6, 0.75, 0.2), "brick")
+    gbox("stallriser-r", (3.0, 0.375, zf), (2.6, 0.75, 0.2), "brick")
+    gbox("fascia", (0, 2.9, zf), (w, 1.6, 0.2), "shop-wall")
+    gbox("over-door", (0, 2.6, zf), (1.1, 0.6, 0.2), "shop-wall")
+    gbox("floor", (0, 0.02, 0), (w - 0.4, 0.04, d - 0.4), "shop-floor")
+    gbox("ceiling", (0, h - 0.05, 0), (w - 0.4, 0.1, d - 0.4), "ceiling")
+    gbox("roof", (0, h + 0.05, 0), (w + 0.4, 0.15, d + 0.4), "roof-charcoal")
+    for s in (-1, 1):
+        gbox(f"parapet-s{s}", (s * (w / 2 + 0.1), h + 0.3, 0), (0.2, 0.4, d + 0.4), "shop-wall")
+    gbox("parapet-b", (0, h + 0.3, -d / 2 - 0.1), (w + 0.4, 0.4, 0.2), "shop-wall")
+    gbox("parapet-f", (0, h + 0.3, d / 2 + 0.1), (w + 0.4, 0.4, 0.2), "shop-wall")
+    # the sign board (text is drawn by the game) with a trim
+    gbox("sign", (0, 3.25, d / 2 + 0.03), (9.0, 0.8, 0.08), "shop-navy")
+    gbox("sign-trim", (0, 3.25, d / 2 + 0.01), (9.2, 0.95, 0.06), "awning-cream")
+    # striped awning over the windows
+    n = 14
+    for i in range(n):
+        x0 = -4.8 + i * (9.6 / n)
+        slab(f"awning{i}", (x0, 2.45, d / 2 + 0.1), (x0 + 9.6 / n, 2.45, d / 2 + 0.1), (x0 + 9.6 / n, 2.05, d / 2 + 1.1), (x0, 2.05, d / 2 + 1.1), 0.03,
+             "awning-red" if i % 2 == 0 else "awning-cream")
+        gbox(f"valance{i}", (x0 + 4.8 / n, 1.97, d / 2 + 1.1), (9.6 / n, 0.16, 0.02), "awning-red" if i % 2 == 0 else "awning-cream")
+    # shop window: frame, glass, and the goods on show
+    framed_window("display", -3.0, 1.5, d / 2, 2.6, 1.5, frame="shop-navy")
+    gbox("display-shelf", (-3.0, 0.78, d / 2 - 0.45), (2.6, 0.06, 0.6), "wood")
+    crt("tv1", -3.7, 0.81, d / 2 - 0.45, 0.55, "screen-blue")
+    crt("tv2", -2.95, 0.81, d / 2 - 0.45, 0.45, "screen-green")
+    gbox("radio", (-2.25, 0.96, d / 2 - 0.4), (0.5, 0.3, 0.2), "radio-wood", bevel=0.02)
+    gbox("radio-grille", (-2.35, 0.96, d / 2 - 0.29), (0.22, 0.2, 0.01), "ink")
+    gbox("radio-dial", (-2.1, 0.99, d / 2 - 0.29), (0.14, 0.08, 0.01), "poster-yellow")
+    gbox("poster", (-3.9, 1.95, d / 2 - 0.06), (0.5, 0.65, 0.01), "poster-yellow")
+    label("poster-text", "SALE", (-3.9, 2.05, d / 2 - 0.05), 0.14, "awning-red")
+    label("poster-text2", "MODEMS\nIN STOCK", (-3.9, 1.8, d / 2 - 0.05), 0.07, "ink")
+    # the door: glazed, with a sign on it
+    gbox("door", (0, 1.05, d / 2 - 0.05), (1.06, 2.1, 0.06), "shop-navy")
+    gbox("door-glass", (0, 1.35, d / 2 - 0.015), (0.8, 1.2, 0.02), "glass")
+    gbox("open-sign", (0, 1.4, d / 2 + 0.0), (0.4, 0.16, 0.01), "label")
+    label("open-text", "OPEN", (0, 1.4, d / 2 + 0.008), 0.08, "awning-red")
+    gbox("door-handle", (0.4, 1.0, d / 2 + 0.02), (0.04, 0.3, 0.04), "steel")
+    gbox("doorstep", (0, 0.05, d / 2 + 0.2), (1.4, 0.1, 0.4), "concrete")
+    # counter hatch: open window with a shelf and a bell, the counter inside
+    gbox("hatch-frame-t", (3.0, 2.27, d / 2 + 0.02), (2.8, 0.1, 0.1), "shop-navy")
+    for s in (-1, 1):
+        gbox(f"hatch-frame{s}", (3.0 + s * 1.35, 1.5, d / 2 + 0.02), (0.1, 1.5, 0.1), "shop-navy")
+    gbox("counter-shelf", (3.0, 0.72, d / 2 + 0.25), (2.8, 0.08, 0.5), "wood")
+    gcyl("bell-base", (3.7, 0.76, d / 2 + 0.3), 0.07, 0.02, "steel", sides=8)
+    gcyl("bell", (3.7, 0.78, d / 2 + 0.3), 0.06, 0.06, "brass", sides=8, r2=0.01)
+    gbox("counter", (3.0, 0.5, d / 2 - 0.6), (2.6, 1.0, 0.6), "wood")
+    gbox("till", (2.5, 1.1, d / 2 - 0.65), (0.4, 0.2, 0.35), "steel", bevel=0.02)
+    gbox("shelves", (3.0, 1.2, -d / 2 + 0.5), (4.0, 2.4, 0.6), "wood")
+    for i in range(10):
+        gbox(f"stock{i}", (1.3 + (i % 5) * 0.8, 0.6 + (i // 5) * 0.9, -d / 2 + 0.55), (0.5, 0.35, 0.4), "cardboard" if i % 3 else "tv")
+    # behind and above: back door, drainpipe, a big roof aerial, a stack of empty boxes by the side wall
+    gbox("back-door", (-3.0, 1.05, -d / 2 - 0.02), (0.95, 2.1, 0.05), "door-green")
+    gbox("drainpipe", (w / 2 + 0.08, h / 2, d / 2 - 0.3), (0.1, h, 0.1), "pipe-grey")
+    k.beam("mast", G(-3.5, h + 0.1, -2.0), G(-3.5, h + 3.2, -2.0), 0.06, M("steel"), round_=True)
+    for i, y in enumerate((h + 2.4, h + 2.9)):
+        k.beam(f"boom{i}", G(-3.5, y, -2.0 - 0.9), G(-3.5, y, -2.0 + 0.9), 0.03, M("steel"), round_=True)
+        for j in range(6):
+            zz = -2.0 - 0.75 + j * 0.3
+            k.beam(f"el{i}{j}", G(-3.5 - 0.5 + j * 0.04, y, zz), G(-3.5 + 0.5 - j * 0.04, y, zz), 0.015, M("steel"))
+    for i, (dx, dy, dz) in enumerate(((0, 0, 0), (0.1, 0.45, 0.05), (-0.05, 0.9, -0.05), (0.7, 0, 0.1))):
+        gbox(f"empties{i}", (-w / 2 - 0.5 + dx, 0.22 + dy, -1.5 + dz), (0.6, 0.45, 0.5), "cardboard")
+
+
+def street_phone_box():
+    red, glass = "awning-red", "glass-in"
+    gbox("base", (0, 0.06, 0), (1.05, 0.12, 1.05), "concrete")
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            gbox(f"corner{sx}{sz}", (sx * 0.45, 1.3, sz * 0.45), (0.1, 2.4, 0.1), red)
+    for side, (ox, oz, ax) in enumerate(((0, 0.47, "x"), (0, -0.47, "x"), (0.47, 0, "z"), (-0.47, 0, "z"))):
+        for r in range(4):
+            y = 0.55 + r * 0.45
+            size = (0.8, 0.4, 0.02) if ax == "x" else (0.02, 0.4, 0.8)
+            gbox(f"pane{side}{r}", (ox, y + 0.22, oz), size, glass)
+            bar = (0.8, 0.05, 0.05) if ax == "x" else (0.05, 0.05, 0.8)
+            gbox(f"bar{side}{r}", (ox, y, oz), bar, red)
+        gbox(f"kick{side}", (ox, 0.3, oz), (0.8, 0.4, 0.04) if ax == "x" else (0.04, 0.4, 0.8), red)
+        gbox(f"head{side}", (ox, 2.38, oz), (0.85, 0.25, 0.05) if ax == "x" else (0.05, 0.25, 0.85), red)
+    gbox("sign-f", (0, 2.38, 0.5), (0.7, 0.14, 0.01), "label")
+    label("sign-text", "TELEPHONE", (0, 2.38, 0.507), 0.07, "ink")
+    gbox("roof", (0, 2.58, 0), (1.05, 0.12, 1.05), red)
+    gbox("roof2", (0, 2.68, 0), (0.85, 0.1, 0.85), red)
+    gbox("phone", (0, 1.45, -0.38), (0.25, 0.35, 0.12), "ink")
+    gbox("handset", (-0.08, 1.48, -0.3), (0.06, 0.25, 0.06), "ink")
+    gbox("directory", (0.15, 1.05, -0.35), (0.3, 0.05, 0.2), "poster-yellow")
+
+
+# ======================================================================================== the depot (1 Main Street)
+# Footprint 8 x 7, collision box 8 x 4 x 7. Roller door left of the people's door (hotspot at x = 0); the name is a
+# Label3D at (0, 2.95, 3.62) on the sign board.
+def depot_yard():
+    w, d, h = 8.0, 7.0, 3.5
+    gbox("plinth", (0, -0.15, 0), (w + 0.1, 0.3, d + 0.1), "plinth")
+    gbox("walls-back", (0, h / 2, -d / 2 + 0.1), (w, h, 0.2), "brick")
+    for s in (-1, 1):
+        gbox(f"walls-side{s}", (s * (w / 2 - 0.1), h / 2, 0), (0.2, h, d - 0.4), "brick")
+    zf = d / 2 - 0.1
+    gbox("pier-l", (-3.75, h / 2, zf), (0.5, h, 0.2), "brick")
+    gbox("pier-m", (-0.45, h / 2, zf), (0.3, h, 0.2), "brick")
+    gbox("pier-r", (2.3, h / 2, zf), (3.4, h, 0.2), "brick")
+    gbox("over-roller", (-2.0, 3.05, zf), (3.1, 0.9, 0.2), "brick")
+    gbox("over-door", (0.15, 2.8, zf), (0.9, 1.4, 0.2), "brick")
+    for i in range(int(h / 0.45)):
+        y = 0.2 + i * 0.45
+        gbox(f"course-b{i}", (0, y, -d / 2 - 0.006), (w, 0.03, 0.012), "brick-dark")
+        for s in (-1, 1):
+            gbox(f"course-s{i}{s}", (s * (w / 2 + 0.006), y, 0), (0.012, 0.03, d), "brick-dark")
+    # roller door: ribbed, slightly raised, with its drum box
+    for i in range(13):
+        gbox(f"slat{i}", (-2.0, 0.12 + i * 0.2, zf + 0.12), (3.0, 0.17, 0.04), "corrugated")
+    gbox("roller-drum", (-2.0, 2.75, zf + 0.2), (3.2, 0.35, 0.3), "steel")
+    gbox("roller-handle", (-2.0, 0.35, zf + 0.15), (0.4, 0.05, 0.05), "ink")
+    # people's door and window
+    gbox("door", (0.15, 1.05, zf + 0.06), (0.9, 2.1, 0.06), "door-green")
+    gbox("door-knob", (0.5, 1.0, zf + 0.11), (0.05, 0.05, 0.05), "brass")
+    framed_window("window", 2.6, 1.7, d / 2, 1.4, 1.0)
+    # sign board, lamp, roof (monopitch, falling to the back)
+    gbox("sign", (0, 2.95, d / 2 + 0.05), (5.0, 0.55, 0.06), "label")
+    gbox("sign-trim", (0, 2.95, d / 2 + 0.03), (5.15, 0.65, 0.05), "ink")
+    k.beam("lamp-arm", G(2.8, 3.2, d / 2), G(2.8, 3.3, d / 2 + 0.5), 0.04, M("ink"))
+    gcyl("lamp", (2.8, 3.1, d / 2 + 0.55), 0.18, 0.2, "ink", sides=8, r2=0.05)
+    slab("roof", (-w / 2 - 0.2, h + 0.5, d / 2 + 0.3), (w / 2 + 0.2, h + 0.5, d / 2 + 0.3), (w / 2 + 0.2, h - 0.05, -d / 2 - 0.3), (-w / 2 - 0.2, h - 0.05, -d / 2 - 0.3), 0.1, "corrugated")
+    for s in (-1, 1):
+        poly(f"roof-end{s}", [(s * w / 2, h, d / 2), (s * w / 2, h + 0.45, d / 2), (s * w / 2, h, -d / 2)], [(0, 1, 2)], "brick")
+    gbox("gutter", (0, h - 0.1, -d / 2 - 0.35), (w + 0.4, 0.12, 0.12), "gutter")
+    gbox("downpipe", (w / 2 - 0.1, h / 2, -d / 2 - 0.35), (0.09, h, 0.09), "gutter")
+    # yard clutter beside it: a drum of cable, a pallet, an oil drum
+    gbox("pallet", (w / 2 + 1.0, 0.07, 1.5), (1.2, 0.14, 1.0), "wood-light")
+    gcyl("oil-drum", (w / 2 + 0.9, 0, -1.5), 0.3, 0.9, "shutter-blue", sides=10)
+    gcyl("reel-l", (w / 2 + 1.1, 0.6, 1.5), 0.45, 0.06, "wood-light", sides=10)
+
+
+# ======================================================================================== Hollow Farm
+# Farmhouse at the origin (8 x 7, collision 8 x 4 x 7); the barn's solid is 11 x 5.2 x 15 at (20, 2.6, -6) and the
+# silo's 4.2 x 9 x 4.2 at (29, 4.5, -10) (TownBuilder.FarmMesh). The van parks in the yard at (-7, 8).
+k.PALETTE.update({
+    "farm-white": (0.90, 0.88, 0.80), "barn-red": (0.60, 0.20, 0.16), "barn-trim": (0.92, 0.90, 0.84), "silo": (0.72, 0.74, 0.76),
+    "silo-roof": (0.52, 0.54, 0.57), "hay": (0.85, 0.74, 0.42), "tractor-green": (0.25, 0.48, 0.22), "tractor-yellow": (0.95, 0.78, 0.18),
+    "tyre": (0.10, 0.10, 0.11), "fence": (0.45, 0.33, 0.21), "water": (0.30, 0.45, 0.55),
+})
+
+
+def tractor(n, x, z, rot=0.0):
+    root = k.empty(n, G(x, 0, z))
+    root.rotation_euler = (0, 0, rot)
+    parts = []
+    def P(o):
+        o.parent = root
+        parts.append(o)
+    P(gbox(f"{n}-body", (0, 1.05, 0.2), (0.8, 0.6, 1.8), "tractor-green", bevel=0.03))
+    P(gbox(f"{n}-bonnet", (0, 1.25, 0.8), (0.7, 0.35, 1.0), "tractor-green", bevel=0.03))
+    P(gbox(f"{n}-grille", (0, 1.1, 1.31), (0.6, 0.4, 0.04), "ink"))
+    P(gbox(f"{n}-seat", (0, 1.55, -0.4), (0.45, 0.12, 0.4), "ink"))
+    P(gbox(f"{n}-seat-back", (0, 1.8, -0.6), (0.45, 0.45, 0.08), "ink"))
+    P(k.beam(f"{n}-wheel-col", G(0, 1.3, 0.1), G(0, 1.75, -0.1), 0.04, M("ink")))
+    P(gcyl(f"{n}-steer", (0, 1.73, -0.12), 0.18, 0.03, "ink", sides=10))
+    P(k.beam(f"{n}-exhaust", G(0.25, 1.4, 1.0), G(0.25, 2.3, 1.0), 0.06, M("ink"), round_=True))
+    for s in (-1, 1):
+        P(k.cylinder(f"{n}-rear{s}", G(s * 0.65, 0.75, -0.45), 0.75, 0.4, M("tyre"), axis="X", sides=14))
+        P(k.cylinder(f"{n}-rear-hub{s}", G(s * 0.86, 0.75, -0.45), 0.35, 0.03, M("tractor-yellow"), axis="X", sides=10))
+        P(k.cylinder(f"{n}-front{s}", G(s * 0.5, 0.42, 1.0), 0.42, 0.25, M("tyre"), axis="X", sides=12))
+        P(k.cylinder(f"{n}-front-hub{s}", G(s * 0.63, 0.42, 1.0), 0.2, 0.03, M("tractor-yellow"), axis="X", sides=8))
+        P(gbox(f"{n}-mudguard{s}", (s * 0.65, 1.55, -0.45), (0.45, 0.06, 1.2), "tractor-green"))
+    return root
+
+
+def farm_hollow():
+    # --- farmhouse
+    fw, fd, fh = 8.0, 7.0, 3.1
+    gbox("fh-plinth", (0, -0.15, 0), (fw + 0.1, 0.3, fd + 0.1), "plinth")
+    gbox("fh-walls", (0, fh / 2, 0), (fw, fh, fd), "farm-white")
+    gable_roof("fh-roof", 0, 0, fh, fw + 0.8, fd + 0.8, 2.4, "roof-grey", end_colour="farm-white", wall_w=fw, wall_d=fd)
+    gbox("fh-door", (0, 1.0, fd / 2 + 0.03), (1.0, 2.0, 0.06), "door-green")
+    gbox("fh-door-frame", (0, 1.05, fd / 2 + 0.01), (1.25, 2.2, 0.04), "trim")
+    for x in (-2.5, 2.5):
+        framed_window(f"fh-w{x}", x, 1.7, fd / 2, 1.3, 1.0)
+        framed_window(f"fh-wb{x}", x, 1.7, -fd / 2, 1.3, 1.0, out=-1)
+    # porch on posts
+    slab("fh-porch", (-2.0, 2.6, fd / 2), (2.0, 2.6, fd / 2), (2.0, 2.25, fd / 2 + 1.8), (-2.0, 2.25, fd / 2 + 1.8), 0.08, "roof-grey")
+    for s in (-1, 1):
+        gbox(f"fh-post{s}", (s * 1.8, 1.12, fd / 2 + 1.65), (0.14, 2.25, 0.14), "trim")
+    gbox("fh-deck", (0, 0.08, fd / 2 + 0.9), (4.0, 0.16, 1.8), "wood-light")
+    gbox("fh-chimney", (-2.6, fh + 1.5, -1.0), (0.7, 2.6, 0.7), "brick")
+    for i, dx in enumerate((-0.15, 0.15)):
+        gcyl(f"fh-pot{i}", (-2.6 + dx, fh + 2.8, -1.0), 0.09, 0.3, "chimney-pot", sides=8)
+    # --- barn (red, white trim, big doors with X-bracing, hay loft)
+    bx, bz, bw, bd, bh = 20.0, -6.0, 11.0, 15.0, 5.2
+    gbox("barn-walls", (bx, bh / 2, bz), (bw, bh, bd), "barn-red")
+    for i in range(int(bw / 0.4)):  # vertical boards on the front
+        gbox(f"barn-board{i}", (bx - bw / 2 + 0.2 + i * 0.4, bh / 2, bz + bd / 2 + 0.01), (0.04, bh, 0.02), "brick-dark")
+    gable_roof("barn-roof", bx, bz, bh, bw + 0.8, bd + 0.8, 3.2, "roof-charcoal", end_colour="barn-red", wall_w=bw, wall_d=bd)
+    zf = bz + bd / 2 + 0.03
+    gbox("barn-door-frame", (bx, 1.85, zf), (4.4, 3.8, 0.05), "barn-trim")
+    for s in (-1, 1):
+        dxc = bx + s * 1.05
+        gbox(f"barn-door{s}", (dxc, 1.8, zf + 0.03), (2.0, 3.5, 0.05), "barn-red")
+        k.beam(f"barn-x{s}a", G(dxc - 0.95, 0.1, zf + 0.07), G(dxc + 0.95, 3.5, zf + 0.07), 0.12, M("barn-trim"))
+        k.beam(f"barn-x{s}b", G(dxc + 0.95, 0.1, zf + 0.07), G(dxc - 0.95, 3.5, zf + 0.07), 0.12, M("barn-trim"))
+    gbox("barn-loft", (bx, bh + 1.0, zf), (1.6, 1.4, 0.05), "barn-trim")
+    gbox("barn-loft-door", (bx, bh + 1.0, zf + 0.03), (1.3, 1.1, 0.05), "barn-red")
+    gbox("barn-hoist", (bx, bh + 2.1, zf + 0.6), (0.15, 0.15, 1.3), "wood")
+    for s in (-1, 1):
+        for zz in (bz - 4, bz + 1):
+            xw = bx + s * bw / 2
+            gbox(f"barn-sw{s}{zz}-frame", (xw + s * 0.02, 2.6, zz), (0.05, 0.96, 1.16), "barn-trim")
+            gbox(f"barn-sw{s}{zz}-glass", (xw + s * 0.045, 2.6, zz), (0.02, 0.8, 1.0), "glass")
+            gbox(f"barn-sw{s}{zz}-bar", (xw + s * 0.06, 2.6, zz), (0.02, 0.8, 0.05), "barn-trim")
+    # --- silo
+    sx, sz = 29.0, -10.0
+    gcyl("silo", (sx, 0, sz), 2.2, 9.0, "silo", sides=16)
+    for i in range(6):
+        gcyl(f"silo-band{i}", (sx, 1.0 + i * 1.5, sz), 2.23, 0.08, "silo-roof", sides=16)
+    gcyl("silo-dome", (sx, 9.0, sz), 2.3, 1.8, "silo-roof", sides=16, r2=0.25)
+    for i in range(20):
+        gbox(f"silo-rung{i}", (sx, 0.5 + i * 0.42, sz + 2.28), (0.4, 0.04, 0.04), "steel")
+    for s in (-1, 1):
+        gbox(f"silo-rail{s}", (sx + s * 0.2, 4.6, sz + 2.28), (0.04, 8.4, 0.04), "steel")
+    k.beam("silo-chute", G(sx - 1.8, 7.5, sz + 1.0), G(bx + bw / 2, 4.8, sz + 2.0), 0.3, M("silo-roof"), round_=True)
+    # --- yard: hay bales, a trough, the tractor, and the old fence toward the road
+    for i, (x, z, r) in enumerate(((12, 4, 0.2), (13.6, 4.3, -0.3), (12.8, 4.2, 0.0))):
+        y = 0.65 if i < 2 else 1.95
+        o = k.cylinder(f"bale{i}", G(x, y, z), 0.65, 1.2, M("hay"), axis="X", sides=12)
+        o.rotation_euler.z += r
+    gbox("trough", (6.5, 0.3, -5.0), (2.0, 0.6, 0.7), "steel")
+    gbox("trough-water", (6.5, 0.55, -5.0), (1.85, 0.04, 0.55), "water")
+    tractor("tractor", 9.0, 7.0, math.radians(-25))
+    for i, x in enumerate((-8, -4, 4, 8)):
+        gbox(f"fence-post{i}", (x, 0.6, 12), (0.15, 1.2, 0.15), "fence")
+    for y in (0.5, 0.95):
+        gbox(f"fence-rail{y}", (0, y, 12), (16.2, 0.1, 0.08), "fence")
+    gbox("sign-post", (-9.5, 0.9, 12.3), (0.12, 1.8, 0.12), "fence")
+    gbox("sign", (-9.5, 1.6, 12.38), (1.4, 0.5, 0.05), "farm-white")
+    label("sign-text", "HOLLOW FARM\nEGGS", (-9.5, 1.6, 12.42), 0.13, "barn-red")
+
+
 # ======================================================================================== registry
 PROPS = {}
 for v in HOUSES:
     PROPS[f"house.{v}"] = (_house(v), f"House ({v})", f"A small 1980s house, style {v}: hollow, with a furnished front room. "
                            "Walls, door gap and windows match TownBuilder.HouseMesh.", "ground, centre of footprint", False)
+
+PROPS["shop.sols"] = (shop_sols, "Sol's Electronics", "The town's electronics shop: display window of televisions, striped awning, the counter hatch where modems are sold, a roof aerial.", "ground, centre of footprint", False)
+PROPS["depot.yard"] = (depot_yard, "1 Main Street (the depot)", "A brick workshop with a roller door and a sign board; the yard you lease for your staff.", "ground, centre of footprint", False)
+PROPS["farm.hollow"] = (farm_hollow, "Hollow Farm", "Farmhouse with a porch, red barn with X-braced doors and hay loft, silo, tractor, hay bales, the fence toward the road.", "farmhouse ground centre", False)
+PROPS["street.phone-box"] = (street_phone_box, "Phone box", "The national phone company's red kiosk outside Sol's.", "foot, centre", False)
 
 
 def bounds():

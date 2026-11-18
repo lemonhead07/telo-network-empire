@@ -43,7 +43,13 @@ public static class TownDressing
         var lots = town.Lots.Where(l => l.Lot.Kind != LotKind.Farm).ToList();
         foreach (var view in lots)
         {
-            if (view.Lot.Kind == LotKind.Shop) { view.Body.AddChild(PhoneBox(new Vector3(6.4f, 0, 5.6f))); continue; }
+            if (view.Lot.Kind == LotKind.Shop)
+            {
+                var box = Props.Make("street.phone-box", () => PhoneBox(Vector3.Zero));
+                box.Position = new Vector3(6.4f, 0, 5.6f);
+                view.Body.AddChild(box);
+                continue;
+            }
             if (view.Lot.Kind != LotKind.House || TownBuilder.StreetOf(view.Lot) is not { } street) continue;
             var garden = Garden(view.Lot, street, lots);
             if (garden.TriangleCount > 0) view.Body.AddChild(garden.Instance("Garden"));
