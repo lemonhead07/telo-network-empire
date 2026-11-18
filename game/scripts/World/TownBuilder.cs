@@ -74,6 +74,7 @@ public static class TownBuilder
         root.AddChild(hq);
         RoomBuilder.BuildShell(hq);
         if (Props.HasModel("room.hq")) hq.AddChild(Props.Make("room.hq"));   // the outside of the room: walls, roof, sign board
+        if (Props.HasModel("room.clutter")) hq.AddChild(Props.Make("room.clutter")); // the rug, the kettle, the coat by the door
 
         var town = new Town
         {

@@ -170,6 +170,15 @@ public partial class GameRoot : Node3D
         f => f, f => Godot.FileAccess.GetFileAsString($"res://content/{f}") is { Length: > 0 } t ? t
             : throw new InvalidOperationException($"Missing res://content/{f}")));
 
+    /// <summary>Swap a code-built box for its model when there is one: the box's mesh goes, its collision and click area stay.</summary>
+    private static void Dress(Node3D thing, string id)
+    {
+        if (!Props.HasModel(id)) return;
+        if (thing is MeshInstance3D own) own.Mesh = null;
+        foreach (var c in thing.GetChildren()) if (c is MeshInstance3D mi && mi.Mesh is BoxMesh) mi.Mesh = null;
+        thing.AddChild(Props.Make(id));
+    }
+
     private async Task BuildRoadsWhenPhysicsIsReady()
     {
         for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
@@ -295,9 +304,10 @@ public partial class GameRoot : Node3D
         };
 
         // Desk with answering machine, PIP's handset on a stand, and the notebook lying open.
-        RoomBuilder.Box(room, new Vector3(1.3f, 0.37f, back + 0.45f), new Vector3(1.7f, 0.74f, 0.8f), RoomBuilder.Wood, solid: true);
-        RoomBuilder.Prop(room, "AnsweringMachine", new Vector3(0.72f, 0.8f, back + 0.4f), new Vector3(0.26f, 0.1f, 0.2f), new Color(0.08f, 0.08f, 0.08f),
+        Dress(RoomBuilder.Box(room, new Vector3(1.3f, 0.37f, back + 0.45f), new Vector3(1.7f, 0.74f, 0.8f), RoomBuilder.Wood, solid: true), "room.desk");
+        var answering = RoomBuilder.Prop(room, "AnsweringMachine", new Vector3(0.72f, 0.8f, back + 0.4f), new Vector3(0.26f, 0.1f, 0.2f), new Color(0.08f, 0.08f, 0.08f),
             () => Sim.State.MessagesWaiting > 0 ? $"Play messages ({Sim.State.MessagesWaiting} waiting)" : "No new messages", PlayMessages);
+        Dress(answering, "room.answering-machine");
 
         RoomBuilder.Prop(room, "Handset", new Vector3(1.3f, 0.86f, back + 0.36f), new Vector3(0.38f, 0.26f, 0.03f), new Color(0.1f, 0.11f, 0.14f),
             () => Onboarding.DeskOpen(Sim.State, _content) ? "Read PIP's Almanac" : "PIP's handset. It has more to show you once you know the round",
@@ -312,7 +322,8 @@ public partial class GameRoot : Node3D
         // The Board's terminal, on a side table. It turns up with your first hire. Worked with the number keys.
         _terminal = new Node3D { Position = new Vector3(2.62f, 0, back + 0.42f), Visible = false };
         room.AddChild(_terminal);
-        _terminal.AddChild(new LowPoly().Box(new Vector3(0, 0.34f, 0), new Vector3(0.7f, 0.68f, 0.62f), RoomBuilder.Wood * 0.9f)
+        if (Props.HasModel("room.terminal")) _terminal.AddChild(Props.Make("room.terminal"));
+        else _terminal.AddChild(new LowPoly().Box(new Vector3(0, 0.34f, 0), new Vector3(0.7f, 0.68f, 0.62f), RoomBuilder.Wood * 0.9f)
             .Box(new Vector3(0, 0.9f, -0.08f), new Vector3(0.52f, 0.44f, 0.42f), new Color(0.72f, 0.7f, 0.62f))          // the tube
             .Box(new Vector3(0, 0.7f, 0.2f), new Vector3(0.46f, 0.04f, 0.17f), new Color(0.66f, 0.64f, 0.57f))           // keyboard
             .Box(new Vector3(0, 0.725f, 0.2f), new Vector3(0.4f, 0.012f, 0.12f), new Color(0.2f, 0.2f, 0.2f)).Instance());
@@ -350,7 +361,7 @@ public partial class GameRoot : Node3D
         _sheet.Hot.OnAlt = () => { Telo.Sim.Plan.PlanRules.PlanFor(Sim.State, PlanDay()).Slots.Clear(); SyncPaper(); };
 
         // Camp bed. Sleeping is how days pass quickly.
-        RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
+        var bed = RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
             () => Guidance.IsQuiet(Sim.State, _content) ? "Sleep until something needs you (days may pass)" : "Sleep until morning",
             () =>
             {
@@ -362,6 +373,7 @@ public partial class GameRoot : Node3D
                 if (days > 1) _pip.Say($"{days} days went by. {Sim.State.Date}. Something needs you.");
                 RefreshIdleScreens();
             });
+        Dress(bed, "room.camp-bed");
     }
 
     private static WorldScreen Screen(Node3D room, ModalView view, float widthM, Vector3 pos, Vector3 rotDeg, bool glows)
@@ -1233,6 +1245,7 @@ public partial class GameRoot : Node3D
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);
         await Shot("-aerial", TownBuilder.Place(_planet, 250, 500, 0, 420).Origin, hq);
+        await Shot("-hq", _town.Hq.ToGlobal(new Vector3(-2.4f, 1.75f, 2.1f)), _town.Hq.ToGlobal(new Vector3(1.2f, 0.7f, -1.9f)));
         await Shot("-gardens", TownBuilder.Place(_planet, -40, -18, 0, 11).Origin, TownBuilder.Place(_planet, -20, -10, 0, 0).Origin);
         await Shot("-fields", TownBuilder.Place(_planet, 140, 190, 0, 22).Origin, TownBuilder.Place(_planet, 230, 290, 0, 0).Origin);
         if (_nadir != Vector3.Zero)

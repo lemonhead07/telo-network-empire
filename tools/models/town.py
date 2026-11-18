@@ -826,7 +826,13 @@ def room_hq():
     o = 0.06          # skin sits this far outside the boundary
     top = 3.0
     dx0, dx1 = 0.7, 1.7
-    gbox("plinth", (0, 0.1, 0), (2 * W2 + 0.2, 0.3, 2 * D2 + 0.2), "plinth")
+    # a plinth round the outside of the walls only (the room's own floor is inside at y = 0)
+    po = o + 0.05
+    gbox("plinth-back", (0, 0.1, -D2 - po), (2 * W2 + 2 * po + 0.1, 0.3, 0.1), "plinth")
+    for sx in (-1, 1):
+        gbox(f"plinth-side{sx}", (sx * (W2 + po), 0.1, 0), (0.1, 0.3, 2 * D2 + 2 * po), "plinth")
+    gbox("plinth-front-l", ((-W2 - po + dx0) / 2, 0.1, D2 + po), (dx0 + W2 + po, 0.3, 0.1), "plinth")
+    gbox("plinth-front-r", ((dx1 + W2 + po) / 2, 0.1, D2 + po), (W2 + po - dx1, 0.3, 0.1), "plinth")
     # back and left walls: whole
     gbox("skin-back", (0, top / 2, -D2 - o), (2 * W2 + 2 * o, top, 0.02), "render")
     gbox("skin-left", (-W2 - o, top / 2, 0), (0.02, top, 2 * D2 + 2 * o), "render")
@@ -891,6 +897,125 @@ def room_hq():
     gbox("bike-basket", (bx, 0.92, bz + 0.5), (0.3, 0.2, 0.25), "wood-light")
 
 
+# ======================================================================================== in your room
+# Each matches the box GameRoot builds for it (pivot at the box centre, front facing +Z), except the terminal,
+# whose pivot is on the floor like its node; its screen is a quad 0.42 wide at (0, 0.9, 0.135) drawn by the game.
+k.PALETTE.update({
+    "desk-wood": (0.46, 0.31, 0.18), "desk-top": (0.52, 0.36, 0.21), "canvas": (0.30, 0.36, 0.24), "blanket": (0.55, 0.20, 0.18),
+    "pillow": (0.90, 0.88, 0.80), "terminal-case": (0.76, 0.73, 0.64), "terminal-key": (0.66, 0.64, 0.57), "key-dark": (0.30, 0.30, 0.30),
+    "tape-window": (0.20, 0.22, 0.24), "led-red": (0.95, 0.2, 0.15), "led-green": (0.3, 0.9, 0.35), "cassette": (0.85, 0.84, 0.78), "mug": (0.90, 0.88, 0.80), "coffee": (0.25, 0.15, 0.08),
+})
+
+
+def room_desk():
+    w, h, d = 1.7, 0.74, 0.8
+    gbox("top", (0, h / 2 - 0.02, 0), (w, 0.04, d), "desk-top", bevel=0.008)
+    # drawer pedestal on the right, two legs on the left
+    gbox("pedestal", (w / 2 - 0.25, -0.02, 0), (0.46, h - 0.06, d - 0.06), "desk-wood")
+    for i in range(3):
+        y = h / 2 - 0.17 - i * 0.22
+        gbox(f"drawer{i}", (w / 2 - 0.25, y, d / 2 - 0.02), (0.4, 0.18, 0.02), "desk-top")
+        gbox(f"pull{i}", (w / 2 - 0.25, y, d / 2 - 0.005), (0.12, 0.025, 0.015), "brass")
+    for z in (-1, 1):
+        gbox(f"leg{z}", (-w / 2 + 0.06, -0.02, z * (d / 2 - 0.06)), (0.05, h - 0.06, 0.05), "desk-wood")
+    gbox("modesty", (-0.1, 0.05, -d / 2 + 0.03), (w - 0.6, 0.45, 0.02), "desk-wood")
+    # a mug of cold coffee and a pencil pot, out of the way of the game's things
+    gcyl("mug", (w / 2 - 0.12, h / 2, -d / 2 + 0.15), 0.045, 0.1, "mug", sides=8)
+    gcyl("coffee", (w / 2 - 0.12, h / 2 + 0.085, -d / 2 + 0.15), 0.04, 0.01, "coffee", sides=8)
+    gcyl("pot", (-w / 2 + 0.12, h / 2, -d / 2 + 0.12), 0.04, 0.1, "steel", sides=8)
+    for i in range(3):
+        k.beam(f"pencil{i}", G(-w / 2 + 0.12 + (i - 1) * 0.015, h / 2 + 0.05, -d / 2 + 0.12), G(-w / 2 + 0.12 + (i - 1) * 0.03, h / 2 + 0.17, -d / 2 + 0.1 + i * 0.01), 0.008, M(["book-1", "book-4", "book-2"][i]))
+
+
+def room_answering_machine():
+    w, h, d = 0.26, 0.1, 0.2
+    gbox("body", (0, 0, 0), (w, h, d), "tv", bevel=0.01)
+    gbox("lid", (-0.03, h / 2 + 0.002, -0.01), (0.15, 0.004, 0.11), "tape-window")
+    gbox("cassette", (-0.03, h / 2 - 0.004, -0.01), (0.12, 0.006, 0.08), "cassette")
+    for i in range(4):
+        gbox(f"key{i}", (0.05 + (i % 2) * 0.04, h / 2 + 0.004, -0.04 + (i // 2) * 0.05), (0.03, 0.01, 0.035), "key-dark" if i else "led-red")
+    gbox("speaker", (0, 0.0, d / 2 + 0.002), (0.18, 0.05, 0.004), "key-dark")
+    gcyl("lamp", (0.1, h / 2, 0.07), 0.008, 0.008, "led-red", sides=6)
+    k.beam("cord", G(-w / 2, -0.02, -0.05), G(-w / 2 - 0.1, -0.05, -0.12), 0.01, M("tv"))
+
+
+def room_camp_bed():
+    w, h, d = 0.9, 0.44, 1.9
+    gbox("canvas", (0, h / 2 - 0.06, 0), (w - 0.1, 0.03, d - 0.1), "canvas")
+    for s in (-1, 1):
+        gbox(f"rail{s}", (s * (w / 2 - 0.04), h / 2 - 0.06, 0), (0.04, 0.05, d), "steel")
+        for z in (-1, 1):  # X-legs at each end
+            k.beam(f"leg{s}{z}a", G(s * (w / 2 - 0.05), -h / 2, z * (d / 2 - 0.1)), G(s * (w / 2 - 0.05), h / 2 - 0.08, z * (d / 2 - 0.3)), 0.03, M("steel"))
+    for z in (-1, 1):
+        gbox(f"stretcher{z}", (0, -h / 2 + 0.05, z * (d / 2 - 0.2)), (w - 0.1, 0.03, 0.03), "steel")
+    gbox("pillow", (0, h / 2 - 0.0, -d / 2 + 0.25), (w - 0.25, 0.1, 0.35), "pillow", bevel=0.03)
+    gbox("blanket", (0, h / 2 - 0.02, 0.35), (w - 0.08, 0.05, 1.0), "blanket", bevel=0.02)
+    gbox("blanket-fold", (0, h / 2 + 0.02, -0.12), (w - 0.06, 0.06, 0.12), "blanket", bevel=0.02)
+
+
+def room_terminal():
+    # side table
+    gbox("table-top", (0, 0.66, 0), (0.7, 0.04, 0.62), "desk-top")
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            gbox(f"table-leg{sx}{sz}", (sx * 0.31, 0.32, sz * 0.27), (0.04, 0.64, 0.04), "desk-wood")
+    gbox("table-shelf", (0, 0.15, 0), (0.62, 0.02, 0.54), "desk-wood")
+    gbox("manuals", (0.1, 0.19, 0), (0.3, 0.06, 0.22), "book-2")
+    # the terminal: a cream tube with a bezel round the screen quad (0.42 x ~0.32 at z 0.135)
+    gbox("tube", (0, 0.9, -0.08), (0.52, 0.44, 0.42), "terminal-case", bevel=0.02)
+    gbox("bezel-t", (0, 1.095, 0.128), (0.52, 0.05, 0.02), "terminal-case")
+    gbox("bezel-b", (0, 0.715, 0.128), (0.52, 0.05, 0.02), "terminal-case")
+    for s in (-1, 1):
+        gbox(f"bezel-s{s}", (s * 0.235, 0.9, 0.128), (0.05, 0.43, 0.02), "terminal-case")
+    k.cone("back", G(0, 0.92, -0.38), 0.17, 0.25, 0.2, M("terminal-case"), sides=4, rot=(math.pi / 2, 0, math.pi / 4))
+    gbox("badge", (0.17, 0.71, 0.14), (0.08, 0.02, 0.005), "steel")
+    gcyl("power", (-0.2, 0.71, 0.138), 0.01, 0.006, "led-green", sides=6)
+    # keyboard with rows of keys
+    gbox("keyboard", (0, 0.7, 0.2), (0.46, 0.035, 0.17), "terminal-key", bevel=0.006)
+    for r in range(4):
+        for c in range(12):
+            gbox(f"key{r}-{c}", (-0.2 + c * 0.036, 0.722, 0.14 + r * 0.035), (0.028, 0.012, 0.026), "key-dark" if r == 0 else "terminal-case")
+    k.beam("kb-cord", G(0, 0.69, 0.11), G(0, 0.69, -0.05), 0.012, M("key-dark"))
+    # a floppy box
+    gbox("disks", (-0.22, 0.73, 0.18), (0.15, 0.1, 0.16), "shutter-blue")
+
+
+def room_clutter():
+    """Lived-in things for the free corners of your room (room origin, floor at 0). Clear of every interactable."""
+    # rug in the middle of the floor
+    gbox("rug-edge", (0.4, 0.015, 0.3), (2.35, 0.03, 1.75), "rug-edge")
+    gbox("rug", (0.4, 0.02, 0.3), (2.2, 0.03, 1.6), "rug")
+    for i in range(5):
+        gbox(f"rug-stripe{i}", (0.4, 0.036, -0.3 + i * 0.3), (2.0, 0.004, 0.05), "rug-edge")
+    # filing cabinet in the front-right corner, kettle and tea things on top
+    cx, cz = 2.62, 2.05
+    gbox("cabinet", (cx, 0.65, cz), (0.5, 1.3, 0.6), "cabinet-grey" if "cabinet-grey" in k.PALETTE else "steel", bevel=0.01)
+    for i in range(3):
+        gbox(f"cab-drawer{i}", (cx - 0.255, 1.1 - i * 0.4, cz), (0.01, 0.34, 0.52), "steel")
+        gbox(f"cab-handle{i}", (cx - 0.265, 1.2 - i * 0.4, cz), (0.02, 0.03, 0.16), "ink")
+        gbox(f"cab-label{i}", (cx - 0.262, 1.05 - i * 0.4, cz), (0.004, 0.05, 0.1), "label")
+    gcyl("kettle", (cx, 1.3, cz - 0.1), 0.1, 0.2, "steel", sides=10, r2=0.07)
+    k.beam("kettle-spout", G(cx - 0.08, 1.38, cz - 0.1), G(cx - 0.16, 1.46, cz - 0.1), 0.03, M("steel"), round_=True)
+    k.beam("kettle-handle", G(cx + 0.06, 1.52, cz - 0.1), G(cx + 0.11, 1.42, cz - 0.1), 0.02, M("ink"))
+    gcyl("mug-a", (cx + 0.05, 1.3, cz + 0.15), 0.04, 0.09, "phone-red" if "phone-red" in k.PALETTE else "book-1", sides=8)
+    gbox("tea-tin", (cx - 0.12, 1.36, cz + 0.17), (0.1, 0.12, 0.1), "shutter-green")
+    # a coat on a hook by the door, and a hat
+    gbox("hook-board", (-0.1, 1.65, 2.42), (0.6, 0.08, 0.03), "wood")
+    gbox("coat", (-0.2, 1.15, 2.36), (0.42, 0.95, 0.1), "roof-brown", bevel=0.03)
+    gbox("coat-collar", (-0.2, 1.6, 2.35), (0.3, 0.1, 0.12), "roof-brown")
+    gcyl("hat", (0.15, 1.6, 2.36), 0.11, 0.1, "ink", sides=10)
+    gcyl("hat-brim", (0.15, 1.58, 2.36), 0.16, 0.015, "ink", sides=10)
+    # paraffin heater by the bed's foot, glowing a little
+    gcyl("heater", (-1.3, 0, 2.15), 0.18, 0.6, "shutter-green", sides=10)
+    gcyl("heater-window", (-1.3, 0.3, 2.15), 0.185, 0.1, "awning-red" if "awning-red" in k.PALETTE else "book-1", sides=10)
+    gcyl("heater-top", (-1.3, 0.6, 2.15), 0.15, 0.05, "steel", sides=10)
+    # the grid map on the front wall, right of the door
+    gbox("map", (2.45, 1.55, 2.43), (0.7, 0.5, 0.01), "paper")
+    for i in range(5):
+        k.beam(f"map-line{i}", G(2.15 + i * 0.12, 1.35 + (i % 2) * 0.1, 2.42), G(2.25 + i * 0.1, 1.72 - (i % 3) * 0.08, 2.42), 0.008, M("shutter-blue"))
+    gbox("map-pin", (2.3, 1.5, 2.42), (0.025, 0.025, 0.02), "book-1")
+
+
 # ======================================================================================== registry
 PROPS = {}
 for v in HOUSES:
@@ -920,6 +1045,13 @@ PROPS["person.sysop"] = (lambda: person("hoodie", "jeans", "skin-2", "hair-dark"
                          "Sysop (Tobi)", "Runs the Board: hoodie, jeans, headphones round the neck, a floppy disk in hand.", "feet, facing +Z", False)
 
 PROPS["room.hq"] = (room_hq, "Your room (outside)", "The rented workshop seen from the street: rendered walls round RoomBuilder's room, pitched roof, sign board, open door, aerial, bins, a bicycle.", "room origin", False)
+
+PROPS["room.desk"] = (room_desk, "Desk", "Your desk: drawer pedestal, a mug of cold coffee, a pencil pot. Top surface at +0.37 from the centre.", "box centre", False)
+PROPS["room.answering-machine"] = (room_answering_machine, "Answering machine", "Black cassette answering machine with a red light.", "box centre", False)
+PROPS["room.camp-bed"] = (room_camp_bed, "Camp bed", "A folding camp bed with a red blanket and a pillow.", "box centre", False)
+PROPS["room.terminal"] = (room_terminal, "The Board's terminal", "A cream terminal on a side table, keyboard and floppy box; the game draws the screen.", "floor, centre", False)
+
+PROPS["room.clutter"] = (room_clutter, "Room clutter", "A rug, a filing cabinet with the kettle on it, a coat on a hook, a paraffin heater, a map of the lines.", "room origin", False)
 
 
 def bounds():
