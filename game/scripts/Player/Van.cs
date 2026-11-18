@@ -27,6 +27,25 @@ public partial class Van : SphereBody
         FloorMaxAngle = Mathf.DegToRad(36);
         FloorSnapLength = 0.6f;
 
+        _visual = Props.Make("vehicle.van", BoxVan);
+        _wheels = Props.Parts(_visual, "wheel-");
+        AddChild(_visual);
+
+        Camera = new Camera3D { Position = new Vector3(0, 3.6f, 8.2f), RotationDegrees = new Vector3(-12, 0, 0), Fov = 70, Near = 0.1f, Far = 60000 };
+        AddChild(Camera);
+
+        // Interaction shell on layer 2 so it never blocks movement, only the player's look ray.
+        Door = new Interactable { CollisionLayer = 2, CollisionMask = 0 };
+        Door.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(2.2f, 1.9f, 4.2f) }, Position = new Vector3(0, 1.0f, -0.25f) }); // stops short of the tailboard and roof rack
+        AddChild(Door);
+    }
+
+    private List<Node3D> _wheels = new();
+    private const float WheelRadius = 0.38f;
+
+    /// <summary>The code-built placeholder, used until game/assets/models/vehicle.van.glb exists.</summary>
+    private static Node3D BoxVan()
+    {
         var cream = new Color(0.86f, 0.82f, 0.68f); var dark = new Color(0.12f, 0.12f, 0.13f);
         var lp = new LowPoly()
             .Box(new Vector3(0, 1.15f, 0.3f), new Vector3(1.9f, 1.5f, 3.6f), cream)                    // cargo body
@@ -40,16 +59,7 @@ public partial class Van : SphereBody
             .Box(new Vector3(0, 0.5f, 2.42f), new Vector3(1.8f, 0.08f, 0.66f), new Color(0.3f, 0.3f, 0.32f)); // tailboard (drum, toolbox, modem)
         foreach (var (x, z) in new[] { (-0.95f, -1.5f), (0.95f, -1.5f), (-0.95f, 1.4f), (0.95f, 1.4f) })
             lp.Box(new Vector3(x, 0.38f, z), new Vector3(0.3f, 0.76f, 0.76f), dark);
-        _visual = lp.Instance("Body");
-        AddChild(_visual);
-
-        Camera = new Camera3D { Position = new Vector3(0, 3.6f, 8.2f), RotationDegrees = new Vector3(-12, 0, 0), Fov = 70, Near = 0.1f, Far = 60000 };
-        AddChild(Camera);
-
-        // Interaction shell on layer 2 so it never blocks movement, only the player's look ray.
-        Door = new Interactable { CollisionLayer = 2, CollisionMask = 0 };
-        Door.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(2.2f, 1.9f, 4.2f) }, Position = new Vector3(0, 1.0f, -0.25f) }); // stops short of the tailboard and roof rack
-        AddChild(Door);
+        return lp.Instance("Body");
     }
 
     public void SetDriven(bool driven)
@@ -76,6 +86,9 @@ public partial class Van : SphereBody
         // What we actually achieved (walls and steep slopes eat speed).
         float actual = Velocity.Dot(Forward);
         if (Mathf.Abs(actual) < Mathf.Abs(Speed)) Speed = Mathf.Lerp(Speed, actual, 0.3f);
+
+        // Roll the wheels (a model's wheel-* nodes; the box van has none). Front is -Z, so forward turns them about -X.
+        foreach (var w in _wheels) w.RotateObjectLocal(Vector3.Right, -Speed / WheelRadius * dt);
 
         // Lean the body to the ground it is on.
         var n = IsOnFloor() ? GlobalBasis.Inverse() * GetFloorNormal() : Vector3.Up;
