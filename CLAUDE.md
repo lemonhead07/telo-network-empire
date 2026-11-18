@@ -34,6 +34,7 @@ godot --path game -- --shot=/abs/path/x.png             # saves x-town, x-instal
 xvfb-run -a godot --path game -- --shot=/abs/path/x.png # the same in a cloud session (no screen or graphics card there)
 godot --path game                                       # play
 godot --editor --path game                              # open editor
+blender -b --factory-startup --python tools/models/<id>.py  # build one model: game/assets/models/<id>.glb + previews in docs/img/props/ (then --import)
 ```
 
 ## Testing policy: develop lots, test little

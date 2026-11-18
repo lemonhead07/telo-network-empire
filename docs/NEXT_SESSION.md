@@ -4,7 +4,7 @@
 
 **Start here:** `BUILD_PLAN.md` → "Early access: Acts 0–5". Next up: **EA2f** (Acts 1–2 ask for more), then EA2b (the Yard), EA2c, EA2d, EA3–EA6. Before committing a rules change, run `dotnet test tests/Telo.Sim.Tests` (the Act 5 script player is in it) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act5` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front).
 
-## Newest idea (2026-11-18): shop days
+## Side branch (2026-11-18): the model pipeline works`n`n`feature/model-pipeline` (off `feature/gameplay-rapid`) proves Blender-to-game end to end with the van: `game/content/props.json` (briefs; `PropCatalog` validates), `Props.Make(id, placeholder)` loads `game/assets/models/<id>.glb` or falls back to the box, `tools/models/_kit.py` + `tools/models/vehicle.van.py` build the model and preview renders (`docs/img/props/`). Blender 5.3 is installed locally (`C:\Program Files\Blender Foundation\Blender 5.3\blender.exe`). The van's wheels spin (`wheel-*` nodes). Next model work: BUILD_PLAN item 11 (switch the switchboard to `Props.Make`), then the asset list order. Merge this branch into `feature/gameplay-rapid` when the owner says.`n`n## Newest idea (2026-11-18): shop days
 
 `docs/SHOP_DAYS.md` (D45, provisional): days open and close at the shop sign, the clock follows the work, before/after hours are the open world, a cash register later, a Clue Card for the line of progression. Build items SD1–SD3 in `BUILD_PLAN.md`, after EA2f. Ask the owner the five questions in its §11.
 
