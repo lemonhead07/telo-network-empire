@@ -15,5 +15,7 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 - 2026-11-15 · **Bookings, service and NezTel** shaped into `docs/BOOKINGS_AND_NEZTEL.md` (D35–D39). Open: B1–B3 in its §6. Story amended same day: you are Nez (amnesiac, time running backwards), PIP's notes are your own invention, NezTel is your worse future, the stakes are the Blackout (D35, D40).
 
+- 2026-11-18 · **Shop days and the Clue Card** shaped into `docs/SHOP_DAYS.md` (D45, provisional): the day opens and closes at the shop sign, the clock follows the work, before/after hours are the open world, cash register at the counter, the shift grows day → week → month, a Clue Card for the line of progression (33 steps through Act 5). Owner questions in its §11.
+
 ## Parked
 *(decided not now; say why)*
