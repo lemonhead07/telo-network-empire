@@ -34,7 +34,9 @@ godot --path game -- --shot=/abs/path/x.png             # saves x-town, x-instal
 xvfb-run -a godot --path game -- --shot=/abs/path/x.png # the same in a cloud session (no screen or graphics card there)
 godot --path game                                       # play
 godot --editor --path game                              # open editor
-blender -b --factory-startup --python tools/models/<id>.py  # build one model: game/assets/models/<id>.glb + previews in docs/img/props/ (then --import)
+blender -b --factory-startup --python tools/models/batch.py -- all   # build every model (or name ids): game/assets/models/<id>.glb, docs/img/props/<id>.png, briefs in props.json (then --import)
+blender -b --factory-startup --python tools/models/lineup.py -- site. --out sites  # contact sheet of models by id prefix → docs/img/props/lineup-sites.png
+godot --path game res://scenes/Showroom.tscn [-- --shot=/abs/x.png]  # every model on a lawn in the real renderer (orbit with the mouse)
 ```
 
 ## Testing policy: develop lots, test little

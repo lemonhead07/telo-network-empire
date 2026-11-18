@@ -38,6 +38,7 @@ def srgb_to_linear(c):
 
 def reset():
     bpy.ops.wm.read_factory_settings(use_empty=True)
+    _mats.clear()
 
 
 _mats = {}
@@ -77,20 +78,60 @@ def _finish(obj, name, material, parent=None, bevel=0.0, segments=1):
     return obj
 
 
-def box(name, center, size, material, parent=None, bevel=0.0, segments=1):
+def box(name, center, size, material, parent=None, bevel=0.0, segments=1, rot=(0, 0, 0)):
     bpy.ops.mesh.primitive_cube_add(size=1, location=center)
     o = bpy.context.active_object
     o.scale = size
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return _finish(o, name, material, parent, bevel, segments)
+    o = _finish(o, name, material, parent, bevel, segments)
+    o.rotation_euler = rot
+    return o
 
 
-def cylinder(name, center, radius, depth, material, axis="Z", sides=12, parent=None, bevel=0.0):
-    rot = {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
+def cylinder(name, center, radius, depth, material, axis="Z", sides=12, parent=None, bevel=0.0, rot=None):
+    rot = rot or {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
     bpy.ops.mesh.primitive_cylinder_add(vertices=sides, radius=radius, depth=depth, location=center, rotation=rot)
     o = bpy.context.active_object
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
     return _finish(o, name, material, parent, bevel)
+
+
+def cone(name, center, r1, r2, depth, material, sides=8, parent=None, rot=(0, 0, 0)):
+    """Tapered cylinder along Z (r2 = 0 makes a point), centred on `center`."""
+    bpy.ops.mesh.primitive_cone_add(vertices=sides, radius1=r1, radius2=r2, depth=depth, location=center, rotation=rot)
+    o = bpy.context.active_object
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+    return _finish(o, name, material, parent)
+
+
+def beam(name, a, b, thick, material, parent=None, round_=False):
+    """A square (or 6-sided) bar from point a to point b: lattice legs, braces, straps, cables."""
+    from mathutils import Vector
+    a, b = Vector(a), Vector(b)
+    d = b - a
+    if round_:
+        bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=thick / 2, depth=d.length, location=(a + b) / 2)
+    else:
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(a + b) / 2)
+        bpy.context.active_object.scale = (thick, thick, d.length)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    o = bpy.context.active_object
+    o.rotation_mode = "QUATERNION"
+    o.rotation_quaternion = d.to_track_quat("Z", "Y")
+    return _finish(o, name, material, parent)
+
+
+def join_all(name):
+    """Merge every mesh into one object (for props the game uses as a single shared mesh, like poles)."""
+    meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in meshes:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    bpy.ops.object.join()
+    o = bpy.context.active_object
+    o.name = name
+    return o
 
 
 def text(name, body, center, size, material, rotation=(0, 0, 0), extrude=0.004, parent=None):

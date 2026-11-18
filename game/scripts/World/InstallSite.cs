@@ -64,27 +64,27 @@ public partial class InstallSite : Node3D
         // --- outside: down the front wall, left of the window ---
         float x = -3.6f, z = 3.53f;
         Vector3 pole = new(x, 6.5f, poleDist), p1 = new(x, Mathf.Min(wallH - 0.35f, 2.7f), z), p2 = new(x, 2.0f, z), p3 = new(x, 1.35f, z), jb = new(x, 0.85f, z + 0.03f);
-        AddPiece(InstallStep.DropWire, 0, Box(p1, new Vector3(0.08f, 0.08f, 0.06f), Steel), Wire(pole, p1));
-        AddPiece(InstallStep.DropWire, 1, Box(p2, new Vector3(0.08f, 0.05f, 0.05f), Steel), Wire(p1, p2));
-        AddPiece(InstallStep.DropWire, 2, Box(p3, new Vector3(0.08f, 0.05f, 0.05f), Steel), Wire(p2, p3), Wire(p3, jb));
+        AddPiece(InstallStep.DropWire, 0, P("install.wall-clip", p1, new Vector3(0.08f, 0.08f, 0.06f), Steel), Wire(pole, p1));
+        AddPiece(InstallStep.DropWire, 1, P("install.wall-clip", p2, new Vector3(0.08f, 0.05f, 0.05f), Steel), Wire(p1, p2));
+        AddPiece(InstallStep.DropWire, 2, P("install.wall-clip", p3, new Vector3(0.08f, 0.05f, 0.05f), Steel), Wire(p2, p3), Wire(p3, jb));
         Point(InstallStep.DropWire, 0, 0, p1); Point(InstallStep.DropWire, 1, 1, p2); Point(InstallStep.DropWire, 2, 2, p3);
-        AddPiece(InstallStep.JunctionBox, 0, Box(jb, new Vector3(0.2f, 0.26f, 0.06f), Grey));
-        AddPiece(InstallStep.JunctionBox, 1, Box(jb + new Vector3(0, 0, 0.04f), new Vector3(0.22f, 0.28f, 0.03f), Cream));
+        AddPiece(InstallStep.JunctionBox, 0, P("install.junction-box", jb, new Vector3(0.2f, 0.26f, 0.06f), Grey));
+        AddPiece(InstallStep.JunctionBox, 1, P("install.junction-cover", jb + new Vector3(0, 0, 0.04f), new Vector3(0.22f, 0.28f, 0.03f), Cream));
         Point(InstallStep.JunctionBox, 0, 1, jb);
 
         // --- inside: through the wall, along the left skirting to a socket by the hall table ---
         float wx = -3.77f, sk = f + 0.1f;
         Vector3 entry = new(x, 0.85f, 3.28f), corner = new(wx, sk, 3.26f), s1 = new(wx, sk, 2.5f), s2 = new(wx, sk, 1.6f), s3 = new(wx, sk, 0.8f),
             socket = new(wx, f + 0.4f, 0.3f), modem = new(-3.35f, f + 0.74f, -0.75f), phone = new(-3.35f, f + 0.76f, -0.25f);
-        AddPiece(InstallStep.Socket, 0, Box(socket, new Vector3(0.03f, 0.1f, 0.1f), Grey));
-        AddPiece(InstallStep.Socket, 1, Box(socket + new Vector3(0.02f, 0, 0), new Vector3(0.02f, 0.12f, 0.12f), Cream));
+        AddPiece(InstallStep.Socket, 0, P("install.socket-back", socket, new Vector3(0.03f, 0.1f, 0.1f), Grey));
+        AddPiece(InstallStep.Socket, 1, P("install.socket-face", socket + new Vector3(0.02f, 0, 0), new Vector3(0.02f, 0.12f, 0.12f), Cream));
         Point(InstallStep.Socket, 0, 1, socket);
         AddPiece(InstallStep.Cable, 0, Wire(entry, corner), Wire(corner, s1), Staple(s1));
         AddPiece(InstallStep.Cable, 1, Wire(s1, s2), Staple(s2));
         AddPiece(InstallStep.Cable, 2, Wire(s2, s3), Staple(s3), Wire(s3, new Vector3(wx, sk, 0.3f)), Wire(new Vector3(wx, sk, 0.3f), socket));
         Point(InstallStep.Cable, 0, 0, s1); Point(InstallStep.Cable, 1, 1, s2); Point(InstallStep.Cable, 2, 2, s3);
-        AddPiece(InstallStep.Modem, 0, Box(modem, new Vector3(0.3f, 0.07f, 0.22f), Beige), Wire(socket, modem + new Vector3(-0.1f, 0, 0.1f)),
-            Box(modem + new Vector3(-0.1f, 0.04f, 0.06f), new Vector3(0.02f, 0.012f, 0.02f), new Color(0.9f, 0.2f, 0.15f)));
+        AddPiece(InstallStep.Modem, 0, P("install.modem", modem, new Vector3(0.3f, 0.07f, 0.22f), Beige), Wire(socket, modem + new Vector3(-0.1f, 0, 0.1f)),
+            Props.HasModel("install.modem") ? new Node3D() : Box(modem + new Vector3(-0.1f, 0.04f, 0.06f), new Vector3(0.02f, 0.012f, 0.02f), new Color(0.9f, 0.2f, 0.15f))); // the model has its own lights
         Point(InstallStep.Modem, 0, 0, modem);
         _twistAt[InstallStep.DropWire] = new Vector3(x + 0.9f, 0.6f, z + 0.9f);       // ivy at the foot of the wall, the dog in the garden
         _twistAt[InstallStep.JunctionBox] = jb + new Vector3(0.4f, 0.1f, 0.12f);       // the old box, the wasps
@@ -92,8 +92,10 @@ public partial class InstallSite : Node3D
         _twistAt[InstallStep.Cable] = s1 + new Vector3(0.3f, 0.35f, 0);                // the new wallpaper
 
         // the customer's own telephone: always there; during a job it is how you test
-        AddChild(Box(phone, new Vector3(0.2f, 0.1f, 0.22f), new Color(0.5f, 0.12f, 0.1f)));
-        AddChild(Box(phone + new Vector3(0, 0.07f, 0), new Vector3(0.24f, 0.05f, 0.07f), new Color(0.42f, 0.1f, 0.08f)));
+        var phoneProp = Props.Make("install.telephone", () => new LowPoly().Box(Vector3.Zero, new Vector3(0.2f, 0.1f, 0.22f), new Color(0.5f, 0.12f, 0.1f))
+            .Box(new Vector3(0, 0.07f, 0), new Vector3(0.24f, 0.05f, 0.07f), new Color(0.42f, 0.1f, 0.08f)).Instance());
+        phoneProp.Position = phone;
+        AddChild(phoneProp);
         _phone = Hotspot(phone, new Vector3(0.34f, 0.3f, 0.34f));
         _phone.Prompt = PhonePrompt;
         _phone.CanUse = () => _job is { CanFinish: true };
@@ -103,8 +105,10 @@ public partial class InstallSite : Node3D
         // the job sheet hangs by the door while you work
         var sheetPos = new Vector3(1.25f, f + 1.4f, 3.27f);
         _sheetMesh = new Node3D();
-        _sheetMesh.AddChild(Box(sheetPos, new Vector3(0.3f, 0.4f, 0.03f), new Color(0.45f, 0.3f, 0.18f)));
-        _sheetMesh.AddChild(Box(sheetPos + new Vector3(0, -0.02f, -0.02f), new Vector3(0.26f, 0.33f, 0.01f), new Color(0.95f, 0.93f, 0.86f)));
+        var board = Props.Make("install.job-sheet", () => new LowPoly().Box(Vector3.Zero, new Vector3(0.3f, 0.4f, 0.03f), new Color(0.45f, 0.3f, 0.18f))
+            .Box(new Vector3(0, -0.02f, -0.02f), new Vector3(0.26f, 0.33f, 0.01f), new Color(0.95f, 0.93f, 0.86f)).Instance());
+        board.Position = sheetPos;
+        _sheetMesh.AddChild(board);
         _sheetMesh.AddChild(new Label3D { Text = "JOB\nSHEET", Position = sheetPos + new Vector3(0, 0, -0.03f), RotationDegrees = new Vector3(0, 180, 0), FontSize = 48, PixelSize = 0.0012f, Modulate = Black, OutlineSize = 0 });
         AddChild(_sheetMesh);
         _sheet = Hotspot(sheetPos, new Vector3(0.4f, 0.5f, 0.2f));
@@ -258,6 +262,14 @@ public partial class InstallSite : Node3D
         var mi = new LowPoly().Box(Vector3.Zero, size, col).Instance();
         mi.Position = pos;
         return mi;
+    }
+
+    /// <summary>A named prop at <paramref name="pos"/>: its model if there is one, else the old box.</summary>
+    private static Node3D P(string id, Vector3 pos, Vector3 size, Color col)
+    {
+        var n = Props.Make(id, () => new LowPoly().Box(Vector3.Zero, size, col).Instance());
+        n.Position = pos;
+        return n;
     }
 
     private static MeshInstance3D Staple(Vector3 pos) => Box(pos, new Vector3(0.02f, 0.05f, 0.03f), Steel);

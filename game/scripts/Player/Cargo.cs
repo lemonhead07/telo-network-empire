@@ -90,6 +90,12 @@ public sealed class Cargo
         Refresh();
     }
 
+    private static string PropId(Tools tool) => tool switch
+    {
+        Tools.Ladder => "kit.ladder", Tools.Pole => "kit.pole", Tools.CableDrum => "kit.cable-drum", Tools.Toolbox => "kit.toolbox",
+        Tools.ModemBox => "kit.modem-box", Tools.LineCard => "kit.line-card", _ => "site.parts-crate",
+    };
+
     private void Add(Tools tool, bool twoHanded, LowPoly mesh, Vector3 grab, Vector3 grabAt, Transform3D van, Transform3D held, Transform3D? ground = null)
     {
         var item = new Carryable
@@ -97,7 +103,7 @@ public sealed class Cargo
             Name = tool.ToString(), Tool = tool, Label = Name(tool), TwoHanded = twoHanded, VanSlot = van, HeldPose = held,
             GroundPose = ground ?? Transform3D.Identity, CollisionLayer = 2, CollisionMask = 0,
         };
-        item.AddChild(mesh.Instance());
+        item.AddChild(Props.Make(PropId(tool), () => mesh.Instance()));
         item.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = grab }, Position = grabAt });
         item.Prompt = () => Held is null ? $"Pick up the {item.Label}{(item.TwoHanded ? " (two hands: you walk slower)" : "")}" : $"Your hands are full ([G] puts down the {Held.Label})";
         item.CanUse = () => Held is null;
