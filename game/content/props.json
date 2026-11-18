@@ -1514,6 +1514,19 @@
    "pivot": "feet, facing +Z",
    "tris": 752,
    "status": "modelled"
+  },
+  {
+   "id": "world.road-barrier",
+   "name": "Council road barrier",
+   "what": "Striped boards on trestles with lamps, a ROAD CLOSED board, cones, sandbags, and a council worker with tea, not working.",
+   "size": [
+    18.075,
+    2.41,
+    1.86
+   ],
+   "pivot": "road centre, ground",
+   "tris": 1836,
+   "status": "modelled"
   }
  ]
 }

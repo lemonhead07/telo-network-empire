@@ -206,7 +206,7 @@ public partial class GameRoot : Node3D
         for (int k = -4; k <= 4; k++) lp.Box(new Vector3(k * 2f, 0.9f, 0), new Vector3(2f, 0.35f, 0.12f), k % 2 == 0 ? new Color(0.9f, 0.25f, 0.15f) : new Color(0.95f, 0.93f, 0.88f));
         foreach (float x in new[] { -8.5f, -3f, 3f, 8.5f }) lp.Box(new Vector3(x, 0.5f, 0), new Vector3(0.12f, 1f, 0.5f), new Color(0.3f, 0.3f, 0.32f));
         lp.Box(new Vector3(0, 1.75f, 0), new Vector3(3.4f, 1.1f, 0.08f), new Color(0.95f, 0.8f, 0.2f));
-        body.AddChild(lp.Instance());
+        body.AddChild(Props.HasModel("world.road-barrier") ? Props.Make("world.road-barrier") : lp.Instance());
         body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(18f, 2.2f, 0.5f) }, Position = new Vector3(0, 1.1f, 0) });
         foreach (int side in new[] { -1, 1 })
             body.AddChild(new Label3D

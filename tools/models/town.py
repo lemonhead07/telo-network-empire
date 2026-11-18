@@ -1150,6 +1150,55 @@ def nez_nadir():
         k.beam(f"guide{i}", G(tx + math.cos(a) * 1.95, 1.3, tz + math.sin(a) * 1.95), G(tx + math.cos(a) * 1.55, 25.0, tz + math.sin(a) * 1.55), 0.18, M("nez-concrete-dark"))
 
 
+# ======================================================================================== the council's road barrier
+# GameRoot.BuildRoadBarrier: 18 m across (X), the sign board 3.4 x 1.1 centred at y 1.75 (lettering drawn by the game
+# on both faces at z = +-0.06), collision 18 x 2.2 x 0.5.
+k.PALETTE.update({"barrier-red": (0.90, 0.25, 0.15), "barrier-white": (0.95, 0.93, 0.88), "sign-yellow": (0.95, 0.80, 0.20),
+                  "sandbag": (0.62, 0.55, 0.40), "hi-vis-vest": (0.98, 0.62, 0.12), "council-grey": (0.30, 0.30, 0.32)})
+
+
+def placed(fn, at, rot_y=0.0):
+    """Build something with its own builder, then move it as a group (to put a person into a scene)."""
+    before = set(bpy.context.scene.objects)
+    fn()
+    root = k.empty("group", G(*at))
+    for o in set(bpy.context.scene.objects) - before:
+        if o.parent is None and o is not root:
+            o.parent = root
+    root.rotation_euler = (0, 0, rot_y)
+    return root
+
+
+def world_road_barrier():
+    # trestles: A-frames at the posts, striped boards between, two rows
+    for x in (-8.5, -3.0, 3.0, 8.5):
+        for sz in (-1, 1):
+            k.beam(f"trestle{x}{sz}", G(x, 0, sz * 0.35), G(x, 1.15, 0), 0.07, M("council-grey"))
+        gbox(f"trestle-foot{x}", (x, 0.05, 0), (0.14, 0.1, 0.9), "council-grey")
+        gcyl(f"lamp-base{x}", (x, 1.15, 0), 0.06, 0.1, "council-grey", sides=6)
+        gcyl(f"lamp{x}", (x, 1.25, 0), 0.08, 0.14, "sign-yellow", sides=8)
+    for k_ in range(-4, 5):
+        col = "barrier-red" if k_ % 2 == 0 else "barrier-white"
+        gbox(f"board{k_}", (k_ * 2.0, 0.9, 0), (2.0, 0.3, 0.1), col)
+        gbox(f"board-low{k_}", (k_ * 2.0, 0.45, 0), (2.0, 0.2, 0.08), "barrier-white" if k_ % 2 == 0 else "barrier-red")
+    # the sign on two posts (lettering is the game's)
+    for sx in (-1, 1):
+        gbox(f"sign-post{sx}", (sx * 1.5, 1.2, 0), (0.08, 2.4, 0.08), "council-grey")
+    gbox("sign", (0, 1.75, 0), (3.4, 1.1, 0.08), "sign-yellow")
+    gbox("sign-edge", (0, 1.75, 0), (3.5, 1.2, 0.06), "ink")
+    # cones along the front, sandbags on the feet
+    for i, x in enumerate((-7, -5, -1, 1.2, 5.5, 7.5)):
+        gcyl(f"cone{i}", (x, 0, 1.2), 0.18, 0.55, "barrier-red", sides=8, r2=0.03)
+        gcyl(f"cone-band{i}", (x, 0.25, 1.2), 0.11, 0.08, "barrier-white", sides=8)
+        gbox(f"cone-base{i}", (x, 0.02, 1.2), (0.42, 0.04, 0.42), "ink")
+    for i, x in enumerate((-8.5, 8.5, 3.0)):
+        gbox(f"sandbag{i}", (x + 0.3, 0.12, 0.25), (0.55, 0.22, 0.32), "sandbag", bevel=0.06)
+    # the council worker, leaning, with tea
+    placed(lambda: person("hi-vis-vest", "trouser-grey", "skin-1", "hair-brown", holding=True, extras=("flatcap",)), (5.2, 0, 0.75), math.radians(-20))
+    gcyl("tea", (5.32, 1.06, 1.05), 0.045, 0.1, "mug", sides=8)
+    gbox("thermos", (4.6, 0.2, 0.6), (0.12, 0.4, 0.12), "shutter-green")
+
+
 # ======================================================================================== registry
 PROPS = {}
 for v in HOUSES:
@@ -1206,6 +1255,8 @@ for arch, (top, legs, skin, hair, extras) in RESIDENTS.items():
                                    f"Resident ({arch})", f"A householder of the '{arch}' kind, arms at their sides.", "feet, facing +Z", False)
 PROPS["person.sol"] = (lambda: person("shop-coat", "trouser-grey", "skin-2", "hair-grey", holding=False, extras=("glasses", "bald", "coat")),
                        "Sol", "Sol of Sol's Electronics: brown shop coat with pens in the pocket, glasses, not much hair.", "feet, facing +Z", False)
+
+PROPS["world.road-barrier"] = (world_road_barrier, "Council road barrier", "Striped boards on trestles with lamps, a ROAD CLOSED board, cones, sandbags, and a council worker with tea, not working.", "road centre, ground", False)
 
 
 def bounds():
