@@ -1,6 +1,7 @@
 using Godot;
 using Telo.Game.World;
 using Telo.Sim.Build;
+using Telo.Sim.Town;
 
 namespace Telo.Game;
 
@@ -23,7 +24,9 @@ public partial class GameRoot
                 : $"{st.Verb} ({ProjectRules.ProgressOf(s, def.Id).Click + 1} of {st.Clicks}){(ProjectRules.Started(s, def.Id) ? "" : $", ${def.Cost} to start")}"
                 : $"{def.Name}: built";
             view.Spot.CanUse = () => ProjectRules.Blocked(s, _content, def, KitOnSite()) is null;
-            view.Spot.HoldSeconds = () => ProjectRules.Step(s, def) is { } st && ProjectRules.Blocked(s, _content, def, KitOnSite()) is null ? Hold(st.Minutes) : 0f;
+            // the step's time, while there is something you could do (missing kit or cash still shows the points, with the reason)
+            view.Spot.HoldSeconds = () => ProjectRules.Step(s, def) is { } st && ProjectRules.Locked(s, _content, def) is null
+                && ProjectRules.ProgressOf(s, def.Id).WaitUntil <= s.Day ? Hold(st.Minutes) : 0f;
             view.Spot.OnUse = () =>
             {
                 if (!ProjectRules.Do(s, _content, def, KitOnSite())) return;
@@ -31,6 +34,8 @@ public partial class GameRoot
                 SyncProjects();
                 RefreshIdleScreens();
             };
+            // no bar: each click of a step is worked at points on the model (its wp-s<step>-… empties), EA5
+            WorkPoints.Attach(view.Spot, view.Places);
         }
         SyncProjects();
     }
@@ -46,10 +51,16 @@ public partial class GameRoot
             int clicks = def.Steps.Sum(x => x.Clicks);
             var prog = ProjectRules.ProgressOf(s, id);
             int done = built ? clicks : def.Steps.Take(prog.Step).Sum(x => x.Clicks) + prog.Click;
+            bool waiting = !built && prog.WaitUntil > s.Day;
             string line = built ? $"{def.Name} (built)"
-                : prog.WaitUntil > s.Day ? $"{def.Name}\n{def.Steps.ElementAtOrDefault(prog.Step)?.WaitText ?? "waiting"}"
+                : waiting ? $"{def.Name}\n{def.Steps.ElementAtOrDefault(prog.Step)?.WaitText ?? "waiting"}"
                 : $"{def.Name}\n{ProjectRules.Step(s, def)?.Verb}";
-            view.Sync(open, clicks == 0 ? 0 : (float)done / clicks, built, line);
+            // the signboard: what it waits on and until when, else the step you are on
+            string board = built ? $"{def.Name}\nBUILT"
+                : waiting ? $"{def.Name}\n{ProjectRules.Blocked(s, _content, def, Tools.All)}"
+                : ProjectRules.Started(s, id) ? $"{def.Name}\nStep {prog.Step + 1} of {def.Steps.Count}: {ProjectRules.Step(s, def)?.Verb}"
+                : $"{def.Name}\n${def.Cost} to start";
+            view.Sync(open, built ? def.Steps.Count : prog.Step, clicks == 0 ? 0 : (float)done / clicks, built, waiting, line, board);
         }
     }
 }

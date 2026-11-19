@@ -38,5 +38,22 @@ So a modeller can change *where* work happens by moving empties and re-exporting
 |---|---|---|
 | Pole line: plant a pole | `PoleLineView.PlantSpot` | dig, dig, lift, tamp (code) |
 | Pole line: string a span | `PoleLineView.StringSpot` | clip, pull, clip (code) |
+| Every project step (14 projects, 12 site models) | `ProjectSiteView.Spot` (`Projects.cs`: `WorkPoints.Attach(view.Spot, view.Places)`) | from the model: `wp-s<step>-NN-<motion>` in each `site.*` builder (`tools/models/batch.py`); fallback `Spread()`. One round of points per click of the step |
 
 (Later conversions add rows here.)
+
+## Project sites: stages and points in one model (EA5)
+
+A `site.*` model is the site as you find it plus one group per project step:
+
+```python
+pegs("mark", -0.6, -0.35, 0.6, 0.35)          # outside any stage: always there (pegs, the old shed, a crate)
+with stage(1, "cabinet"):                       # empty "stage-1-cabinet": shown once step 1 is done
+    cabinet("cab", 1.0, 0.45, 1.25, "cabinet-green", with_plinth=False)
+wp(1, 1, "lift", (-0.35, -0.3, 0.9))            # empty "wp-s1-01-lift": where a hand works during step 1
+```
+
+- `ProjectSiteView` shows stages below the current step solid, the current one as a ghost (60% see-through, no shadow), later ones hidden; everything once built. During a wait there is no ghost and no points; the signboard says what it waits on and until when.
+- Points sit on the surface on the -Y side (Godot +Z, towards the player), 0.3–2.2 m up, or on the ground for dig/tamp. A tall thing (mast, tower) is worked at its foot or the bottom of its ladder.
+- A model with no `stage-` nodes falls back to the old look (hidden until built, crates meanwhile); no model at all, to the growing frame.
+- Look at them: `xvfb-run -a godot --path game -- --shot-projects=/abs/p.png` writes `p-<project>.png` and `p-<project>-hands.png` (close on the next point) for every project half-built.
