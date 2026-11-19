@@ -64,12 +64,47 @@ public partial class SwitchboardStation : Node3D
     private static string PortName(int port) => port >= SwitchRules.SpareBase ? $"S{port - SwitchRules.SpareBase + 1}" : $"{port + 1}";
     private static readonly Vector2 ProbeAt = new(-0.64f, -0.58f), TestAt = new(-0.38f, -0.58f), HookAt = new(-0.12f, -0.53f), DirtyAt = new(0.06f, -0.53f), SwitchAt = new(0.62f, -0.52f), PanelAt = new(0.64f, 0.625f);
 
+    // where the tools lie on the shelf (its top is at y -0.62): their centres, so the models rest on the plank
+    private static readonly Vector3 ProbeRest = new(-0.64f, -0.598f, 0.1f), TestRest = new(-0.38f, -0.591f, 0.1f);
+    private static readonly Color Nickel = new(0.7f, 0.72f, 0.75f);
+    private Node3D? _blade;
+
+    /// <summary>A named prop (D30) placed on the board: the Blender model if there is one, else the old box.</summary>
+    private Node3D Part(string id, Vector3 at, Func<Node3D> box, Node3D? parent = null)
+    {
+        var n = Props.Make(id, box);
+        n.Position = at;
+        (parent ?? _static).AddChild(n);
+        return n;
+    }
+
+    /// <summary>Every mesh under a model's nodes named <paramref name="prefix"/>… gets <paramref name="mat"/> (lamp lenses, plug sleeves).</summary>
+    private static void Paint(Node3D model, string prefix, Material mat)
+    {
+        foreach (var part in Props.Parts(model, prefix))
+        {
+            if (part is MeshInstance3D mi) mi.MaterialOverride = mat;
+            foreach (var inner in part.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>()) inner.MaterialOverride = mat;
+        }
+    }
+
+    /// <summary>Every mesh in a placeholder gets <paramref name="mat"/> (the box lamp when there is no model).</summary>
+    private static void PaintAll(Node3D root, Material mat)
+    {
+        foreach (var mi in root.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().Append(root as MeshInstance3D).OfType<MeshInstance3D>())
+        {
+            mi.MaterialOverride = mat;
+            mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+        }
+    }
+
     private void BuildStatic()
     {
         foreach (var old in _static.GetChildren()) old.QueueFree();
         _hots.Clear(); _lamps.Clear();
         _builtStage = B.Stage;
-        var lp = new LowPoly().Box(Vector3.Zero, new Vector3(W, H, Face), Ply).Box(new Vector3(0, -0.64f, 0.1f), new Vector3(W, 0.04f, 0.22f), Ply * 0.85f);
+        // the backboard: plywood on battens, the shelf from an offcut
+        Part("room.switchboard", Vector3.Zero, () => new LowPoly().Box(Vector3.Zero, new Vector3(W, H, Face), Ply).Box(new Vector3(0, -0.64f, 0.1f), new Vector3(W, 0.04f, 0.22f), Ply * 0.85f).Instance());
         void Text(string t, Vector3 at, float size, Color col) =>
             _static.AddChild(new Label3D { Text = t, Position = at, FontSize = 48, PixelSize = size / 48f, Modulate = col, OutlineSize = 0 });
         var dark = new Color(0.15f, 0.1f, 0.05f);
@@ -78,29 +113,43 @@ public partial class SwitchboardStation : Node3D
 
         int n = SwitchRules.Size(B);
         float h = Mathf.Min(0.07f, Step * 0.72f);
+        float post = Mathf.Min(1f, h / 0.045f);   // terminals, ports and lamps shrink a little on a crowded board
+        static Node3D Block(Color c) => new LowPoly().Box(new Vector3(0, 0, 0.015f), new Vector3(0.045f, 0.045f, 0.03f), c).Instance();
         for (int row = 0; row < n; row++)
         {
-            lp.Box(new Vector3(-0.62f, RowY(row), Face + 0.004f), new Vector3(0.34f, h, 0.008f), Paper);
-            lp.Box(TerminalAt(row), new Vector3(0.045f, Mathf.Min(0.045f, h), 0.03f), Brass);
+            var tag = Part("switch.tag", new Vector3(-0.62f, RowY(row), Face), () => new LowPoly().Box(new Vector3(0, 0, 0.004f), new Vector3(0.34f, 0.04f, 0.008f), Paper).Instance());
+            tag.Scale = new Vector3(1, h / 0.04f, 1);
+            Part("switch.terminal", new Vector3(-0.4f, RowY(row), Face), () => Block(Brass)).Scale = Vector3.One * post;
             _hots.Add(new Hot(new Rect2(-0.8f, RowY(row) - Step / 2, 0.45f, Step), Spot.Terminal, row, $"terminal:{row}"));
         }
         foreach (int port in SwitchRules.PortList(B))
         {
-            lp.Box(PortAt(port), new Vector3(0.045f, Mathf.Min(0.045f, h), 0.03f), SwitchRules.IsSpare(B, port) ? new Color(0.7f, 0.72f, 0.75f) : Brass);
+            bool spare = SwitchRules.IsSpare(B, port);
+            var jack = Part("switch.port", PortAt(port) with { Z = Face }, () => Block(spare ? Nickel : Brass));
+            jack.Scale = Vector3.One * post;
+            if (spare) Paint(jack, "collar", new StandardMaterial3D { AlbedoColor = Nickel, Metallic = 0.6f, Roughness = 0.35f });
             Text(PortName(port), PortAt(port) + new Vector3(0.09f, 0, -0.01f), Mathf.Min(0.04f, h * 0.8f), dark);
             var mat = new StandardMaterial3D { AlbedoColor = Colors.Black, EmissionEnabled = true, Emission = Colors.Black, EmissionEnergyMultiplier = 2 };
             _lamps[port] = mat;
-            _static.AddChild(new MeshInstance3D { Position = PortAt(port) + new Vector3(0.19f, 0, 0), Mesh = new BoxMesh { Size = new Vector3(0.045f, Mathf.Min(0.045f, h), 0.03f) }, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+            var lamp = Part("switch.port-lamp", (PortAt(port) with { Z = Face }) + new Vector3(0.19f, 0, 0), () => Block(Colors.Black));
+            lamp.Scale = Vector3.One * post;
+            if (Props.HasModel("switch.port-lamp")) Paint(lamp, "lens", mat); else PaintAll(lamp, mat);
             _hots.Add(new Hot(new Rect2(0.24f, RowY(PortRow(port)) - Step / 2, 0.32f, Step), Spot.Port, port, $"port:{port}"));
         }
 
         // the shelf: tone probe, test set, clean jumpers on a hook, old dirty ones beside them, the test switch
-        lp.Box(new Vector3(ProbeAt.X, ProbeAt.Y, 0.1f), new Vector3(0.2f, 0.045f, 0.045f), new Color(0.95f, 0.8f, 0.15f)).Box(new Vector3(ProbeAt.X + 0.12f, ProbeAt.Y, 0.1f), new Vector3(0.05f, 0.018f, 0.018f), new Color(0.7f, 0.7f, 0.72f));
-        lp.Box(new Vector3(TestAt.X, TestAt.Y, 0.1f), new Vector3(0.2f, 0.065f, 0.065f), new Color(0.1f, 0.1f, 0.11f));
-        lp.Box(new Vector3(HookAt.X, HookAt.Y + 0.06f, Face + 0.02f), new Vector3(0.16f, 0.018f, 0.03f), Brass).Box(new Vector3(DirtyAt.X, DirtyAt.Y + 0.06f, Face + 0.02f), new Vector3(0.1f, 0.018f, 0.03f), Brass * 0.6f);
-        for (int i = 0; i < 5; i++) lp.Box(new Vector3(HookAt.X - 0.06f + i * 0.03f, HookAt.Y, Face + 0.02f), new Vector3(0.011f, 0.11f, 0.011f), WireColours[i]);
-        for (int i = 0; i < 3; i++) lp.Box(new Vector3(DirtyAt.X - 0.03f + i * 0.03f, DirtyAt.Y - i * 0.006f, Face + 0.02f), new Vector3(0.011f, 0.1f, 0.011f), Dirty);
-        lp.Box(new Vector3(SwitchAt.X, SwitchAt.Y, Face + 0.02f), new Vector3(0.15f, 0.19f, 0.03f), new Color(0.15f, 0.15f, 0.16f)).Box(new Vector3(SwitchAt.X, SwitchAt.Y + 0.05f, 0.11f), new Vector3(0.03f, 0.15f, 0.09f), Brass);
+        Part("tool.tone-probe", ProbeRest, () => new LowPoly().Box(Vector3.Zero, new Vector3(0.2f, 0.045f, 0.045f), new Color(0.95f, 0.8f, 0.15f)).Box(new Vector3(0.12f, 0, 0), new Vector3(0.05f, 0.018f, 0.018f), new Color(0.7f, 0.7f, 0.72f)).Instance());
+        Part("tool.test-set", TestRest, () => new LowPoly().Box(Vector3.Zero, new Vector3(0.2f, 0.065f, 0.065f), new Color(0.1f, 0.1f, 0.11f)).Instance());
+        Part("switch.jumper-hook", new Vector3(HookAt.X, HookAt.Y, Face), () =>
+        {
+            float old = DirtyAt.X - HookAt.X;
+            var lp = new LowPoly().Box(new Vector3(0, 0.06f, 0.02f), new Vector3(0.16f, 0.018f, 0.03f), Brass).Box(new Vector3(old, 0.06f, 0.02f), new Vector3(0.1f, 0.018f, 0.03f), Brass * 0.6f);
+            for (int i = 0; i < 5; i++) lp.Box(new Vector3(-0.06f + i * 0.03f, 0, 0.02f), new Vector3(0.011f, 0.11f, 0.011f), WireColours[i]);
+            for (int i = 0; i < 3; i++) lp.Box(new Vector3(old - 0.03f + i * 0.03f, -i * 0.006f, 0.02f), new Vector3(0.011f, 0.1f, 0.011f), Dirty);
+            return lp.Instance();
+        });
+        var sw = Part("switch.throw-switch", new Vector3(SwitchAt.X, SwitchAt.Y, Face), () => new LowPoly().Box(new Vector3(0, 0, 0.02f), new Vector3(0.15f, 0.19f, 0.03f), new Color(0.15f, 0.15f, 0.16f)).Box(new Vector3(0, 0.05f, 0.07f), new Vector3(0.03f, 0.15f, 0.09f), Brass).Instance());
+        _blade = Props.Parts(sw, "blade").FirstOrDefault();
         var light = new Color(0.95f, 0.93f, 0.85f);
         Text("probe", new Vector3(ProbeAt.X, ProbeAt.Y + 0.05f, 0.1f), 0.026f, dark); Text("test set", new Vector3(TestAt.X, TestAt.Y + 0.06f, 0.1f), 0.026f, dark);
         Text("jumpers", new Vector3(HookAt.X, HookAt.Y + 0.09f, Face + 0.03f), 0.026f, dark); Text("old", new Vector3(DirtyAt.X, DirtyAt.Y + 0.09f, Face + 0.03f), 0.026f, dark);
@@ -112,14 +161,12 @@ public partial class SwitchboardStation : Node3D
         _hots.Add(new Hot(new Rect2(SwitchAt.X - 0.09f, SwitchAt.Y - 0.11f, 0.18f, 0.24f), Spot.Switch, 0, "switch"));
         if (B.Stage < SwitchRules.MaxStage)
         {
-            lp.Box(new Vector3(PanelAt.X, PanelAt.Y, Face + 0.005f), new Vector3(0.28f, 0.06f, 0.01f), new Color(0.3f, 0.3f, 0.32f));
+            Part("switch.upgrade-panel", new Vector3(PanelAt.X, PanelAt.Y, Face), () => new LowPoly().Box(new Vector3(0, 0, 0.005f), new Vector3(0.28f, 0.06f, 0.01f), new Color(0.3f, 0.3f, 0.32f)).Instance());
             Text($"+ PANEL ${SwitchRules.PanelPrice}", new Vector3(PanelAt.X, PanelAt.Y, Face + 0.012f), 0.026f, light);
             _hots.Add(new Hot(new Rect2(PanelAt.X - 0.14f, PanelAt.Y - 0.03f, 0.28f, 0.06f), Spot.Panel, 0, "panel"));
         }
-        _static.AddChild(lp.Instance());
         _sig = "";
     }
-
     /// <summary>Catch the object up with the sim: tags, wires and lamps.</summary>
     public void Sync()
     {
@@ -143,7 +190,18 @@ public partial class SwitchboardStation : Node3D
                 });
                 if (p.Jumper < 0) continue;
                 var to = PortAt(p.Jumper) + (p.Loose ? new Vector3(-0.035f, -0.03f, 0.03f) : Vector3.Zero);   // a loose jumper hangs out of its jack
-                AddWire(_dynamic, TerminalAt(row) + new Vector3(0, 0, 0.015f), to + new Vector3(0, 0, 0.015f), p.HotWired ? Dirty : WireColours[row % WireColours.Length], p.Loose ? 0.16f : 0.07f);
+                var col = p.HotWired ? Dirty : WireColours[row % WireColours.Length];
+                var end = to + new Vector3(0, 0, 0.015f);
+                if (Props.HasModel("switch.jumper-plug"))
+                {
+                    // the plug sits in the jack (its tip in the hole, 2 cm proud of the board); the wire leaves its back
+                    var plug = Plug(col);
+                    plug.Position = to + new Vector3(0, 0, 0.02f);
+                    if (p.Loose) plug.Rotation = new Vector3(-0.5f, 0.4f, 0);
+                    _dynamic.AddChild(plug);
+                    end = plug.Position + plug.Basis * new Vector3(0, 0, 0.016f);
+                }
+                AddWire(_dynamic, TerminalAt(row) + new Vector3(0, 0, 0.015f), end, col, p.Loose ? 0.16f : 0.07f);
             }
         }
         var onLine = OnLineNow();
@@ -157,6 +215,18 @@ public partial class SwitchboardStation : Node3D
             else if (SwitchRules.KnownGood(s, port) is { } good) col = good ? new Color(0.1f, 0.4f, 0.15f) : new Color(0.75f, 0.08f, 0.06f);
             mat.AlbedoColor = col; mat.Emission = lit ? col : Colors.Black;
         }
+        if (_blade is not null) _blade.Rotation = new Vector3(_flash > 0 ? 1.15f : 0, 0, 0);   // the knife swings out while the lines are tried
+    }
+
+    private readonly Dictionary<Color, StandardMaterial3D> _sleeves = new();
+
+    /// <summary>A jumper's end in the wire's colour (the plug model's "sleeve" and "boot" are painted).</summary>
+    private Node3D Plug(Color col)
+    {
+        var plug = Props.Make("switch.jumper-plug", () => new LowPoly().Box(Vector3.Zero, new Vector3(0.03f, 0.03f, 0.03f), col).Instance());
+        if (!_sleeves.TryGetValue(col, out var mat)) _sleeves[col] = mat = new StandardMaterial3D { AlbedoColor = col, Roughness = 0.7f };
+        Paint(plug, "sleeve", mat); Paint(plug, "boot", mat);
+        return plug;
     }
 
     public override void _Process(double delta)
@@ -329,16 +399,32 @@ public partial class SwitchboardStation : Node3D
         if (!IsOpen || _hand == Hand.Empty) return;
         var at = new Vector3(_at.X, _at.Y, 0.16f);
         var lp = new LowPoly();
+        // tools are held with their business end (the probe's tip, the test set's clips) at the cursor, tilted as if in a hand
+        Node3D Held(string id, Vector3 tip, Func<Node3D> box)
+        {
+            var n = Props.Make(id, box);
+            n.Rotation = new Vector3(0, 0, -0.5f);
+            n.Position = at - n.Basis * tip;
+            _handNode.AddChild(n);
+            return n;
+        }
         switch (_hand)
         {
-            case Hand.Probe: lp.Box(at + new Vector3(0.06f, -0.03f, 0), new Vector3(0.16f, 0.04f, 0.04f), new Color(0.95f, 0.8f, 0.15f)).Box(at, new Vector3(0.05f, 0.016f, 0.016f), new Color(0.7f, 0.7f, 0.72f)); break;
-            case Hand.TestSet: lp.Box(at + new Vector3(0.05f, -0.04f, 0), new Vector3(0.16f, 0.06f, 0.06f), new Color(0.1f, 0.1f, 0.11f)); break;
+            case Hand.Probe:
+                Held("tool.tone-probe", new Vector3(0.13f, 0, 0), () => new LowPoly().Box(Vector3.Zero, new Vector3(0.2f, 0.045f, 0.045f), new Color(0.95f, 0.8f, 0.15f)).Box(new Vector3(0.12f, 0, 0), new Vector3(0.05f, 0.018f, 0.018f), new Color(0.7f, 0.7f, 0.72f)).Instance());
+                break;
+            case Hand.TestSet:
+                Held("tool.test-set", new Vector3(0.11f, -0.02f, 0), () => new LowPoly().Box(Vector3.Zero, new Vector3(0.16f, 0.06f, 0.06f), new Color(0.1f, 0.1f, 0.11f)).Instance());
+                break;
             default:
                 var col = _hand == Hand.Dirty ? Dirty : WireColours[B.Positions.FindIndex(p => p.CustomerId == _wireFrom) is >= 0 and var i ? i % WireColours.Length : 0];
-                lp.Box(at, new Vector3(0.03f, 0.03f, 0.03f), col);
+                var plug = Plug(col);
+                plug.Position = at;
+                _handNode.AddChild(plug);
+                var back = at + new Vector3(0, 0, 0.016f);
                 if (_wireFrom is not null && B.Positions.FindIndex(p => p.CustomerId == _wireFrom) is >= 0 and var row)
-                    AddWire(_handNode, TerminalAt(row) + new Vector3(0, 0, 0.015f), at, col, 0.05f);
-                else lp.Box(at + new Vector3(0, -0.07f, 0), new Vector3(0.012f, 0.12f, 0.012f), col);
+                    AddWire(_handNode, TerminalAt(row) + new Vector3(0, 0, 0.015f), back, col, 0.05f);
+                else lp.Box(at + new Vector3(0, -0.07f, 0.016f), new Vector3(0.012f, 0.12f, 0.012f), col);
                 break;
         }
         _handNode.AddChild(lp.Instance());

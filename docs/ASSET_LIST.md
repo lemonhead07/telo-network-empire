@@ -9,6 +9,8 @@ Written 2026-11-12 after the owner's first 10-minute playtest ("pacing good, mis
 
 **Model requests (D30, 2026-11-15).** Each asset becomes a named prop with a brief (size, anchors, three takes, a charm detail) in `game/content/props.json`; a model that keeps the brief's size, pivot and anchors drops in with no code change. How to write one: `MODELS_AND_VARIETY.md`. First batch: the switchboard (`docs/props/switchboard.json`).
 
+**Your room's working wall, modelled 2026-11-19** (`tools/models/room.py`, written in Godot coordinates like `town.py`): the switchboard and its parts (`room.switchboard`, `switch.terminal`, `switch.port`, `switch.port-lamp`, `switch.tag`, `switch.jumper-plug`, `switch.jumper-hook`, `switch.throw-switch`, `switch.upgrade-panel`, `tool.tone-probe`, `tool.test-set`), the line rack (`room.line-rack`, with `wp-01-place` / `wp-02-plug` / `wp-03-screw` at the next empty card slot) and the wall boards (`room.ticket-rail`, `room.wall-calendar`, `room.timesheet`, `room.ad-board`). Contact sheets: `docs/img/props/lineup-room.png`, and each switchboard part's three takes (plain / old / bodge) in `docs/img/props/takes-switchboard.png` for the owner to pick from (the game uses *plain*). In the game: `docs/img/room-models.png`.
+
 Priority: **A** = the demo needs it, **B** = the trailer needs it, **C** = later.
 
 ## 1. Characters
@@ -55,7 +57,7 @@ Each person needs a **speech bubble** above their head (same look as PIP's bubbl
 | A | Toolbox | Red metal, cantilever lid. |
 | A | Boxed modem and the modem itself | Beige box with lights; cardboard carton with a printed label. |
 | A | Line pole | With crossarm, insulators and climbing steps. |
-| B | Tone probe, screwdriver, staple gun, hand drill | Shown in the hand during install steps. |
+| B | Tone probe, screwdriver, staple gun, hand drill | Shown in the hand during install steps. Tone probe and test set ✅ 2026-11-19 (`tool.*`, held at the switchboard). |
 
 ## 5. Install and network parts
 
@@ -66,7 +68,7 @@ Each person needs a **speech bubble** above their head (same look as PIP's bubbl
 | A | Wall socket (backplate and faceplate) | Indoors. |
 | A | Cable staple, cable runs | Skirting cable; a drooping drop wire to the pole. |
 | A | Telephone, rotary | The customer's own phone; lift the handset to test. |
-| A | Frame terminal blocks, jumper wire, labels | For making the frame physical. |
+| A | Frame terminal blocks, jumper wire, labels | ✅ 2026-11-19: the switchboard batch in `tools/models/room.py` (the wire itself stays drawn in code). |
 | B | Sagging overhead line | Replace the straight wire between poles. |
 
 ## 6. Desk and room props (replacing the on-screen text)
@@ -76,7 +78,7 @@ Each person needs a **speech bubble** above their head (same look as PIP's bubbl
 | A | PIP's handset | The talking device: small screen, antenna, a light that pulses when PIP speaks. |
 | A | Answering machine | Blinking light, cassette window. |
 | A | Company notebook | Open book with ruled pages. |
-| A | Wall calendar | Shows the date (replaces the date text). |
+| A | Wall calendar | ✅ 2026-11-19 `room.wall-calendar` (the game still writes the week on it). Also modelled: ticket rail, timesheet clipboard, ad board, line rack. |
 | A | Cash tin | Shows your money. |
 | B | Pager, fax roll | Replace the "what next" line and the event feed. |
 | B | Job sheet clipboard | By the customer's door. |
