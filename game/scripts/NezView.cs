@@ -29,7 +29,8 @@ public partial class GameRoot
         if (fwd.LengthSquared() < 0.1f) fwd = dir.Cross(Vector3.Right).Normalized();
         var basis = new Basis(fwd.Cross(dir).Normalized(), dir, fwd);
         var root = new Node3D { Name = "Nadir", Transform = new Transform3D(basis, _nadir) };
-        root.AddChild(new LowPoly()
+        if (Props.HasModel("nez.nadir")) root.AddChild(Props.Make("nez.nadir"));
+        else root.AddChild(new LowPoly()
             .Box(new Vector3(0, -4f, 0), new Vector3(40, 8, 30), NezGrey * 0.8f)                     // plinth / pier
             .Box(new Vector3(0, 6f, 0), new Vector3(30, 12, 18), NezGrey)                          // the exchange hall
             .Box(new Vector3(0, 12.4f, 0), new Vector3(31, 0.8f, 19), NezBlue)                     // roof band
@@ -48,12 +49,16 @@ public partial class GameRoot
         if (NezRules.Stage(s) >= NezStage.Notice && _nezVan is null)
         {
             _nezVan = new Node3D { Name = "NezVan", Transform = TownBuilder.Place(_planet, -34, 11.5f, 90, 0.05f) };
-            _nezVan.AddChild(new LowPoly().Box(new Vector3(0, 1.1f, 0), new Vector3(2.0f, 1.9f, 4.6f), NezBlue)
-                .Box(new Vector3(0, 1.5f, -1.95f), new Vector3(1.7f, 0.6f, 0.75f), new Color(0.25f, 0.35f, 0.42f))
-                .Box(new Vector3(0, 0.9f, 0), new Vector3(2.04f, 0.2f, 4.62f), NezLetter)
-                .Instance());
-            foreach (int side in new[] { -1, 1 })
-                _nezVan.AddChild(new Label3D { Text = "NATIONAL TELEPHONE", Position = new Vector3(side * 1.03f, 1.45f, 0.3f), RotationDegrees = new Vector3(0, side * 90, 0), FontSize = 48, PixelSize = 0.0045f, Modulate = NezLetter, OutlineSize = 0 });
+            if (Props.HasModel("vehicle.nez-van")) _nezVan.AddChild(Props.Make("vehicle.nez-van"));   // lettered on the model itself
+            else
+            {
+                _nezVan.AddChild(new LowPoly().Box(new Vector3(0, 1.1f, 0), new Vector3(2.0f, 1.9f, 4.6f), NezBlue)
+                    .Box(new Vector3(0, 1.5f, -1.95f), new Vector3(1.7f, 0.6f, 0.75f), new Color(0.25f, 0.35f, 0.42f))
+                    .Box(new Vector3(0, 0.9f, 0), new Vector3(2.04f, 0.2f, 4.62f), NezLetter)
+                    .Instance());
+                foreach (int side in new[] { -1, 1 })
+                    _nezVan.AddChild(new Label3D { Text = "NATIONAL TELEPHONE", Position = new Vector3(side * 1.03f, 1.45f, 0.3f), RotationDegrees = new Vector3(0, side * 90, 0), FontSize = 48, PixelSize = 0.0045f, Modulate = NezLetter, OutlineSize = 0 });
+            }
             _town.Root.AddChild(_nezVan);
         }
         foreach (var id in s.NezLots)

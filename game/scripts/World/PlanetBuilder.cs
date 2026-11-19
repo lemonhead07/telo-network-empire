@@ -128,20 +128,20 @@ public static class PlanetBuilder
     // ---- props -------------------------------------------------------------------------------
     private static void Scatter(Node3D root, PlanetGen gen)
     {
-        var pine = new LowPoly()
+        var pine = Props.MeshOf("nature.pine") ?? new LowPoly()
             .Cylinder(Vector3.Zero, 0.2f, 0.14f, 1.3f, 5, new Color(0.36f, 0.25f, 0.16f))
             .Cylinder(new Vector3(0, 1.0f, 0), 1.5f, 0, 2.6f, 6, new Color(0.20f, 0.40f, 0.22f))
             .Cylinder(new Vector3(0, 2.4f, 0), 1.1f, 0, 2.2f, 6, new Color(0.23f, 0.45f, 0.25f))
             .Cylinder(new Vector3(0, 3.7f, 0), 0.7f, 0, 1.7f, 6, new Color(0.27f, 0.50f, 0.28f)).Build();
-        var oak = new LowPoly()
+        var oak = Props.MeshOf("nature.oak") ?? new LowPoly()
             .Cylinder(Vector3.Zero, 0.25f, 0.18f, 1.8f, 5, new Color(0.38f, 0.27f, 0.17f))
             .Gem(new Vector3(0, 3.0f, 0), 1.7f, 1.6f, 1.3f, 7, new Color(0.36f, 0.58f, 0.24f))
             .Gem(new Vector3(0.7f, 2.5f, 0.4f), 1.0f, 0.9f, 0.7f, 6, new Color(0.32f, 0.53f, 0.22f)).Build();
-        var cactus = new LowPoly()
+        var cactus = Props.MeshOf("nature.cactus") ?? new LowPoly()
             .Cylinder(Vector3.Zero, 0.28f, 0.22f, 2.4f, 6, new Color(0.33f, 0.52f, 0.30f))
             .Box(new Vector3(0.5f, 1.3f, 0), new Vector3(0.6f, 0.2f, 0.2f), new Color(0.31f, 0.50f, 0.29f))
             .Box(new Vector3(0.72f, 1.65f, 0), new Vector3(0.2f, 0.7f, 0.2f), new Color(0.33f, 0.52f, 0.30f)).Build();
-        var rock = new LowPoly()
+        var rock = Props.MeshOf("nature.rock") ?? new LowPoly()
             .Gem(new Vector3(0, 0.25f, 0), 0.9f, 0.6f, 0.4f, 5, new Color(0.52f, 0.50f, 0.48f))
             .Gem(new Vector3(0.6f, 0.1f, 0.3f), 0.5f, 0.35f, 0.3f, 4, new Color(0.46f, 0.44f, 0.43f)).Build();
 
@@ -162,6 +162,7 @@ public static class PlanetBuilder
                 float scale = 0.75f + rng.Next(1000) / 1000f * 0.9f;
                 int spin = rng.Next(628);
                 if ((dir - town).Length() * R < gen.Town.RadiusM * 1.25f) continue;
+                if (TownDressing.InField(gen, dir)) continue;  // no trees in the middle of a ploughed field
                 var sd = ToSim(dir);
                 Mesh? pick = gen.BiomeAt(sd) switch
                 {

@@ -1,5 +1,5 @@
 [
-  { "id": "proj-church-poles", "model": "site.pole-stack", "name": "Poles up Church Lane", "act": 0, "site": "town-start", "east": -77, "south": -20, "cost": 60,
+  { "id": "proj-church-poles", "model": "site.pole-stack", "name": "Poles up Church Lane", "act": 0, "site": "town-start", "east": -92, "south": -20, "cost": 60,
     "requires": [ { "kind": "ledgerServed", "value": 1 }, { "kind": "subscribers", "value": 6 } ],
     "story": "Church Lane has no poles of its own: NezTel ran the lane off a junction that rotted in 1977. Plant two along Mill Row and string them up the lane.",
     "doneText": "Church Lane has wire. Father Roe rang the bell for it, which nobody asked him to do.",
@@ -21,7 +21,7 @@
       { "verb": "Test every pair", "clicks": 1, "minutes": 10 }
     ] },
 
-  { "id": "proj-modem-bank", "model": "site.modem-bank", "name": "Rack the modem bank", "act": 2, "site": "town-start", "east": 56, "south": 27, "cost": 400,
+  { "id": "proj-modem-bank", "model": "site.modem-bank", "name": "Rack the modem bank", "act": 2, "site": "town-start", "east": 57, "south": 27, "cost": 400,
     "requiresEntry": "alm-14k", "requiresDepot": true,
     "story": "The dial-up years: one modem per caller won't do. A rack of them in the depot, answering in turn, is what the Almanac page describes.",
     "doneText": "Eight modems in a rack at the depot, lamps blinking in a row. The Board answers eight more calls at once.",
@@ -160,7 +160,7 @@
       { "verb": "Hand calls between the masts on a drive down the coast", "clicks": 2, "minutes": 15 }
     ] },
 
-  { "id": "proj-backhaul", "model": "site.fibre-joint", "name": "Fibre to every mast", "act": 5, "site": "town-start", "east": -90, "south": -40, "cost": 12000,
+  { "id": "proj-backhaul", "model": "site.fibre-joint", "name": "Fibre to every mast", "act": 5, "site": "town-start", "east": -104, "south": -40, "cost": 12000,
     "requiresProjects": ["proj-cell-sites"],
     "story": "The masts are only as fast as the line behind them, and half of them run on borrowed copper. Fibre to every mast, and the phones in people's pockets get fast.",
     "doneText": "Every mast has fibre behind it. Data on the phones is fast enough that people stop noticing it, which is the point.",

@@ -170,10 +170,20 @@ public partial class GameRoot : Node3D
         f => f, f => Godot.FileAccess.GetFileAsString($"res://content/{f}") is { Length: > 0 } t ? t
             : throw new InvalidOperationException($"Missing res://content/{f}")));
 
+    /// <summary>Swap a code-built box for its model when there is one: the box's mesh goes, its collision and click area stay.</summary>
+    private static void Dress(Node3D thing, string id)
+    {
+        if (!Props.HasModel(id)) return;
+        if (thing is MeshInstance3D own) own.Mesh = null;
+        foreach (var c in thing.GetChildren()) if (c is MeshInstance3D mi && mi.Mesh is BoxMesh) mi.Mesh = null;
+        thing.AddChild(Props.Make(id));
+    }
+
     private async Task BuildRoadsWhenPhysicsIsReady()
     {
         for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
         TownBuilder.BuildRoads(_town.Root, _planet, GetWorld3D().DirectSpaceState);
+        TownDressing.Fields(_town.Root, _planet, GetWorld3D().DirectSpaceState);
         foreach (var p in _content.Premises.Values) BuildPoleLine(p);
         BuildNadir();
         if (!Onboarding.RoadOpen(Sim.State, _content)) BuildRoadBarrier();
@@ -184,7 +194,7 @@ public partial class GameRoot : Node3D
     {
         if (_planet.Roads.Count == 0) return;
         var pts = _planet.Roads[0].Points; float R = (float)_planet.RadiusM;
-        int i = Enumerable.Range(0, pts.Count).FirstOrDefault(k => (pts[k] - _planet.Town.Dir).Length * _planet.RadiusM > _planet.Town.RadiusM * 0.7);
+        int i = Enumerable.Range(0, pts.Count).FirstOrDefault(k => (pts[k] - _planet.Town.Dir).Length * _planet.RadiusM > _planet.Town.RadiusM * 0.8);
         if (i <= 0 || i >= pts.Count - 1) return;
         var dir = PlanetBuilder.ToGodot(pts[i]);
         var hit = GetWorld3D().DirectSpaceState.IntersectRay(PhysicsRayQueryParameters3D.Create(dir * (R + 400), dir * (R - 100), 1));
@@ -196,7 +206,7 @@ public partial class GameRoot : Node3D
         for (int k = -4; k <= 4; k++) lp.Box(new Vector3(k * 2f, 0.9f, 0), new Vector3(2f, 0.35f, 0.12f), k % 2 == 0 ? new Color(0.9f, 0.25f, 0.15f) : new Color(0.95f, 0.93f, 0.88f));
         foreach (float x in new[] { -8.5f, -3f, 3f, 8.5f }) lp.Box(new Vector3(x, 0.5f, 0), new Vector3(0.12f, 1f, 0.5f), new Color(0.3f, 0.3f, 0.32f));
         lp.Box(new Vector3(0, 1.75f, 0), new Vector3(3.4f, 1.1f, 0.08f), new Color(0.95f, 0.8f, 0.2f));
-        body.AddChild(lp.Instance());
+        body.AddChild(Props.HasModel("world.road-barrier") ? Props.Make("world.road-barrier") : lp.Instance());
         body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(18f, 2.2f, 0.5f) }, Position = new Vector3(0, 1.1f, 0) });
         foreach (int side in new[] { -1, 1 })
             body.AddChild(new Label3D
@@ -294,24 +304,29 @@ public partial class GameRoot : Node3D
         };
 
         // Desk with answering machine, PIP's handset on a stand, and the notebook lying open.
-        RoomBuilder.Box(room, new Vector3(1.3f, 0.37f, back + 0.45f), new Vector3(1.7f, 0.74f, 0.8f), RoomBuilder.Wood, solid: true);
-        RoomBuilder.Prop(room, "AnsweringMachine", new Vector3(0.72f, 0.8f, back + 0.4f), new Vector3(0.26f, 0.1f, 0.2f), new Color(0.08f, 0.08f, 0.08f),
+        Dress(RoomBuilder.Box(room, new Vector3(1.3f, 0.37f, back + 0.45f), new Vector3(1.7f, 0.74f, 0.8f), RoomBuilder.Wood, solid: true), "room.desk");
+        var answering = RoomBuilder.Prop(room, "AnsweringMachine", new Vector3(0.72f, 0.8f, back + 0.4f), new Vector3(0.26f, 0.1f, 0.2f), new Color(0.08f, 0.08f, 0.08f),
             () => Sim.State.MessagesWaiting > 0 ? $"Play messages ({Sim.State.MessagesWaiting} waiting)" : "No new messages", PlayMessages);
+        Dress(answering, "room.answering-machine");
 
-        RoomBuilder.Prop(room, "Handset", new Vector3(1.3f, 0.86f, back + 0.36f), new Vector3(0.38f, 0.26f, 0.03f), new Color(0.1f, 0.11f, 0.14f),
+        var handset = RoomBuilder.Prop(room, "Handset", new Vector3(1.3f, 0.86f, back + 0.36f), new Vector3(0.38f, 0.26f, 0.03f), new Color(0.1f, 0.11f, 0.14f),
             () => Onboarding.DeskOpen(Sim.State, _content) ? "Read PIP's Almanac" : "PIP's handset. It has more to show you once you know the round",
-            () => { if (Onboarding.DeskOpen(Sim.State, _content)) _almanac.Open(InterfaceTier.Terminal); }).RotationDegrees = new Vector3(-18, 0, 0);
+            () => { if (Onboarding.DeskOpen(Sim.State, _content)) _almanac.Open(InterfaceTier.Terminal); });
+        handset.RotationDegrees = new Vector3(-18, 0, 0);
+        Dress(handset, "room.pip-handset");
         _pipScreen = Screen(room, _almanac, 0.34f, new Vector3(1.3f, 0.865f, back + 0.385f), new Vector3(-18, 0, 0), glows: true);
 
-        RoomBuilder.Prop(room, "Notebook", new Vector3(1.85f, 0.745f, back + 0.5f), new Vector3(0.52f, 0.02f, 0.34f), new Color(0.5f, 0.12f, 0.1f),
+        var notebook = RoomBuilder.Prop(room, "Notebook", new Vector3(1.85f, 0.745f, back + 0.5f), new Vector3(0.52f, 0.02f, 0.34f), new Color(0.5f, 0.12f, 0.1f),
             () => Onboarding.DeskOpen(Sim.State, _content) ? "Read the company notebook" : "The company notebook. Nothing in it yet: there is no company",
             () => { if (Onboarding.DeskOpen(Sim.State, _content)) _notebook.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing")); });
+        Dress(notebook, "room.notebook");
         _notebookScreen = Screen(room, _notebook, 0.48f, new Vector3(1.85f, 0.758f, back + 0.5f), new Vector3(-90, 0, 0), glows: false);
 
         // The Board's terminal, on a side table. It turns up with your first hire. Worked with the number keys.
         _terminal = new Node3D { Position = new Vector3(2.62f, 0, back + 0.42f), Visible = false };
         room.AddChild(_terminal);
-        _terminal.AddChild(new LowPoly().Box(new Vector3(0, 0.34f, 0), new Vector3(0.7f, 0.68f, 0.62f), RoomBuilder.Wood * 0.9f)
+        if (Props.HasModel("room.terminal")) _terminal.AddChild(Props.Make("room.terminal"));
+        else _terminal.AddChild(new LowPoly().Box(new Vector3(0, 0.34f, 0), new Vector3(0.7f, 0.68f, 0.62f), RoomBuilder.Wood * 0.9f)
             .Box(new Vector3(0, 0.9f, -0.08f), new Vector3(0.52f, 0.44f, 0.42f), new Color(0.72f, 0.7f, 0.62f))          // the tube
             .Box(new Vector3(0, 0.7f, 0.2f), new Vector3(0.46f, 0.04f, 0.17f), new Color(0.66f, 0.64f, 0.57f))           // keyboard
             .Box(new Vector3(0, 0.725f, 0.2f), new Vector3(0.4f, 0.012f, 0.12f), new Color(0.2f, 0.2f, 0.2f)).Instance());
@@ -349,7 +364,7 @@ public partial class GameRoot : Node3D
         _sheet.Hot.OnAlt = () => { Telo.Sim.Plan.PlanRules.PlanFor(Sim.State, PlanDay()).Slots.Clear(); SyncPaper(); };
 
         // Camp bed. Sleeping is how days pass quickly.
-        RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
+        var bed = RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
             () => Guidance.IsQuiet(Sim.State, _content) ? "Sleep until something needs you (days may pass)" : "Sleep until morning",
             () =>
             {
@@ -361,6 +376,7 @@ public partial class GameRoot : Node3D
                 if (days > 1) _pip.Say($"{days} days went by. {Sim.State.Date}. Something needs you.");
                 RefreshIdleScreens();
             });
+        Dress(bed, "room.camp-bed");
     }
 
     private static WorldScreen Screen(Node3D room, ModalView view, float widthM, Vector3 pos, Vector3 rotDeg, bool glows)
@@ -921,6 +937,7 @@ public partial class GameRoot : Node3D
             {
                 if (lot.Lights is not null) lot.Lights.Visible = Clock.Dark(Sim.State) && HomeRules.IsHome(Sim.State, _content, lot.Lot);
                 if (lot.Car is not null) lot.Car.Visible = !HomeRules.OutAtWork(Sim.State, _content, lot.Lot);
+                if (lot.Resident is not null) lot.Resident.Visible = HomeRules.IsHome(Sim.State, _content, lot.Lot);
             }
             _cargo.Refresh();
             foreach (var refresh in _lineRefresh) refresh();
@@ -1230,8 +1247,12 @@ public partial class GameRoot : Node3D
         await Frames(30);
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
-        await Shot("-shop", TownBuilder.Place(_planet, 66, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 72, 1, 0, 2).Origin);
+        await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);
         await Shot("-aerial", TownBuilder.Place(_planet, 250, 500, 0, 420).Origin, hq);
+        await Shot("-hq", _town.Hq.ToGlobal(new Vector3(-2.4f, 1.75f, 2.1f)), _town.Hq.ToGlobal(new Vector3(1.2f, 0.7f, -1.9f)));
+        await Shot("-desk", _town.Hq.ToGlobal(new Vector3(1.0f, 1.45f, -0.5f)), _town.Hq.ToGlobal(new Vector3(1.4f, 0.8f, -2.05f)));
+        await Shot("-gardens", TownBuilder.Place(_planet, -40, -18, 0, 11).Origin, TownBuilder.Place(_planet, -20, -10, 0, 0).Origin);
+        await Shot("-fields", TownBuilder.Place(_planet, 140, 190, 0, 22).Origin, TownBuilder.Place(_planet, 230, 290, 0, 0).Origin);
         if (_nadir != Vector3.Zero)
         {
             var nu = _nadir.Normalized(); var side = nu.Cross(Vector3.Up).Normalized();

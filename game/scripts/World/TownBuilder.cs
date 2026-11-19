@@ -21,6 +21,8 @@ public sealed class LotView
     public Node3D? Lights { get; init; }
     /// <summary>The household's car. Gone when they are out at work.</summary>
     public Node3D? Car { get; init; }
+    /// <summary>Whoever lives or works here, standing indoors (by the front window; Sol behind his counter). Shown while they are in.</summary>
+    public Node3D? Resident { get; init; }
     /// <summary>Where a visiting van parks: on the driveway (or the shop's forecourt, the farmyard), off the street.</summary>
     public Vector3? Park { get; init; }
     /// <summary>Where the driveway meets the middle of Main Street. Null for places not on Main Street.</summary>
@@ -73,6 +75,8 @@ public static class TownBuilder
         var hq = new Node3D { Name = "HQ", Transform = Place(gen, 0, 0, 0, 0.1f) };
         root.AddChild(hq);
         RoomBuilder.BuildShell(hq);
+        if (Props.HasModel("room.hq")) hq.AddChild(Props.Make("room.hq"));   // the outside of the room: walls, roof, sign board
+        if (Props.HasModel("room.clutter")) hq.AddChild(Props.Make("room.clutter")); // the rug, the kettle, the coat by the door
 
         var town = new Town
         {
@@ -96,6 +100,15 @@ public static class TownBuilder
             var xf = Place(gen, site, (float)lot.East, (float)lot.South, (float)lot.Yaw);
             float wallH = 3f + (i % 2) * 0.5f;
             var solids = new List<(Vector3 Pos, Vector3 Size)>();
+            // a house's look comes from one of six models (house.a-f) when they exist; its walls still come from HouseMesh
+            string? model = lot.Kind switch
+            {
+                LotKind.House => $"house.{(char)('a' + i % 6)}",
+                LotKind.Shop => "shop.sols",
+                LotKind.Depot => "depot.yard",
+                LotKind.Farm => "farm.hollow",
+                _ => null,
+            };
             Mesh mesh = lot.Kind switch
             {
                 LotKind.Shop => ShopMesh(),
@@ -107,8 +120,10 @@ public static class TownBuilder
             // how far the street's pole line is from this front door (the drop wire comes from there)
             var street = StreetOf(lot);
             float poleDist = Mathf.Abs((float)lot.South - (street is null ? PoleLineSouth : street.PoleLine));
-            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist, palette[(i + 2) % palette.Length], street));
+            var look = model is not null && Props.HasModel(model) ? Props.Make(model) : null;
+            town.Lots.Add(Building(root, lot, xf, mesh, solids, wallH, poleDist, palette[(i + 2) % palette.Length], street, look));
         }
+        TownDressing.Gardens(root, gen, town);
 
         // --- the streets: Main Street, Church Lane and Mill Row in town, the High Street in Eastgate -----------
         var road = new LowPoly().Box(Vector3.Zero, new Vector3(6.3f, 0.08f, StreetHalfWidth * 2), new Color(0.27f, 0.27f, 0.29f))
@@ -143,13 +158,13 @@ public static class TownBuilder
     }
 
     /// <summary>Main Street: its centre line is this far south of the town centre, it is this wide, and runs this far east and west.</summary>
-    public const float StreetSouth = 16.5f, StreetHalfWidth = 3.25f, StreetEnd = 96f;
+    public const float StreetSouth = 16.5f, StreetHalfWidth = 3.25f, StreetEnd = 112f;
 
     public static readonly Street[] Streets =
     {
         new("town-start", false, StreetSouth, -StreetEnd, StreetEnd, "Main Street"),
-        new("town-start", false, -30f, -72f, 60f, "Church Lane"),
-        new("town-start", true, -72f, -30f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
+        new("town-start", false, -40f, -86f, 84f, "Church Lane"),          // its east end meets the road out to the farm
+        new("town-start", true, -86f, -40f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
         new("eastgate", false, 8f, -64f, 48f, "Eastgate High Street"),  // west end reaches the two houses moved off the town road (2026-11-19)
     };
 
@@ -158,11 +173,12 @@ public static class TownBuilder
         lot.Kind == LotKind.Farm ? null : Streets.Where(s => !s.NorthSouth && s.Site == lot.Site && lot.East >= s.From - 10 && lot.East <= s.To + 10)
             .OrderBy(s => Mathf.Abs(s.At - (float)lot.South)).FirstOrDefault();
 
-    private const float HqDriveEast = 8f, DriveOffset = 5.7f;
+    private const float HqDriveEast = 8f;
+    internal const float DriveOffset = 5.7f;
     private static readonly Color Concrete = new(0.52f, 0.51f, 0.48f);
 
     /// <summary>Which side of a house its driveway goes: the right (+1) unless that would run through a street pole.</summary>
-    private static int DriveSide(LotDef lot, bool facingSouth, Street street)
+    internal static int DriveSide(LotDef lot, bool facingSouth, Street street)
     {
         if (!facingSouth) return 1; // the pole line is on the north side of the street only
         float east = (float)lot.East + DriveOffset;
@@ -184,12 +200,12 @@ public static class TownBuilder
     /// <summary>Height of a house's floor above its lot origin (keeps the lawn from poking through the carpet).</summary>
     public const float HouseFloor = 0.15f;
 
-    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist, Color carColour, Street? street)
+    private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist, Color carColour, Street? street, Node3D? look = null)
     {
         bool shop = lot.Kind == LotKind.Shop, house = lot.Kind == LotKind.House;
         float w = shop ? 10 : 8, d = shop ? 8 : 7, front = d / 2;
         var body = new StaticBody3D { Name = lot.Id, Transform = xf };
-        body.AddChild(new MeshInstance3D { Mesh = mesh });
+        body.AddChild(look ?? new MeshInstance3D { Mesh = mesh });
         if (!house) body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(w, 4, d) }, Position = new Vector3(0, 1.5f, 0) });
         foreach (var (pos, size) in solids) body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = size }, Position = pos });
         root.AddChild(body);
@@ -253,10 +269,24 @@ public static class TownBuilder
                 var lp = new LowPoly().Box(new Vector3(0, 0.55f, 0), new Vector3(1.7f, 0.6f, 3.9f), carColour).Box(new Vector3(0, 1.05f, 0.2f), new Vector3(1.5f, 0.5f, 2.0f), carColour * 0.9f)
                     .Box(new Vector3(0, 1.07f, -0.82f), new Vector3(1.4f, 0.4f, 0.04f), new Color(0.3f, 0.42f, 0.52f));
                 foreach (var (wx, wz) in new[] { (-0.85f, -1.25f), (0.85f, -1.25f), (-0.85f, 1.25f), (0.85f, 1.25f) }) lp.Box(new Vector3(wx, 0.3f, wz), new Vector3(0.22f, 0.6f, 0.6f), dark);
-                car = lp.Instance("Car");
+                var carModel = $"car.{new[] { "saloon", "estate", "hatch", "coupe" }[(lot.Id.Sum(ch => ch) + lot.Resident.Length) % 4]}";
+                car = Props.HasModel(carModel) ? Props.Make(carModel) : lp.Instance("Car");
                 car.Position = new Vector3(park is null ? DriveOffset : driveX, 0.06f, 1.2f); // at the top of the driveway, by the house
                 body.AddChild(car);
             }
+        }
+
+        // the person who lives or works here, when there's a model for them
+        Node3D? resident = null;
+        string? who = house ? $"person.res-{lot.Archetype}" : shop ? "person.sol" : null;
+        if (who is not null && Props.HasModel(who))
+        {
+            resident = Props.Make(who);
+            resident.Name = "Resident";
+            // in the front room by the left window, turned a little towards the door; Sol behind the counter hatch
+            resident.Position = house ? new Vector3(-2.3f, HouseFloor, 2.2f) : new Vector3(3.0f, 0.02f, 2.75f);
+            resident.RotationDegrees = new Vector3(0, house ? 25 : 0, 0);
+            body.AddChild(resident);
         }
 
         Interactable Hotspot(Vector3 pos, Vector3 size)
@@ -285,7 +315,7 @@ public static class TownBuilder
             Visible = false,
         };
         body.AddChild(marker);
-        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor, Lights = lights, Car = car, Park = park, DriveEntry = entry };
+        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor, Lights = lights, Car = car, Park = park, DriveEntry = entry, Resident = resident };
     }
 
     /// <summary>The road surface, laid onto the real terrain by ray-casting down. Call once physics has the terrain.</summary>
@@ -316,7 +346,7 @@ public static class TownBuilder
                 var along = (centre[Math.Min(i + 1, centre.Count - 1)] - centre[Math.Max(i - 1, 0)]).Normalized();
                 var side = along.Cross(c).Normalized();
                 Vector3? l = Ground((c * R - side * 3.2f).Normalized()), r = Ground((c * R + side * 3.2f).Normalized()), m = Ground(c);
-                bool skip = gen.Sites.Any(s => (PlanetBuilder.ToGodot(s.Dir) - c).Length() * R < s.RadiusM * 0.5f);
+                bool skip = gen.Sites.Any(s => (PlanetBuilder.ToGodot(s.Dir) - c).Length() * R < s.RadiusM * 0.75f); // the drawn road starts where the streets end
                 if (!skip && l is { } L && r is { } Rr && m is { } M && pl is { } PL && pr is { } PR && pc is { } PC)
                 {
                     lp.Quad(PL, PR, Rr, L, asphalt, c);

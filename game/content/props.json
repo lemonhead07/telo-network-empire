@@ -1033,6 +1033,526 @@
    "pivot": "ground, centre",
    "tris": 1096,
    "status": "modelled"
+  },
+  {
+   "id": "house.a",
+   "name": "House (a)",
+   "what": "A small 1980s house, style a: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.48,
+    8.252
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2186,
+   "status": "modelled"
+  },
+  {
+   "id": "house.b",
+   "name": "House (b)",
+   "what": "A small 1980s house, style b: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.98,
+    9.107
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2630,
+   "status": "modelled"
+  },
+  {
+   "id": "house.c",
+   "name": "House (c)",
+   "what": "A small 1980s house, style c: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    9.12,
+    6.48,
+    8.252
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2278,
+   "status": "modelled"
+  },
+  {
+   "id": "house.d",
+   "name": "House (d)",
+   "what": "A small 1980s house, style d: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.98,
+    8.252
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2078,
+   "status": "modelled"
+  },
+  {
+   "id": "house.e",
+   "name": "House (e)",
+   "what": "A small 1980s house, style e: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.48,
+    7.98
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2830,
+   "status": "modelled"
+  },
+  {
+   "id": "house.f",
+   "name": "House (f)",
+   "what": "A small 1980s house, style f: hollow, with a furnished front room. Walls, door gap and windows match TownBuilder.HouseMesh.",
+   "size": [
+    8.92,
+    6.98,
+    9.107
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 2450,
+   "status": "modelled"
+  },
+  {
+   "id": "depot.yard",
+   "name": "1 Main Street (the depot)",
+   "what": "A brick workshop with a roller door and a sign board; the yard you lease for your staff.",
+   "size": [
+    9.8,
+    4.3,
+    8.14
+   ],
+   "pivot": "ground, centre of footprint",
+   "tris": 798,
+   "status": "modelled"
+  },
+  {
+   "id": "farm.hollow",
+   "name": "Hollow Farm",
+   "what": "Farmhouse with a porch, red barn with X-braced doors and hay loft, silo, tractor, hay bales, the fence toward the road.",
+   "size": [
+    41.5,
+    11.1,
+    26.323
+   ],
+   "pivot": "farmhouse ground centre",
+   "tris": 3380,
+   "status": "modelled"
+  },
+  {
+   "id": "street.phone-box",
+   "name": "Phone box",
+   "what": "The national phone company's red kiosk outside Sol's.",
+   "size": [
+    1.05,
+    2.73,
+    1.05
+   ],
+   "pivot": "foot, centre",
+   "tris": 1000,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.oak",
+   "name": "Oak",
+   "what": "A broad faceted oak, three canopy lumps. Scattered on grassland and in hedgerows.",
+   "size": [
+    3.572,
+    4.6,
+    3.232
+   ],
+   "pivot": "foot of the trunk",
+   "tris": 108,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.pine",
+   "name": "Pine",
+   "what": "Four tiers of needles on a dark trunk. Forests and cold places.",
+   "size": [
+    3.12,
+    5.4,
+    3.042
+   ],
+   "pivot": "foot of the trunk",
+   "tris": 64,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.rock",
+   "name": "Rock",
+   "what": "A boulder with a smaller one beside it and a cap of moss.",
+   "size": [
+    1.838,
+    0.98,
+    1.632
+   ],
+   "pivot": "ground, centre",
+   "tris": 44,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.cactus",
+   "name": "Cactus",
+   "what": "A desert cactus with two arms and one red flower.",
+   "size": [
+    1.391,
+    2.51,
+    0.532
+   ],
+   "pivot": "foot",
+   "tris": 144,
+   "status": "modelled"
+  },
+  {
+   "id": "nature.fruit-tree",
+   "name": "Apple tree",
+   "what": "A small garden apple tree with fruit on it and a stick propping up a branch.",
+   "size": [
+    2.5,
+    3.1,
+    2.5
+   ],
+   "pivot": "foot of the trunk",
+   "tris": 248,
+   "status": "modelled"
+  },
+  {
+   "id": "street.lamp",
+   "name": "Street lamp",
+   "what": "Grey column with an arm reaching over the road (towards -Z), a warm lens.",
+   "size": [
+    0.32,
+    5.284,
+    1.91
+   ],
+   "pivot": "foot, centre",
+   "tris": 144,
+   "status": "modelled"
+  },
+  {
+   "id": "car.saloon",
+   "name": "Saloon car",
+   "what": "A household's four-door saloon, teal.",
+   "size": [
+    2.02,
+    1.345,
+    4.02
+   ],
+   "pivot": "ground, centre",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "car.estate",
+   "name": "Estate car",
+   "what": "A long estate with wood panels down the sides.",
+   "size": [
+    2.02,
+    1.345,
+    4.32
+   ],
+   "pivot": "ground, centre",
+   "tris": 700,
+   "status": "modelled"
+  },
+  {
+   "id": "car.hatch",
+   "name": "Hatchback",
+   "what": "A small mustard hatchback.",
+   "size": [
+    2.02,
+    1.345,
+    3.62
+   ],
+   "pivot": "ground, centre",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "car.coupe",
+   "name": "Coupe",
+   "what": "A maroon two-door with a short roof.",
+   "size": [
+    2.02,
+    1.345,
+    4.12
+   ],
+   "pivot": "ground, centre",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "vehicle.nez-van",
+   "name": "National Telephone van",
+   "what": "The monopoly's blue van, lettered on both sides, ladder on the roof.",
+   "size": [
+    2.34,
+    2.17,
+    4.75
+   ],
+   "pivot": "ground, centre",
+   "tris": 1940,
+   "status": "modelled"
+  },
+  {
+   "id": "person.engineer",
+   "name": "Engineer (Jory)",
+   "what": "A line engineer in blue overalls and cap, clipboard in hand.",
+   "size": [
+    0.685,
+    1.815,
+    0.488
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 792,
+   "status": "modelled"
+  },
+  {
+   "id": "person.sysop",
+   "name": "Sysop (Tobi)",
+   "what": "Runs the Board: hoodie, jeans, headphones round the neck, a floppy disk in hand.",
+   "size": [
+    0.685,
+    1.808,
+    0.58
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 780,
+   "status": "modelled"
+  },
+  {
+   "id": "room.hq",
+   "name": "Your room (outside)",
+   "what": "The rented workshop seen from the street: rendered walls round RoomBuilder's room, pitched roof, sign board, open door, aerial, bins, a bicycle.",
+   "size": [
+    7.189,
+    6.05,
+    6.095
+   ],
+   "pivot": "room origin",
+   "tris": 1050,
+   "status": "modelled"
+  },
+  {
+   "id": "room.answering-machine",
+   "name": "Answering machine",
+   "what": "Black cassette answering machine with a red light.",
+   "size": [
+    0.364,
+    0.114,
+    0.229
+   ],
+   "pivot": "box centre",
+   "tris": 160,
+   "status": "modelled"
+  },
+  {
+   "id": "room.camp-bed",
+   "name": "Camp bed",
+   "what": "A folding camp bed with a red blanket and a pillow.",
+   "size": [
+    0.86,
+    0.497,
+    1.9
+   ],
+   "pivot": "box centre",
+   "tris": 240,
+   "status": "modelled"
+  },
+  {
+   "id": "room.terminal",
+   "name": "The Board's terminal",
+   "what": "A cream terminal on a side table, keyboard and floppy box; the game draws the screen.",
+   "size": [
+    0.7,
+    1.17,
+    0.881
+   ],
+   "pivot": "floor, centre",
+   "tris": 864,
+   "status": "modelled"
+  },
+  {
+   "id": "room.clutter",
+   "name": "Room clutter",
+   "what": "A rug, a filing cabinet with the kettle on it, a coat on a hook, a paraffin heater, a map of the lines.",
+   "size": [
+    4.346,
+    1.8,
+    3.095
+   ],
+   "pivot": "room origin",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "nez.nadir",
+   "name": "Nadir exchange",
+   "what": "The national phone company's grand exchange at the antipode: concrete hall on a sea pier, bronze doors and crest, flags, and a tower crowded with dishes and horns.",
+   "size": [
+    40.6,
+    46.3,
+    30.6
+   ],
+   "pivot": "pier top, centre",
+   "tris": 2576,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-tech-inexperienced",
+   "name": "Resident (tech-inexperienced)",
+   "what": "A householder of the 'tech-inexperienced' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 752,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-curious",
+   "name": "Resident (curious)",
+   "what": "A householder of the 'curious' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.43
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 772,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-family",
+   "name": "Resident (family)",
+   "what": "A householder of the 'family' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 636,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-gamer",
+   "name": "Resident (gamer)",
+   "what": "A householder of the 'gamer' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.808,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 692,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-reliability-sensitive",
+   "name": "Resident (reliability-sensitive)",
+   "what": "A householder of the 'reliability-sensitive' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 624,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-price-sensitive",
+   "name": "Resident (price-sensitive)",
+   "what": "A householder of the 'price-sensitive' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.81,
+    0.333
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 656,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-small-business",
+   "name": "Resident (small-business)",
+   "what": "A householder of the 'small-business' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 696,
+   "status": "modelled"
+  },
+  {
+   "id": "person.res-student",
+   "name": "Resident (student)",
+   "what": "A householder of the 'student' kind, arms at their sides.",
+   "size": [
+    0.701,
+    1.78,
+    0.323
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 676,
+   "status": "modelled"
+  },
+  {
+   "id": "person.sol",
+   "name": "Sol",
+   "what": "Sol of Sol's Electronics: brown shop coat with pens in the pocket, glasses, not much hair.",
+   "size": [
+    0.701,
+    1.765,
+    0.48
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 752,
+   "status": "modelled"
+  },
+  {
+   "id": "world.road-barrier",
+   "name": "Council road barrier",
+   "what": "Striped boards on trestles with lamps, a ROAD CLOSED board, cones, sandbags, and a council worker with tea, not working.",
+   "size": [
+    18.075,
+    2.41,
+    1.86
+   ],
+   "pivot": "road centre, ground",
+   "tris": 1836,
+   "status": "modelled"
+  },
+  {
+   "id": "room.pip-handset",
+   "name": "PIP's handset",
+   "what": "A chunky handset on a little stand: bezel round the screen the game draws, aerial, lamp, coiled lead.",
+   "size": [
+    0.496,
+    0.57,
+    0.209
+   ],
+   "pivot": "box centre",
+   "tris": 416,
+   "status": "modelled"
+  },
+  {
+   "id": "room.notebook",
+   "name": "Company notebook",
+   "what": "An open red hardback with a ribbon and a pencil; the game draws the page.",
+   "size": [
+    0.606,
+    0.02,
+    0.41
+   ],
+   "pivot": "box centre",
+   "tris": 112,
+   "status": "modelled"
   }
  ]
 }
