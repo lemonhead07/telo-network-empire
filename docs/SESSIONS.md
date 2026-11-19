@@ -1,6 +1,6 @@
 # Session modes: Idea vs Dev
 
-Every session is **one** of these two. Say which at the start (`/idea` or `/dev` in Claude Code), or Claude asks. Mixing them is how sessions sprawl and burn tokens.
+Every session is **one** of these two. A dev session also names its **lane**, geometry or gameplay, and works on that branch (`docs/BRANCHES.md`). Say which at the start (`/idea` or `/dev` in Claude Code), or Claude asks. Mixing them is how sessions sprawl and burn tokens.
 
 | | Idea session | Dev session |
 |---|---|---|
