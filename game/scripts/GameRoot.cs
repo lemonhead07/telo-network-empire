@@ -164,6 +164,7 @@ public partial class GameRoot : Node3D
         if (args.FirstOrDefault(a => a == "--autoplay" || a.StartsWith("--autoplay=")) is { } auto)
             _ = RunAutoplay(auto.Contains('=') ? auto[(auto.IndexOf('=') + 1)..] : null, args);
         if (args.FirstOrDefault(a => a.StartsWith("--shot=")) is { } shot) _ = TakeScreenshot(shot["--shot=".Length..]);
+        if (args.FirstOrDefault(a => a.StartsWith("--shot-projects=")) is { } ps) _ = TakeProjectShots(ps["--shot-projects=".Length..]);   // ProjectShots.cs
     }
 
     private static ContentDb LoadContent() => ContentDb.FromJson(ContentDb.FileNames.ToDictionary(
