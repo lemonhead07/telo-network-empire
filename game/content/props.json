@@ -80,11 +80,11 @@
    "what": "Your hand-built distribution board on the room's back wall: subscriber terminals with paper tags down the left, Board ports with lamps down the right, a tool shelf along the bottom. The centrepiece of the room.",
    "size": [
     1.6,
-    1.36,
-    0.04
+    1.568,
+    0.237
    ],
-   "pivot": "centre of the back face",
-   "tris": 600,
+   "pivot": "station origin: centre of the board; battens on the wall at z -0.02, plywood face at z 0.034",
+   "tris": 868,
    "colours": [
     "switch-ply",
     "switch-ply-shelf",
@@ -174,7 +174,7 @@
     "lines.frame",
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "switch.terminal",
@@ -182,11 +182,11 @@
    "what": "Where a customer's pair arrives on the board. Two brass screw posts; a jumper's near end is wound on here.",
    "size": [
     0.045,
-    0.045,
+    0.04,
     0.03
    ],
    "pivot": "back-centre",
-   "tris": 60,
+   "tris": 180,
    "colours": [
     "switch-brass"
    ],
@@ -212,7 +212,7 @@
    "usedBy": [
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "switch.port",
@@ -221,10 +221,10 @@
    "size": [
     0.045,
     0.045,
-    0.03
+    0.027
    ],
    "pivot": "back-centre",
-   "tris": 60,
+   "tris": 204,
    "colours": [
     "switch-brass",
     "switch-spare"
@@ -252,19 +252,19 @@
    "usedBy": [
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "switch.port-lamp",
    "name": "Port lamp",
    "what": "A small jewelled lamp beside each port. Burns while that subscriber is on the Board; shows test results.",
    "size": [
-    0.045,
-    0.045,
+    0.036,
+    0.038,
     0.03
    ],
    "pivot": "back-centre",
-   "tris": 40,
+   "tris": 92,
    "colours": [
     "lamp-live",
     "lamp-good",
@@ -291,7 +291,7 @@
    "usedBy": [
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "switch.tag",
@@ -299,11 +299,11 @@
    "what": "A strip of card naming the subscriber on each terminal row. It can smudge until it needs a tone-probe.",
    "size": [
     0.34,
-    0.04,
-    0.008
+    0.041,
+    0.006
    ],
    "pivot": "back-centre",
-   "tris": 20,
+   "tris": 60,
    "colours": [
     "switch-tag",
     "switch-tag-ink"
@@ -331,19 +331,19 @@
    "usedBy": [
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "switch.jumper-plug",
    "name": "Jumper wire end",
    "what": "The ends of a jumper wire. The wire itself stays drawn in code (it sags between any two points); only its ends and the coils on the hook are models.",
    "size": [
-    0.03,
-    0.03,
-    0.03
+    0.016,
+    0.016,
+    0.032
    ],
-   "pivot": "centre",
-   "tris": 40,
+   "pivot": "centre; tip into the jack at -Z, wire out at +Z",
+   "tris": 112,
    "colours": [
     "wire-red",
     "wire-blue",
@@ -356,6 +356,11 @@
    "charm": "A coloured sleeve on each end, slightly too long.",
    "anchors": {
     "wire": [
+     0,
+     0,
+     0.016
+    ],
+    "tip": [
      0,
      0,
      -0.015
@@ -375,19 +380,19 @@
    "usedBy": [
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "switch.jumper-hook",
    "name": "Jumper hook",
    "what": "Two brass hooks under the board: new coloured jumpers on the left, salvaged old wire on the right.",
    "size": [
-    0.16,
-    0.13,
-    0.03
+    0.339,
+    0.143,
+    0.04
    ],
-   "pivot": "back-centre of the bar",
-   "tris": 120,
+   "pivot": "the new-jumper hook's spot (HookAt), back of the bar",
+   "tris": 1260,
    "colours": [
     "switch-brass",
     "switch-brass-old",
@@ -420,19 +425,19 @@
    "usedBy": [
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "tool.tone-probe",
    "name": "Tone probe",
    "what": "A yellow probe that finds a pair by its tone. Used to read a smudged tag.",
    "size": [
-    0.2,
-    0.045,
-    0.045
+    0.233,
+    0.044,
+    0.042
    ],
    "pivot": "centre",
-   "tris": 150,
+   "tris": 196,
    "colours": [
     "tool-probe",
     "tool-steel"
@@ -440,12 +445,12 @@
    "charm": "A strip of tape on the handle: 'PROPERTY OF' and the name scratched out.",
    "anchors": {
     "tip": [
-     0.12,
+     0.13,
      0,
      0
     ],
     "grip": [
-     -0.04,
+     -0.05,
      0,
      0
     ]
@@ -464,19 +469,19 @@
     "switchboard",
     "lines.drop"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "tool.test-set",
    "name": "Lineman's test handset",
    "what": "A chunky handset with crocodile clips, for testing a port before trusting it.",
    "size": [
-    0.2,
-    0.065,
-    0.065
+    0.222,
+    0.058,
+    0.06
    ],
    "pivot": "centre",
-   "tris": 200,
+   "tris": 300,
    "colours": [
     "tool-test-set",
     "tool-steel"
@@ -484,12 +489,12 @@
    "charm": "Chipped paint and a curly cord ending in two clips.",
    "anchors": {
     "clips": [
-     0.1,
-     0,
+     0.11,
+     -0.02,
      0
     ],
     "grip": [
-     -0.03,
+     -0.01,
      0,
      0
     ]
@@ -508,7 +513,7 @@
     "switchboard",
     "lines.drop"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "switch.throw-switch",
@@ -517,10 +522,10 @@
    "size": [
     0.15,
     0.19,
-    0.12
+    0.122
    ],
    "pivot": "back-centre",
-   "tris": 150,
+   "tris": 384,
    "colours": [
     "switch-knife",
     "switch-brass"
@@ -530,7 +535,12 @@
     "handle": [
      0,
      0.05,
-     0.11
+     0.095
+    ],
+    "hinge": [
+     0,
+     -0.035,
+     0.036
     ]
    },
    "states": [
@@ -546,7 +556,7 @@
    "usedBy": [
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "switch.upgrade-panel",
@@ -554,11 +564,11 @@
    "what": "The $120 panel that takes the board from 8 subscribers to 16. Shown as a price sign until bought, then as the extra rows.",
    "size": [
     0.28,
-    0.06,
-    0.01
+    0.103,
+    0.012
    ],
    "pivot": "back-centre",
-   "tris": 60,
+   "tris": 248,
    "colours": [
     "switch-panel",
     "switch-label"
@@ -578,7 +588,7 @@
    "usedBy": [
     "switchboard"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "room.line-rack",
@@ -587,10 +597,10 @@
    "size": [
     0.62,
     1.0,
-    0.05
+    0.061
    ],
-   "pivot": "centre of the back face",
-   "tris": 300,
+   "pivot": "centre of the rack (LineRack's origin)",
+   "tris": 2296,
    "colours": [
     "rack-body",
     "rack-tally",
@@ -620,6 +630,11 @@
      0,
      0.4,
      0.03
+    ],
+    "next-slot": [
+     -0.225,
+     0.24,
+     0
     ]
    },
    "states": [
@@ -636,7 +651,7 @@
     "room.bbs",
     "lines.hunt"
    ],
-   "status": "box"
+   "status": "modelled"
   },
   {
    "id": "kit.line-card",
@@ -1552,6 +1567,70 @@
    ],
    "pivot": "box centre",
    "tris": 112,
+   "status": "modelled"
+  },
+  {
+   "id": "room.ticket-rail",
+   "name": "Ticket rail",
+   "what": "The job tickets board on the left wall: cork in a pine frame, four steel ticket rails with a ball holding each slip, done tickets on a nail in the header. The slips are drawn by the game.",
+   "size": [
+    1.36,
+    1.0,
+    0.06
+   ],
+   "pivot": "centre of the board (TicketRail's origin)",
+   "tris": 1012,
+   "usedBy": [
+    "desk"
+   ],
+   "status": "modelled"
+  },
+  {
+   "id": "room.wall-calendar",
+   "name": "Wall calendar",
+   "what": "A telephone company's tear-off calendar on a string from a nail: a picture of a pole line on the hills, wire rings, the month pad the game writes on.",
+   "size": [
+    0.712,
+    0.994,
+    0.029
+   ],
+   "pivot": "centre of the card (WallCalendar's origin)",
+   "tris": 684,
+   "usedBy": [
+    "desk"
+   ],
+   "status": "modelled"
+  },
+  {
+   "id": "room.timesheet",
+   "name": "Timesheet clipboard",
+   "what": "Tomorrow's plan on a masonite clipboard: steel clip, a sheet with a navy header band, a pencil on a string. The game writes the hours.",
+   "size": [
+    0.668,
+    0.92,
+    0.024
+   ],
+   "pivot": "centre of the sheet (Timesheet's origin)",
+   "tris": 260,
+   "usedBy": [
+    "desk"
+   ],
+   "status": "modelled"
+  },
+  {
+   "id": "room.ad-board",
+   "name": "Ad board",
+   "what": "A pinboard: cork in pine, two leaflets with tear-off phone strips (two taken), coloured pins, and the card the game writes what's running on.",
+   "size": [
+    0.8,
+    0.6,
+    0.038
+   ],
+   "pivot": "centre of the board (AdBoard's origin)",
+   "tris": 596,
+   "usedBy": [
+    "desk"
+   ],
    "status": "modelled"
   }
  ]
