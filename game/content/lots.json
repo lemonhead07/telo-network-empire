@@ -39,5 +39,14 @@
   {"id": "lot-eg-s3", "kind": "house", "site": "eastgate", "east": -8, "south": 24, "yaw": 180, "resident": "The Delacroix-Byrnes", "archetype": "family", "fee": 24, "opensAt": 12, "needsProject": "proj-eastgate-cabinet"},
   {"id": "lot-eg-s4", "kind": "house", "site": "eastgate", "east": 8, "south": 24, "yaw": 180, "resident": "Teodor Lisowski", "archetype": "curious", "fee": 18, "opensAt": 12, "needsProject": "proj-eastgate-cabinet"},
   {"id": "lot-eg-s5", "kind": "house", "site": "eastgate", "east": 24, "south": 24, "yaw": 180, "resident": "Gil & Marguerite", "archetype": "reliability-sensitive", "fee": 26, "opensAt": 12, "needsProject": "proj-eastgate-cabinet"},
-  {"id": "lot-eg-s6", "kind": "house", "site": "eastgate", "east": 40, "south": 24, "yaw": 180, "resident": "Rev. Ojo", "archetype": "tech-inexperienced", "fee": 16, "opensAt": 12, "needsProject": "proj-eastgate-cabinet"}
+  {"id": "lot-eg-s6", "kind": "house", "site": "eastgate", "east": 40, "south": 24, "yaw": 180, "resident": "Rev. Ojo", "archetype": "tech-inexperienced", "fee": 16, "opensAt": 12, "needsProject": "proj-eastgate-cabinet"},
+
+  {"id": "lot-mb-n1", "kind": "house", "site": "millbrook", "east": -24, "south": -8, "yaw": 0, "resident": "Millbrook Corn Exchange", "archetype": "small-business", "fee": 32, "opensAt": 30, "needsProject": "proj-millbrook"},
+  {"id": "lot-mb-n2", "kind": "house", "site": "millbrook", "east": -8, "south": -8, "yaw": 0, "resident": "Agnes Pellow", "archetype": "tech-inexperienced", "fee": 14, "opensAt": 30, "needsProject": "proj-millbrook"},
+  {"id": "lot-mb-n3", "kind": "house", "site": "millbrook", "east": 8, "south": -8, "yaw": 0, "resident": "The Okonkwo-Hales", "archetype": "family", "fee": 22, "opensAt": 30, "needsProject": "proj-millbrook"},
+  {"id": "lot-mb-n4", "kind": "house", "site": "millbrook", "east": 24, "south": -8, "yaw": 0, "resident": "Barnaby Thwaite", "archetype": "curious", "fee": 18, "opensAt": 30, "needsProject": "proj-millbrook"},
+  {"id": "lot-mb-s1", "kind": "house", "site": "millbrook", "east": -40, "south": 24, "yaw": 180, "resident": "The Drover's Arms", "archetype": "small-business", "fee": 30, "opensAt": 30, "needsProject": "proj-millbrook"},
+  {"id": "lot-mb-s2", "kind": "house", "site": "millbrook", "east": -24, "south": 24, "yaw": 180, "resident": "Saoirse Linden", "archetype": "student", "fee": 12, "opensAt": 30, "needsProject": "proj-millbrook"},
+  {"id": "lot-mb-s3", "kind": "house", "site": "millbrook", "east": -8, "south": 24, "yaw": 180, "resident": "Mr. & Mrs. Quill", "archetype": "price-sensitive", "fee": 10, "opensAt": 30, "needsProject": "proj-millbrook"},
+  {"id": "lot-mb-s4", "kind": "house", "site": "millbrook", "east": 8, "south": 24, "yaw": 180, "resident": "Dr. Imogen Varga", "archetype": "reliability-sensitive", "fee": 28, "opensAt": 30, "needsProject": "proj-millbrook"}
 ]

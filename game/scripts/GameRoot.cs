@@ -1275,6 +1275,12 @@ public partial class GameRoot : Node3D
             await Shot("-farm", TownBuilder.Place(_planet, farm, -25, 45, 0, 9).Origin, f + f.Normalized() * 2);
             await Shot("-road", ((hq + f) / 2).Normalized() * (hq.Length() + 260), (hq + f) / 2, (f - hq).Normalized());
         }
+        if (_planet.SiteById("millbrook") is { } mb)   // EA3: Market Street from where the farm road comes in, then from above
+        {
+            var m = TownBuilder.Place(_planet, mb, -8, 8).Origin;
+            await Shot("-millbrook", TownBuilder.Place(_planet, mb, -70, -45, 0, 16).Origin, m + m.Normalized() * 2);
+            await Shot("-millbrook-air", TownBuilder.Place(_planet, mb, -120, 60, 0, 170).Origin, TownBuilder.Place(_planet, mb, -60, -40).Origin);
+        }
         // a house part-way through an install: outside wall, then indoors
         Customer? shown = null;
         for (int i = 0; i < 10 && (shown is null || _town.Lots.First(l => l.Lot.Id == shown.LotId).Install is null); i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }

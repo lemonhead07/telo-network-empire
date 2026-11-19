@@ -94,7 +94,8 @@ public static class TownBuilder
         var palette = new[] { new Color(0.80f, 0.72f, 0.58f), new Color(0.70f, 0.76f, 0.78f), new Color(0.82f, 0.62f, 0.52f), new Color(0.74f, 0.78f, 0.64f), new Color(0.86f, 0.82f, 0.72f) };
         var roofs = new[] { new Color(0.50f, 0.22f, 0.18f), new Color(0.28f, 0.30f, 0.34f), new Color(0.38f, 0.28f, 0.20f) };
         int i = 0;
-        foreach (var lot in content.Lots.Values.OrderBy(l => l.Id))
+        // newer, far-off places after the rest, so adding a town never changes the look of the houses already built
+        foreach (var lot in content.Lots.Values.OrderBy(l => l.Site == "millbrook").ThenBy(l => l.Id))
         {
             if (gen.SiteById(lot.Site) is not { } site) continue;
             var xf = Place(gen, site, (float)lot.East, (float)lot.South, (float)lot.Yaw);
@@ -125,7 +126,7 @@ public static class TownBuilder
         }
         TownDressing.Gardens(root, gen, town);
 
-        // --- the streets: Main Street, Church Lane and Mill Row in town, the High Street in Eastgate -----------
+        // --- the streets: Main Street, Church Lane and Mill Row in town, the High Street in Eastgate, Market Street in Millbrook
         var road = new LowPoly().Box(Vector3.Zero, new Vector3(6.3f, 0.08f, StreetHalfWidth * 2), new Color(0.27f, 0.27f, 0.29f))
             .Box(new Vector3(0, 0.045f, 0), new Vector3(2.2f, 0.01f, 0.16f), new Color(0.85f, 0.8f, 0.6f)).Build();
         var pole = PoleMesh();
@@ -166,6 +167,8 @@ public static class TownBuilder
         new("town-start", false, -40f, -86f, 84f, "Church Lane"),          // its east end meets the road out to the farm
         new("town-start", true, -86f, -40f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
         new("eastgate", false, 8f, -64f, 48f, "Eastgate High Street"),  // west end reaches the two houses moved off the town road (2026-11-19)
+        new("millbrook", false, 8f, -60f, 40f, "Market Street"),          // Millbrook, over the hill past the farm (EA3)
+        new("millbrook", true, -40f, -48f, 8f, "Mill Lane"),               // up from Market Street to where the farm road comes in
     };
 
     /// <summary>The east-west street a building fronts on: the nearest one on its site that runs past it. Null for the farm.</summary>

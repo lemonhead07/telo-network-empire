@@ -55,10 +55,10 @@
       { "verb": "Test the hop end to end", "clicks": 1, "minutes": 10 }
     ] },
 
-  { "id": "proj-millbrook", "model": "site.exchange-hut", "name": "Millbrook exchange", "act": 2, "site": "farm-hollow", "east": -30, "south": -30, "cost": 1200,
+  { "id": "proj-millbrook", "model": "site.exchange-hut", "name": "Millbrook exchange", "act": 2, "site": "millbrook", "east": -56, "south": -24, "cost": 1200,
     "requiresProjects": ["proj-microwave"],
-    "story": "Millbrook, the market town over the hills, has one NezTel exchange and a waiting list longer than the high street. A relay hut on the hill past the farm puts it within your reach.",
-    "doneText": "The Millbrook relay is up. The town's waiting list is about to become your customer list.",
+    "story": "Millbrook, the market town over the hill past the farm, has one NezTel exchange and a waiting list longer than Market Street. An exchange hut of your own at the top of Mill Lane, fed by the hop over the ridge, puts it within your reach.",
+    "doneText": "The Millbrook exchange is up. The town's waiting list is about to become your customer list, starting with Agnes Pellow, who has been on it since 1974.",
     "reward": { "region": 150, "regionName": "Millbrook", "regionFee": 15, "regionCost": 9 },
     "steps": [
       { "verb": "Survey the route over the hill", "clicks": 1, "minutes": 20 },

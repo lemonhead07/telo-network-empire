@@ -45,6 +45,57 @@ public sealed class PlanetGen
             _sites.Add(village);
             _roads.Add(BuildRoad("road-town-eastgate", Town, village));
         }
+        // Millbrook: the market town over the hill past the farm (Act 2), reached by the farm road and on (EA3). Added last
+        // so every place and road before it is unchanged.
+        if (SiteById("farm-hollow") is { } hollow && FindMillbrookSite(hollow) is { } millbrook)
+        {
+            _sites.Add(millbrook);
+            _roads.Add(BuildRoad("road-farm-millbrook", hollow, millbrook));
+        }
+    }
+
+    /// <summary>
+    /// Millbrook: beyond the farm, on the side away from town, over a hill but not across the sea. Gentle ground for a
+    /// street, well clear of Eastgate. Deterministic for a seed.
+    /// </summary>
+    private Site? FindMillbrookSite(Site farm)
+    {
+        var rng = new DetRng(DetRng.Derive(Seed, "millbrook-site"));
+        var f = farm.Dir;
+        var east = new V3(0, 1, 0).Cross(f).Normalized();
+        var north = f.Cross(east);
+        var onward = (f - Town.Dir).Normalized();
+        var eastgate = SiteById("eastgate");
+        V3? best = null; double bestScore = double.MinValue;
+        for (int i = 0; i < 1500; i++)
+        {
+            double dx = rng.Next(2001) / 1000.0 - 1, dz = rng.Next(2001) / 1000.0 - 1;
+            double len = Math.Sqrt(dx * dx + dz * dz);
+            if (len is < 0.2 or > 1) continue;
+            double dist = 450 + rng.Next(350);
+            var c = (f + (east * (dx / len) + north * (dz / len)) * (dist / RadiusM)).Normalized();
+            if (onward.Dot((c - f).Normalized()) < 0.2) continue;                           // on past the farm, not back
+            if ((c - Town.Dir).Length * RadiusM < 1100) continue;
+            if (eastgate is not null && (c - eastgate.Dir).Length * RadiusM < 700) continue;
+            double h = RawHeight(c);
+            if (h is < 4 or > 50) continue;
+            double worst = 0, low = double.MaxValue, high = double.MinValue, prev = farm.HeightM, rough = 0;
+            int steps = (int)(dist / 25);
+            for (int k = 1; k <= steps; k++)
+            {
+                double hk = RawHeight((f + (c - f) * ((double)k / steps)).Normalized());
+                low = Math.Min(low, hk); high = Math.Max(high, hk);
+                worst = Math.Max(worst, Math.Abs(hk - prev));
+                prev = hk;
+            }
+            foreach (var (rx, rz) in Ring) rough = Math.Max(rough, Math.Abs(RawHeight((c + east * (rx * 60 / RadiusM) + north * (rz * 60 / RadiusM)).Normalized()) - h));
+            if (low < 3 || worst > 10) continue;
+            // a hill between (that is the point of the relay), a flat town at the end
+            double hill = Math.Min(20, high - Math.Max(farm.HeightM, h));
+            double score = -worst * 3 - rough * 2 + hill / 4 - Math.Abs(h - 15) / 10;
+            if (score > bestScore) { bestScore = score; best = c; }
+        }
+        return best is { } b ? new Site("millbrook", b, 70, RawHeight(b)) : null;
     }
 
     /// <summary>

@@ -70,6 +70,7 @@ The owner wants fast iteration. **Do not run the test suite or the smoke test af
 - **"Down" is toward the world origin.** Anything that moves derives from `SphereBody` (`MoveOnPlanet`, `AlignToPlanet`, `PlaceAt`). Never assume +Y is up outside a building's local space.
 - Place things on the surface one by one with `TownBuilder.Place(gen, eastM, southM, yawDeg, lift)`: a long flat object would float off the curve (2 cm at 10 m, 1.3 m at 80 m).
 - A new town needs a `Site` in `PlanetGen` (flattens terrain) before buildings go on it.
+- Places so far: `town-start`, `farm-hollow` (995 m), `eastgate` (500 m), `millbrook` (on past the farm, 1.4 km; EA3). Each new place is found **after** the ones before it, so they never move. Far towns (`TownRules.FarTowns`) offer no odd jobs; their households open with their project (`needsProject`). In `TownBuilder` lots of newer places are built after the rest so the older houses keep their looks.
 - One fixed world for now: seed 1983 (`GameRoot.DefaultSeed`). The planet is rebuilt from the save's seed on load.
 - Planet size is `PlanetGen.DefaultRadiusM`. The owner chose it for travel time (5 min flight, 12–20 min drive per lap); don't change it casually.
 
