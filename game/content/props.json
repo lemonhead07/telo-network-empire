@@ -883,12 +883,12 @@
    "name": "Stack of poles",
    "what": "Poles on chocks, ready for Church Lane.",
    "size": [
-    2.14,
-    0.83,
-    6.0
+    5.205,
+    6.0,
+    3.43
    ],
    "pivot": "ground, centre",
-   "tris": 800,
+   "tris": 1564,
    "status": "modelled"
   },
   {
@@ -896,12 +896,12 @@
    "name": "Street cabinet",
    "what": "Green roadside cabinet on a plinth.",
    "size": [
-    1.1,
-    1.84,
-    0.55
+    3.889,
+    1.44,
+    1.22
    ],
    "pivot": "ground, centre",
-   "tris": 452,
+   "tris": 764,
    "status": "modelled"
   },
   {
@@ -909,7 +909,7 @@
    "name": "Modem bank",
    "what": "An open rack of beige modems with blinking lights and too many leads.",
    "size": [
-    1.769,
+    1.819,
     2.02,
     0.973
    ],
@@ -927,7 +927,7 @@
     0.45
    ],
    "pivot": "ground, centre",
-   "tris": 424,
+   "tris": 536,
    "status": "modelled"
   },
   {
@@ -940,7 +940,7 @@
     2.55
    ],
    "pivot": "ground, centre",
-   "tris": 1168,
+   "tris": 1428,
    "status": "modelled"
   },
   {
@@ -948,12 +948,12 @@
    "name": "Exchange hut",
    "what": "A small brick exchange with a green door and a sign.",
    "size": [
-    3.2,
-    2.71,
-    3.02
+    4.55,
+    6.5,
+    3.77
    ],
    "pivot": "ground, centre",
-   "tris": 804,
+   "tris": 1544,
    "status": "modelled"
   },
   {
@@ -961,12 +961,12 @@
    "name": "Cold store data room",
    "what": "A corrugated cold store, the ice company's name still showing under TELO DATA.",
    "size": [
-    3.8,
+    5.55,
     3.52,
-    3.21
+    3.26
    ],
    "pivot": "ground, centre",
-   "tris": 1576,
+   "tris": 2152,
    "status": "modelled"
   },
   {
@@ -974,12 +974,12 @@
    "name": "Cable landing",
    "what": "Concrete pad, a manhole marked CABLE, a hut, the cable heading into the sea.",
    "size": [
-    3.0,
-    2.908,
-    4.215
+    3.14,
+    2.909,
+    4.289
    ],
    "pivot": "ground, centre",
-   "tris": 608,
+   "tris": 668,
    "status": "modelled"
   },
   {
@@ -987,12 +987,12 @@
    "name": "Ocean cable reel",
    "what": "A huge yellow reel of sea cable on a stand, and a marker buoy.",
    "size": [
-    2.435,
+    3.395,
     2.325,
-    3.125
+    4.39
    ],
    "pivot": "ground, centre",
-   "tris": 692,
+   "tris": 1192,
    "status": "modelled"
   },
   {
@@ -1000,12 +1000,12 @@
    "name": "Broadband cabinet",
    "what": "A tall grey cabinet with fans and a BROADBAND sticker.",
    "size": [
-    1.3,
+    2.35,
     1.79,
     0.7
    ],
    "pivot": "ground, centre",
-   "tris": 948,
+   "tris": 1084,
    "status": "modelled"
   },
   {
@@ -1013,12 +1013,12 @@
    "name": "Fibre joint",
    "what": "An open chamber, orange ducts, a splice closure on a tripod, cones.",
    "size": [
-    2.257,
-    1.015,
-    2.414
+    4.02,
+    1.009,
+    1.759
    ],
    "pivot": "ground, centre",
-   "tris": 300,
+   "tris": 484,
    "status": "modelled"
   },
   {
@@ -1031,7 +1031,7 @@
     3.467
    ],
    "pivot": "ground, centre",
-   "tris": 1096,
+   "tris": 1508,
    "status": "modelled"
   },
   {
