@@ -253,6 +253,16 @@ public partial class GameRoot : Node3D
         };
         view.PlantSpot.HoldSeconds = () => Hold(LineRules.PlantMinutes);
         view.StringSpot.HoldSeconds = () => Hold(LineRules.StringMinutes);
+        // no bar: a pole goes in at points round its foot, a span is clipped and pulled taut at the pole (WorkPoints)
+        WorkPoints.Attach(view.PlantSpot, _ => new WorkPlace[]
+        {
+            new(new Vector3(0.45f, -0.9f, 0.35f), "dig"), new(new Vector3(-0.4f, -0.9f, 0.4f), "dig"),
+            new(new Vector3(0, 0.6f, 0.35f), "lift"), new(new Vector3(0.1f, -0.92f, -0.45f), "tamp"),
+        });
+        WorkPoints.Attach(view.StringSpot, _ => new WorkPlace[]
+        {
+            new(new Vector3(0.25f, 0.7f, 0.3f), "clip"), new(new Vector3(0, 1.0f, 0.4f), "pull"), new(new Vector3(-0.25f, 0.7f, 0.3f), "clip"),
+        });
         view.StringSpot.Prompt = () =>
         {
             var missing = LineRules.StringNeeds & ~KitOnSite();
@@ -955,7 +965,7 @@ public partial class GameRoot : Node3D
             : _cargo.Held is { } held ? $"Carrying the {held.Label}   [G] put it down" : null;
         _hud.Refresh(Sim, prompt, Hour, where, "");
         _phoneView.Tick((float)delta, Hour, AnyScreenOpen ? "" : "▶ " + next, where);
-        _hud.SetHold(_van.Driven ? 0 : _player.HoldProgress);
+        _hud.SetHold(_van.Driven || _player.Focus?.Pieces is not null ? 0 : _player.HoldProgress);   // work points show their progress on the piece itself
     }
 
     public override void _UnhandledInput(InputEvent e)
@@ -1308,6 +1318,11 @@ public partial class GameRoot : Node3D
             for (int i = 0; i < 4; i++) line.StringSpot.OnUse!();
             Vector3 a = line.PolePosition(1), b = line.PolePosition(5), u = a.Normalized();
             await Shot("-poles", a + u * 4f + (a - b).Normalized() * 14f + (b - a).Cross(u).Normalized() * 9f, b + u * 4f);
+            // the next pole half done at its work points: two spadefuls dug, the pole still to raise and tamp
+            await Frames(3);
+            if (line.PlantSpot.Pieces is { } wp) { wp.Next?.OnUse?.Invoke(); wp.Next?.OnUse?.Invoke(); }
+            var at = line.PlantSpot.GlobalPosition; var pu = at.Normalized(); var side = (b - a).Cross(pu).Normalized();
+            await Shot("-workpoints", at + pu * 0.9f + side * 2.4f + (a - b).Normalized() * 1.2f, at - pu * 0.4f);
         }
         await Shot("-orbit", (up + _town.Hq.GlobalBasis.X * 0.5f + _town.Hq.GlobalBasis.Z * 0.35f).Normalized() * (float)_planet.RadiusM * 3.3f, Vector3.Zero, Vector3.Up);
 

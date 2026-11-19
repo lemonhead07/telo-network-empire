@@ -80,6 +80,7 @@ public partial class FirstPersonController : SphereBody
         if (IsFrozen())
         {
             if (!Flying) MoveOnPlanet(Vector3.Zero, delta);
+            _holding?.OnHold?.Invoke(0); _holding = null; _held = 0;
             Focus = null; HoldProgress = 0;
             return;
         }
@@ -106,11 +107,12 @@ public partial class FirstPersonController : SphereBody
         // hold E to work: the job is done when the hold completes; keep holding to carry straight on
         if (Focus is { } f && Input.IsActionPressed("interact") && f.CanUse() && f.HoldSeconds() is var need and > 0)
         {
-            if (f != _holding) { _holding = f; _held = 0; }
+            if (f != _holding) { _holding?.OnHold?.Invoke(0); _holding = f; _held = 0; }
             _held += (float)delta;
             HoldProgress = Mathf.Clamp(_held / need, 0, 1);
+            f.OnHold?.Invoke(HoldProgress);
             if (_held >= need) { _held = 0; HoldProgress = 0; f.OnUse?.Invoke(); }
         }
-        else { _holding = null; _held = 0; HoldProgress = 0; }
+        else { _holding?.OnHold?.Invoke(0); _holding = null; _held = 0; HoldProgress = 0; }
     }
 }

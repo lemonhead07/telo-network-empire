@@ -578,6 +578,19 @@ public partial class GameRoot
     /// <summary>Walk up to a thing, look at it, and press or hold E on it (R for the second way).</summary>
     private async Task Use(Interactable it, bool alt = false)
     {
+        // work done at points on the thing (WorkPoints): walk to it, then work each point in turn
+        if (!alt && it.Pieces is { } wp && wp.Host == it)
+        {
+            await WalkTo(it.GlobalPosition, 1.4f);
+            for (int k = 0; k < 4 && wp.Next is null; k++) await Physics(2);
+            if (wp.Next is null) { await Seconds(it.HoldSeconds()); if (it.CanUse()) it.OnUse?.Invoke(); _autoLog.Add($"   (no work points on {it.Name}: did the work directly)"); return; }
+            for (int guard = 0; guard < 8 && wp.Next is { } point; guard++)
+            {
+                if (!point.CanUse()) break;
+                await Use(point);
+            }
+            return;
+        }
         var p = it.GlobalPosition;
         await WalkTo(p, 1.4f);
         await Aim(p);

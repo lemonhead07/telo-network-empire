@@ -14,4 +14,8 @@ public partial class Interactable : StaticBody3D
     public Action? OnAlt { get; set; }
     /// <summary>How long E must be held to do this (real seconds). Zero means a single press. Work takes the time it takes; nothing jumps the clock.</summary>
     public Func<float> HoldSeconds { get; set; } = () => 0f;
+    /// <summary>Called every frame while E is held on this, with how far through it is (0..1), and with 0 when let go. The work shows on the thing itself.</summary>
+    public Action<float>? OnHold { get; set; }
+    /// <summary>Set when this thing's work is done at points on it (or when this is one of those points). See <see cref="WorkPoints"/>.</summary>
+    public WorkPoints? Pieces { get; set; }
 }
