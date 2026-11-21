@@ -51,11 +51,11 @@ public class ScriptPlayerTests
     }
 
     /// <summary>
-    /// Early access is Acts 0 to 5: the bot plays from the first message into the mobile years by choosing actions, no cheats,
-    /// so every step is reachable from the one before (nothing gated behind something that never comes).
+    /// Early access is Acts 0 to 5: the bot plays from the first message to the lit board at the end of The Core (Act 5, D46) by
+    /// choosing actions, no cheats, so every step is reachable from the one before (nothing gated behind something that never comes).
     /// </summary>
     [Fact]
-    public void The_bot_plays_from_the_first_message_into_act_5()
+    public void The_bot_plays_from_the_first_message_through_act_5()
     {
         var (sim, me, gen) = NewGame();
         var s = sim.State;
@@ -64,7 +64,7 @@ public class ScriptPlayerTests
         long lived = 0, lastAbs = (long)s.Day * 1440 + s.Minute;
         var hours = new List<double>();                 // real hours of awake play when each act began
         var tally = new Dictionary<string, long>();     // where the awake minutes went, by the line being followed
-        var taken = Bot.Play(sim, me, gen, () => s.ActIndex >= 5 || s.Day > Simulation.StartDate.Day + 365 * 30, 400000,
+        var taken = Bot.Play(sim, me, gen, () => s.ActIndex >= 6 || s.Day > Simulation.StartDate.Day + 365 * 30, 500000,
             (id, why) =>
             {
                 // awake time the player lives: every action's own minutes except sleeping (a fade, not play); 3 game minutes are one real second
@@ -81,33 +81,35 @@ public class ScriptPlayerTests
                 if (acts.Count == 0 || !acts[^1].StartsWith($"act {s.ActIndex}:"))
                 {
                     hours.Add(lived / 3.0 / 3600);
-                    acts.Add($"act {s.ActIndex}: {s.Date} subs={s.TotalSubscribers} cash={s.Cash} projects={s.ProjectsDone.Count} realHours={lived / 3.0 / 3600:0.0}");
+                    acts.Add($"act {s.ActIndex}: {s.Date} subs={s.TotalSubscribers} cash={s.Cash} projects={s.ProjectsDone.Count} realHours={lived / 3.0 / 3600:0.0} lastMonth={s.RevenueLastMonth}");
                 }
             });
         _out.WriteLine(string.Join("\n", acts));
         if (Environment.GetEnvironmentVariable("TELO_BOTLOG") is { } path) File.WriteAllLines(path, log);   // the whole run, for reading
         foreach (var kv in tally.OrderByDescending(k => k.Value).Take(15)) _out.WriteLine($"  {kv.Value / 180.0 / 60:0.0}h  {kv.Key}");
-        Assert.True(s.ActIndex >= 5,
+        Assert.True(s.ActIndex >= 6,
             $"stuck in act {s.ActIndex} on {s.Date}: subs={s.TotalSubscribers} cash={s.Cash} archive={s.Archive} projects={string.Join(",", s.ProjectsDone)}\n" +
             $"next: {Guidance.Next(s, sim.Content).Text}\n" + string.Join("\n", acts) + "\nLast actions:\n" + string.Join("\n", log.TakeLast(12)));
         // EA2e/EA2f: the pace (D42). A perfect player: no act drags past 8 real hours, the whole run stays in 20-30, and no
         // shortcut skips the work (the floor). Acts 1-2 fill with hand work in Wrenfold, Kettle Cross and Highmoor (EA2f).
         for (int i = 1; i < hours.Count; i++) Assert.True(hours[i] - hours[i - 1] <= 8, $"act {i - 1} took {hours[i] - hours[i - 1]:0.0} real hours\n" + string.Join("\n", acts));
         Assert.InRange(hours[^1], 20, 30);
-        // EA1: money stays tight enough to matter (bands in DECISIONS.md D41), and a year into Act 5 it hasn't run away.
+        // EA1: money stays tight enough to matter (bands in DECISIONS.md D41), and a year into mobile (Act 6) it hasn't run away.
         // Acts 3 and 4 begin the day the last project is paid for, so their floor is "not in debt" rather than savings.
-        var bands = new (long Lo, long Hi)[] { (0, long.MaxValue), (300, 3_000), (500, 6_000), (0, 20_000), (1_500, 25_000), (8_000, 80_000) };
+        // DC1: The Core's buildings soak up what Act 4 leaves; Act 6 begins just after paying for the lit board.
+        var bands = new (long Lo, long Hi)[] { (0, long.MaxValue), (300, 3_000), (500, 6_000), (0, 20_000), (1_500, 25_000), (8_000, 80_000), (1_500, 60_000) };
         foreach (var line in acts)
         {
             int act = int.Parse(line[4..line.IndexOf(':')]);
             long cash = long.Parse(line[(line.IndexOf("cash=") + 5)..].Split(' ')[0]);
             Assert.InRange(cash, bands[act].Lo, bands[act].Hi);
         }
-        int act5 = s.Day;
-        Bot.Play(sim, me, gen, () => s.Day > act5 + 365, 200000);
-        _out.WriteLine($"a year into act 5: {s.Date} subs={s.TotalSubscribers} cash={s.Cash}");
+        // through the acts' own work, not around it: The Core is built, every data-centre project in it
+        Assert.All(sim.Content.Projects.Where(p => p.Act == 5 && p.Id != "proj-peering"), p => Assert.Contains(p.Id, s.ProjectsDone));
+        int act6 = s.Day;
+        Bot.Play(sim, me, gen, () => s.Day > act6 + 365, 200000);
+        _out.WriteLine($"a year into act 6: {s.Date} subs={s.TotalSubscribers} cash={s.Cash}");
         Assert.InRange(s.Cash, 0, 300_000);
-        // and through the acts' own work, not around it
         Assert.Contains("proj-first-mast", s.ProjectsDone.Concat(s.Projects.Keys).Append(Telo.Sim.Build.ProjectRules.Next(s, sim.Content)?.Id ?? ""));
     }
 

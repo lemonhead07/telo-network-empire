@@ -8,9 +8,14 @@ public enum WorkMode { Manual, Delegated, Automated }
 /// <summary>How the player *sees* a kind of work. The UI literally changes as this climbs.</summary>
 public enum InterfaceTier { Paper, Terminal, Database, Dashboard }
 
-public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries, Customers, SocketsFitted, JobsDone, Knocked, ServiceNines, ProjectsDone }
+public enum ConditionKind { Subscribers, Cash, Staff, MonthlyRevenue, LedgerServed, RecalledEntries, Customers, SocketsFitted, JobsDone, Knocked, ServiceNines, ProjectsDone, Built }
 
-public sealed record Condition(ConditionKind Kind, long Value);
+/// <summary>A threshold on something measured (<see cref="Kind"/> at least <see cref="Value"/>), or, for <see cref="ConditionKind.Built"/>, one named project built (<see cref="Id"/>).</summary>
+public sealed record Condition(ConditionKind Kind, long Value)
+{
+    /// <summary>The project a <see cref="ConditionKind.Built"/> condition asks for (DC1: Act 5 ends when the board is lit).</summary>
+    public string? Id { get; init; }
+}
 
 /// <summary>One part of an assembly, outermost first: what it is, what holds it, and whether it can be the fault.</summary>
 public sealed record PartDef

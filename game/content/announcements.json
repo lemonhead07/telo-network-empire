@@ -10,6 +10,7 @@
   { "id": "ann-radius", "title": "Dial-in authentication servers", "date": "1993-04-01", "headline": "One server to check every dial-in password. One server to fail them all." },
   { "id": "ann-browser", "title": "Graphical web browsers on sale", "date": "1994-12-15", "headline": "You can now buy a browser in a box. Queues outside the computer shop." },
   { "id": "ann-adsl", "title": "Consumer ADSL", "date": "1999-06-01", "headline": "Always-on internet over the same copper as your phone. 'Always' is doing a lot of work." },
+  { "id": "ann-core", "title": "Server farms", "date": "2006-09-01", "headline": "Everything goes through a building now. The papers are full of server farms, and the photos all look like the same cold corridor." },
   { "id": "ann-smartphone", "title": "The touchscreen phone", "date": "2007-06-29", "headline": "A phone that is mostly screen. Data usage graphs develop a new shape." },
   { "id": "ann-4g", "title": "4G / LTE", "date": "2010-12-01", "headline": "Mobile data fast enough to make home broadband nervous." },
   { "id": "ann-5g", "title": "5G", "date": "2019-04-01", "headline": "5G launches. Nobody can explain what it is for, including the people selling it." },

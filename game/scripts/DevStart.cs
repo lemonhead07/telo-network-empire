@@ -1,5 +1,8 @@
 using Godot;
+using Telo.Game.World;
+using Telo.Sim.Net;
 using Telo.Sim.Town;
+using Telo.Sim.Work;
 
 namespace Telo.Game;
 
@@ -8,7 +11,8 @@ namespace Telo.Game;
 ///   godot --path game -- --from=free        the first hour done (everyone keeps hours, everything is open)
 ///   godot --path game -- --from=hire        ...and the first technician hired
 ///   godot --path game -- --from=poles       ...up to the pole line to the farm, ready to build
-///   godot --path game -- --from=act2        straight into an act (act1 ... act7)
+///   godot --path game -- --from=act2        straight into an act (act1 ... act8)
+///   godot --path game -- --from=act5        The Core: on Halden Flats with the van, by the empty plot (DC1)
 /// Works for playing by hand and with --autoplay. Nothing here is a rule: it only presses F4 / F6 for you.
 /// </summary>
 public partial class GameRoot
@@ -45,6 +49,14 @@ public partial class GameRoot
                         if (p.Reward.Region > 0) s.RegionSigned[p.Id] = p.Reward.Region;
                     }
                     Telo.Sim.Almanac.AlmanacRules.RefreshStatuses(s, _content, quiet: true);
+                    // ...and everyone in the streets and villages they opened on the line (F4: the hire, the farm poles, the rest), Tobi on the Board
+                    for (int i = 0; i < 8 && TownRules.Prospects(s, _content).Any(); i++)
+                        if (Sim.GodNextStage(_planet) == "The whole town is connected.") break;
+                    if (_content.Work.ContainsKey(BoardService.WorkId) && !BoardService.Delegated(s, _content) && WorkRules.Next(s, _content, BoardService.WorkId) is { } coSysop)
+                    {
+                        s.Cash = Math.Max(s.Cash, coSysop.Cost);
+                        WorkRules.Upgrade(s, _content, BoardService.WorkId);
+                    }
                     s.Cash = Math.Max(s.Cash, 2000L * (act + 1) * (act + 1));
                 }
                 else GD.PrintErr($"--from={from}: use free, hire, poles or act1..act{_content.Acts.Count - 1}");
@@ -54,6 +66,14 @@ public partial class GameRoot
         s.Cash = Math.Max(s.Cash, 2000);
         s.Modems = Math.Max(s.Modems, 3);
         s.Minute = 60; s.SleepDebt = 0;
+        // The Core begins where the data centre will stand: on Halden Flats, the van parked by the empty plot
+        if (from == "act5" && _planet.SiteById("halden") is { } flats)
+        {
+            var park = TownBuilder.Place(_planet, flats, -40, -40, 0, 0.6f);
+            _van.PlaceAt(park.Origin, -park.Basis.Z);
+            var stand = TownBuilder.Place(_planet, flats, -36, -32, 0, 1.0f);
+            _player.PlaceAt(stand.Origin, TownBuilder.Place(_planet, flats, -24, -18).Origin - stand.Origin);
+        }
         RefreshViews();
         GD.Print($"FROM {from}: {s.Date}, act {s.ActIndex}, {s.LiveSubscribers} subscribers. Next: {Line()}");
     }

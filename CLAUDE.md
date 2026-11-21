@@ -114,6 +114,7 @@ The owner wants to avoid GUIs. Anything you read or click is the surface of an o
 - Houses (`LotKind.House`) are hollow and enterable: the door opens when the resident lets you in for an install. The shop and farm are still solid boxes.
 - **Set dressing** (`game/scripts/World/TownDressing.cs`, looks only, no collision): every house gets a garden sized from its neighbours (striped lawn, side and back fences, a front hedge/picket/wall with gaps for path and drive, flower beds, letterbox, a tree and some of shed/veg patch/washing line), plus street lamps and a phone box outside Sol's. Outside each settlement a patchwork of fields with hedgerows, sheep and hay bales is laid on the terrain after physics (`TownDressing.Fields`); scattered trees skip fields (`InField`). Houses are 20 m apart (the Act 5 script player's cash bands are on a knife-edge: 21 and 22 m both failed it, so rerun it whenever a lot moves). Drawn roads start at 0.75 × a site's radius, where the streets end.
 - **Villages for hand work** (EA2f): besides the town and Eastgate, `PlanetGen` finds Wrenfold and Kettle Cross (opened by Act 1 projects) and Highmoor (Act 2, 1.2 km up the hill). Each is a `Site` plus a road to town, a street in `TownBuilder.Streets`, and lots with `needsProject`. A new village goes last in the `PlanetGen` constructor so the others don't move.
+- **Halden Flats** (DC1, `PlanetGen.FindFlatsSite`, site id `halden`): the data centre's plain on the coastal flats between the town, Eastgate and the shore, with a road from town. The Act 5 (The Core) projects stand there; the homing projects stand at the far end of each link. An act can end on one named project (`{ "kind": "built", "id": "proj-dc-lit" }`), not only on counts.
 - `PlanetGen.Roads`: graded routes that cut/fill terrain; `IsPaved` makes the van full speed on roads and in settlements, half speed off-road. Road surfaces are ray-cast onto the terrain (`TownBuilder.BuildRoads`).
 
 ## Assets: prototype in code, then model in Blender
@@ -129,7 +130,7 @@ Decision D15 (changed 2026-11-12). Two stages:
 
 ## Sim architecture cheatsheet
 
-- `World/Simulation.cs`: facade. `NewGame`, `AdvanceDay`, `AdvanceMinutes`, `Sleep`, `TakeEnquiry`, `ThrowSwitch`, `NewInstallJob`, `ApplyInstallOutcome`. Saves are at version 18 (pass `ContentDb` to `SaveCodec.FromJson` so older saves get their staff back).
+- `World/Simulation.cs`: facade. `NewGame`, `AdvanceDay`, `AdvanceMinutes`, `Sleep`, `TakeEnquiry`, `ThrowSwitch`, `NewInstallJob`, `ApplyInstallOutcome`. Saves are at version 19 (pass `ContentDb` to `SaveCodec.FromJson` so older saves get their staff back; v19 moved mobile from Act 5 to 6).
 - `World/GameState.cs`: all mutable state (serialisable).
 - `Almanac/AlmanacRules.cs`: research is recall. Archive (earned from your network) is spent to recall future tech. Recalling it early adds Echo, and too much Echo triggers a Correction (the entry drifts).
 - `Work/WorkRules.cs`: earned automation. Manual → Delegated → Automated, plus the interface tier.

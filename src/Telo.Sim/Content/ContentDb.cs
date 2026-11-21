@@ -90,7 +90,9 @@ public sealed class ContentDb
             if (Acts[i].Index != i) e.Add($"act {Acts[i].Id}: index {Acts[i].Index} should be {i}");
             if (Acts[i].GateAnnouncement is { } g && !Announcements.ContainsKey(g))
                 e.Add($"act {Acts[i].Id}: unknown gate announcement '{g}'");
+            foreach (var cond in Acts[i].ExitMilestone) CheckBuilt(cond, $"act {Acts[i].Id}");
         }
+        foreach (var ch in Plot) foreach (var cond in ch.DoneWhen) CheckBuilt(cond, $"plot {ch.Id}");
         foreach (var a in Announcements.Values)
             try { Core.GameDate.Parse(a.Date); } catch { e.Add($"announcement {a.Id}: bad date '{a.Date}'"); }
         foreach (var entry in Almanac.Values)
@@ -127,6 +129,7 @@ public sealed class ContentDb
             if (p.RequiresEntry is { } re && !Almanac.ContainsKey(re)) e.Add($"project {p.Id}: unknown entry '{re}'");
             if (p.Reward.Cancels is { } cx && Project(cx) is null) e.Add($"project {p.Id}: cancels unknown '{cx}'");
             if (p.Act >= Acts.Count && Acts.Count > 0) e.Add($"project {p.Id}: act {p.Act} doesn't exist");
+            foreach (var cond in p.Requires) CheckBuilt(cond, $"project {p.Id}");
             foreach (var st in p.Steps)
             {
                 if (st.Clicks < 1 || st.Minutes < 1) e.Add($"project {p.Id}: step '{st.Verb}' needs clicks and minutes");
@@ -134,5 +137,11 @@ public sealed class ContentDb
             }
         }
         return e;
+
+        // a "built" condition names a real project
+        void CheckBuilt(Condition cond, string where)
+        {
+            if (cond.Kind == ConditionKind.Built && (cond.Id is not { } id || Project(id) is null)) e.Add($"{where}: built condition names unknown project '{cond.Id}'");
+        }
     }
 }
