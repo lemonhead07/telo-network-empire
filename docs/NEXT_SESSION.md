@@ -6,7 +6,7 @@
 
 ## Also 2026-11-21 (a parallel cloud session, geometry lane): models for every age
 
-The switchboard models (left on an unmerged branch since 11-19) are now in master; each village has two landmarks (school and green, pub and boatyard, chapel and weather station); **every Data Centre prop in `DATA_CENTRE_DESIGN.md` §12 has a model under its id** (so DC2–DC9 get them through `Props.Make` for free); later ages are modelled ahead (PIP's handsets by era, monitors, laptop, ops wall, small cells, phone shop, rocket, pad, satellite, dish, drone); and every in-world screen now draws its own pointer in its era's style. Details: `ASSET_LIST.md` top, `IDEAS.md` inbox. No rules changed.
+The switchboard models (left on an unmerged branch since 11-19) are now in master; each village has two landmarks (school and green, pub and boatyard, chapel and weather station) and Eastgate a parade of shops; **every Data Centre prop in `DATA_CENTRE_DESIGN.md` §12 has a model under its id** (so DC2–DC9 get them through `Props.Make` for free); later ages are modelled ahead (PIP's handsets by era, monitors, laptop, ops wall, small cells, phone shop, rocket, pad, satellite, dish, drone); every in-world screen now draws its own pointer in its era's style; and `World/ScreenFaces` lights the `screen*` empties on any model (see the Showroom's new Data Centre and ops-room corners, `docs/img/showroom-dc-and-screens.png`). Details: `ASSET_LIST.md` top, `IDEAS.md` inbox. No rules changed.
 
 ## Newest (2026-11-21): three villages of hand work (EA2f)
 

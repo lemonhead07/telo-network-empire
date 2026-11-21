@@ -102,7 +102,7 @@ def room_laptop():
     o.rotation_euler = (-a, 0, 0)
     g = gbox("glass", (0, cy + 0.004 * math.sin(a), cz + 0.0045 * math.cos(a)), (w - 0.02, lh - 0.025, 0.001), "glass-black")
     g.rotation_euler = (-a, 0, 0)
-    screen_empty("screen", (0, cy, cz + 0.006))
+    k.empty("screen", G(0, cy + 0.0045 * math.sin(a), cz + 0.006 * math.cos(a))).rotation_euler = (-a, 0, 0)
 
 
 def room_ops_wall():
