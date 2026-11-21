@@ -4,6 +4,10 @@
 
 **Start here:** `BUILD_PLAN.md` → "Early access: Acts 0–5". Next up: **EA2f** (Acts 1–2 ask for more), then EA2b (the Yard), EA2c, EA2d, EA3–EA6. Before committing a rules change, run `dotnet test tests/Telo.Sim.Tests` (the Act 5 script player is in it) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act5` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front).
 
+## Decided 2026-11-21 (idea session): early access ends in a data centre
+
+New Act 5, **The Core**: build a data centre on Halden Flats, plan the network on a pin board with string, patch it in at an easy rack, play crossed patches and follow the lights, then hire Dana, Moss and the night shift. Mobile moves to Act 6. Design: `DATA_CENTRE_DESIGN.md` (concept sheet `img/dc-concept.png`); decisions D46–D50; build items DC1–DC9 in `BUILD_PLAN.md`. **DC1 (the act swap, content only) comes right after EA2f.** EA2d (masts) is no longer early access.
+
 ## Branches (2026-11-19)
 
 Everything (gameplay-rapid plus the town and models work) is merged into **`master`**. Two lanes now branch from it: **`feature/geometry`** (models, looks) and **`feature/gameplay`** (rules, systems, procedures). How to use them: `docs/BRANCHES.md`. `feature/gameplay-rapid` is the old single lane: merge what is left on it into master, then use `feature/gameplay`.

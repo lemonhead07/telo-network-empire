@@ -3,6 +3,7 @@
 **Status:** 📄 design (idea session, 2026-11-15). Nothing past Act 1 is built.
 **Why it exists:** so every system built now is shaped for the whole game. §6 is the list dev sessions should check before designing any new system: *"what later act also uses this?"*
 **Reads with:** `EXPANSION_DESIGN.md` (Acts 0–1 in detail, as rounds 0–4), `TECH_TREE.md` (tasks and the hand-off ladder), `NEZ_AND_THE_SPINE.md` (actions, Nez, one plot line). Where this disagrees with those, they win until an idea session decides otherwise.
+**Changed 2026-11-21 (D46):** a new Act 5, *The Core* (the data centre), now sits between Broadband and Mobile, and ends early access: see `DATA_CENTRE_DESIGN.md`. The sections below keep their old numbers: read "Act 5: Mobile" as Act 6, "Act 6" as 7, "Act 7" as 8.
 **Design canvas:** https://claude.ai/code/artifact/0a398f7c-ea51-4285-9488-2cba471067b4 (the "Ages" boards).
 
 ---
