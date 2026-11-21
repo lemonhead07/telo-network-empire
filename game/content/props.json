@@ -1632,6 +1632,630 @@
     "desk"
    ],
    "status": "modelled"
+  },
+  {
+   "id": "village.school",
+   "name": "Wrenfold School",
+   "what": "A red-brick board school with tall windows, a bell cote on the ridge, a porch, and a playground with hopscotch and a climbing frame.",
+   "size": [
+    11.45,
+    7.33,
+    12.525
+   ],
+   "pivot": "ground, centre of the building; front +Z",
+   "tris": 2064,
+   "status": "modelled"
+  },
+  {
+   "id": "village.green",
+   "name": "Wrenfold Green",
+   "what": "An oval of tufty grass with a duck pond and reeds, an old oak with a ring seat, a bench and the parish noticeboard (LOST: CAT).",
+   "size": [
+    22.0,
+    6.025,
+    14.0
+   ],
+   "pivot": "ground, centre of the green",
+   "tris": 2138,
+   "status": "modelled"
+  },
+  {
+   "id": "village.pub",
+   "name": "The Drover's Arms",
+   "what": "A whitewashed two-storey pub with black trim, gold lettering, a swinging sign with a cow and a crook, picnic tables, barrels and a chalkboard (QUIZ THURS).",
+   "size": [
+    11.12,
+    9.05,
+    10.44
+   ],
+   "pivot": "ground, centre of the building; front +Z",
+   "tris": 2690,
+   "status": "modelled"
+  },
+  {
+   "id": "village.boatyard",
+   "name": "Kettle Cross boatyard",
+   "what": "A tarred boat shed, the crabber MARGIT (KX 12) up on its trailer, lobster pots and buoys, nets drying on poles.",
+   "size": [
+    16.352,
+    5.2,
+    11.0
+   ],
+   "pivot": "ground, centre of the shed; front +Z",
+   "tris": 1888,
+   "status": "modelled"
+  },
+  {
+   "id": "village.chapel",
+   "name": "Highmoor Chapel",
+   "what": "A grey stone chapel with a steep slate roof, pointed windows, a bell gable and a round window over the door, in a walled yard with leaning headstones and a yew.",
+   "size": [
+    14.4,
+    9.7,
+    16.423
+   ],
+   "pivot": "ground, centre of the building; front +Z",
+   "tris": 1754,
+   "status": "modelled"
+  },
+  {
+   "id": "village.weather-station",
+   "name": "Highmoor weather station",
+   "what": "A fenced plot with a white louvred screen, a lattice mast with anemometer cups and a vane, a rain gauge, a sunshine recorder and the observer's hut.",
+   "size": [
+    11.047,
+    9.635,
+    9.08
+   ],
+   "pivot": "ground, centre of the plot; front +Z",
+   "tris": 2611,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.rack-42u",
+   "name": "42U rack",
+   "what": "An open-front 19-inch rack, 0.6 x 2.0 x 1.0 m: black frame, grey side panels, numbered rails, a cable tray on the roof, tape across unused slots. Empties u01 (bottom slot, front rail) and u42.",
+   "size": [
+    0.606,
+    2.12,
+    1.008
+   ],
+   "pivot": "floor, centre; front +Z",
+   "tris": 1564,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.rack-12u",
+   "name": "12U cabinet",
+   "what": "A small floor cabinet for an exchange hut: glass door, lock, fan.",
+   "size": [
+    0.6,
+    0.74,
+    0.64
+   ],
+   "pivot": "floor, centre; front +Z",
+   "tris": 148,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.wallbox-6u",
+   "name": "6U wall box",
+   "what": "A wall-hung box for a street cabinet: smoked door, a TELO 6U label.",
+   "size": [
+    0.55,
+    0.37,
+    0.471
+   ],
+   "pivot": "front face centre (the wall is at -0.45 Z)",
+   "tris": 404,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.box-router",
+   "name": "Router (2U)",
+   "what": "Blue-grey 2U box: four line modules of four ports, a lamp on each, ROUTER badge. Empty port-1.",
+   "size": [
+    0.483,
+    0.088,
+    0.463
+   ],
+   "pivot": "bottom centre of the front panel",
+   "tris": 836,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.box-switch",
+   "name": "Switch (1U)",
+   "what": "1U box with 24 ports in two rows and a lamp over each pair. Empty port-1.",
+   "size": [
+    0.483,
+    0.043,
+    0.462
+   ],
+   "pivot": "bottom centre of the front panel",
+   "tris": 508,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.box-patch",
+   "name": "Patch panel (1U)",
+   "what": "1U panel of 24 sockets with a hand-labelled write-on strip. Empty port-1.",
+   "size": [
+    0.483,
+    0.043,
+    0.462
+   ],
+   "pivot": "bottom centre of the front panel",
+   "tris": 460,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.box-fibretray",
+   "name": "Fibre tray (1U)",
+   "what": "1U drawer pulled out a little: twelve yellow adapters, dust caps, a coil of fibre. Empty port-1.",
+   "size": [
+    0.483,
+    0.043,
+    0.577
+   ],
+   "pivot": "bottom centre of the front panel",
+   "tris": 416,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.pdu",
+   "name": "Power strip (PDU)",
+   "what": "0U vertical strip, 1.8 m: sixteen sockets, a red breaker, a big A tag (tint it for B).",
+   "size": [
+    0.055,
+    1.8,
+    0.062
+   ],
+   "pivot": "bottom centre",
+   "tris": 476,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.patch-lead",
+   "name": "Patch lead end",
+   "what": "One end of a lead: clear plug, blue boot, a stub of cable, a tag. The game draws the cable between two ends.",
+   "size": [
+    0.025,
+    0.011,
+    0.103
+   ],
+   "pivot": "plug tip",
+   "tris": 56,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.trolley",
+   "name": "Kit trolley",
+   "what": "Two-shelf steel trolley with boxes on top and reels of blue, yellow and red lead underneath, the patch sheet on the bottom shelf.",
+   "size": [
+    0.912,
+    0.972,
+    0.555
+   ],
+   "pivot": "floor, centre",
+   "tris": 972,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.test-plug",
+   "name": "Loopback test plug",
+   "what": "A plug with a red loop of cable back into itself and a LOOP tag.",
+   "size": [
+    0.03,
+    0.083,
+    0.078
+   ],
+   "pivot": "plug tip",
+   "tris": 284,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.fibre-pen",
+   "name": "Fibre cleaning pen",
+   "what": "A fat yellow click pen with a cap, for cleaning fibre ends.",
+   "size": [
+    0.04,
+    0.026,
+    0.175
+   ],
+   "pivot": "centre",
+   "tris": 116,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.ups-batteries",
+   "name": "Battery string",
+   "what": "A steel rack of six big batteries linked with red straps; DC 48V warning.",
+   "size": [
+    1.6,
+    1.2,
+    0.517
+   ],
+   "pivot": "floor, centre",
+   "tris": 1048,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.generator",
+   "name": "Standby generator",
+   "what": "Yellow enclosure on a fuel tank: louvres, radiator, exhaust stack, start panel, the log book.",
+   "size": [
+    3.4,
+    3.36,
+    1.505
+   ],
+   "pivot": "floor, centre",
+   "tris": 860,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.load-dial",
+   "name": "Load dial",
+   "what": "Grey panel with a big white dial, red zone, one needle (empty needle-pivot), LOAD kW, HALL A + B.",
+   "size": [
+    0.8,
+    0.9,
+    0.096
+   ],
+   "pivot": "panel centre",
+   "tris": 936,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.crac-unit",
+   "name": "Cooling unit",
+   "what": "Floor-standing cream cooling cabinet with a return grille, a display reading 18C, a drip tray.",
+   "size": [
+    1.8,
+    1.95,
+    1.075
+   ],
+   "pivot": "floor, centre",
+   "tris": 436,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.pinboard",
+   "name": "The pin board",
+   "what": "2.4 x 1.5 m cork board: hand-drawn map, a brass pin for the core and coloured pins (empties site-*), strings by link kind, reels on a shelf, fairy lights all round, the big switch.",
+   "size": [
+    2.743,
+    1.708,
+    0.235
+   ],
+   "pivot": "board centre, back face",
+   "tris": 2516,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.clip-rail",
+   "name": "Clip rail",
+   "what": "Wooden rail of bulldog clips with work orders hanging, one urgent in red.",
+   "size": [
+    1.4,
+    0.347,
+    0.048
+   ],
+   "pivot": "rail centre",
+   "tris": 1084,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.odf-wall",
+   "name": "Fibre wall (ODF)",
+   "what": "The Meet-Me Room's wall of fibre trays: 24 trays, yellow leads looping down, luggage tags, a floor duct, a MEET-ME sign.",
+   "size": [
+    2.4,
+    2.375,
+    0.46
+   ],
+   "pivot": "floor, centre",
+   "tris": 3164,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.cage",
+   "name": "Customer cage",
+   "what": "A 3 x 3 m mesh pen on posts with a padlocked door and a CAGE 3 card.",
+   "size": [
+    3.05,
+    2.4,
+    3.13
+   ],
+   "pivot": "floor, centre",
+   "tris": 798,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.noc-desk",
+   "name": "Night shift desk",
+   "what": "A long desk with a bank of site lamps (green is good), four monitors (empties screen-0..3 at each face for the game to draw on), phones, chairs, mugs, an alarm with IGNORE stuck on it.",
+   "size": [
+    3.2,
+    1.75,
+    1.6
+   ],
+   "pivot": "floor, centre; operators sit at +Z",
+   "tris": 5340,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.slab-portacabin",
+   "name": "Slab and site office",
+   "what": "A 34 x 26 m concrete slab with shuttering still on one edge, a portacabin office on blocks, a COMING SOON board, steel and a skip.",
+   "size": [
+    34.23,
+    3.3,
+    27.583
+   ],
+   "pivot": "slab centre, ground",
+   "tris": 4140,
+   "status": "modelled"
+  },
+  {
+   "id": "dc.hall-shell",
+   "name": "The hall (shell)",
+   "what": "The 32 x 24 x 7 m clad steel hall on its slab: roller door to the loading bay, people door, THE CORE on the band, roof fans, parapet and a ladder up. Hollow inside for the five rooms. Empties door-people, door-roller.",
+   "size": [
+    35.8,
+    8.42,
+    26.0
+   ],
+   "pivot": "slab centre, ground; front +Z",
+   "tris": 3544,
+   "status": "modelled"
+  },
+  {
+   "id": "person.dana",
+   "name": "Dana Wilke (DC technician)",
+   "what": "Navy polo, lanyard, a yellow fibre lead over one shoulder, a fibre pen in the pocket.",
+   "size": [
+    0.685,
+    1.78,
+    0.453
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 660,
+   "status": "modelled"
+  },
+  {
+   "id": "person.moss",
+   "name": "Moss Achebe (planner)",
+   "what": "Green cardigan, glasses, a pencil, a rolled network plan under one arm.",
+   "size": [
+    0.72,
+    1.78,
+    0.6
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 792,
+   "status": "modelled"
+  },
+  {
+   "id": "person.noc-a",
+   "name": "Night shift (A)",
+   "what": "Grey fleece, headset, a mug of tea.",
+   "size": [
+    0.685,
+    1.808,
+    0.473
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 744,
+   "status": "modelled"
+  },
+  {
+   "id": "person.noc-b",
+   "name": "Night shift (B)",
+   "what": "Hoodie, glasses, headset, a mug of coffee.",
+   "size": [
+    0.685,
+    1.808,
+    0.473
+   ],
+   "pivot": "feet, facing +Z",
+   "tris": 804,
+   "status": "modelled"
+  },
+  {
+   "id": "phone.brick",
+   "name": "Brick phone",
+   "what": "PIP in the late 1980s: a grey slab, a long aerial, a green LCD (empty screen), a keypad.",
+   "size": [
+    0.06,
+    0.35,
+    0.049
+   ],
+   "pivot": "bottom centre; screen faces +Z",
+   "tris": 288,
+   "status": "modelled"
+  },
+  {
+   "id": "phone.flip",
+   "name": "Flip phone",
+   "what": "PIP around 2000: a silver clamshell opened, a colour screen in the lid (empty screen).",
+   "size": [
+    0.05,
+    0.207,
+    0.023
+   ],
+   "pivot": "bottom centre; screen faces +Z",
+   "tris": 292,
+   "status": "modelled"
+  },
+  {
+   "id": "phone.touch",
+   "name": "The touchscreen phone",
+   "what": "PIP from 2007: a black glass slab with one button (empty screen). Never given a brand.",
+   "size": [
+    0.064,
+    0.12,
+    0.013
+   ],
+   "pivot": "bottom centre; screen faces +Z",
+   "tris": 128,
+   "status": "modelled"
+  },
+  {
+   "id": "room.flat-monitor",
+   "name": "Flat monitor",
+   "what": "A thin-bezelled monitor on a stand for the database and dashboard years (empty screen).",
+   "size": [
+    0.59,
+    0.605,
+    0.18
+   ],
+   "pivot": "foot, centre",
+   "tris": 92,
+   "status": "modelled"
+  },
+  {
+   "id": "room.laptop",
+   "name": "Laptop",
+   "what": "An open silver laptop, lid tilted back (empty screen on the lid's glass).",
+   "size": [
+    0.33,
+    0.222,
+    0.288
+   ],
+   "pivot": "base centre",
+   "tris": 124,
+   "status": "modelled"
+  },
+  {
+   "id": "room.ops-wall",
+   "name": "Operations wall",
+   "what": "Acts 6-7: a 4 x 2 wall of big screens (screen-0..7), a ticker, and a long desk with three monitors (desk-0..2).",
+   "size": [
+    5.1,
+    2.937,
+    2.477
+   ],
+   "pivot": "floor, centre of the wall",
+   "tris": 1004,
+   "status": "modelled"
+  },
+  {
+   "id": "mast.small-cell-bench",
+   "name": "Small cell bench",
+   "what": "Not In My Park: a park bench with a small cell in its fat back rail, a box under the seat, a WITH THANKS plaque, one blinking light.",
+   "size": [
+    1.8,
+    0.965,
+    0.65
+   ],
+   "pivot": "ground, centre",
+   "tris": 564,
+   "status": "modelled"
+  },
+  {
+   "id": "mast.clock-tower-cell",
+   "name": "Clock tower cell site",
+   "what": "A stone clock tower with three white panel antennas poking out of the belfry, a cable down the side, a cabinet at the foot.",
+   "size": [
+    4.075,
+    15.5,
+    3.36
+   ],
+   "pivot": "ground, centre",
+   "tris": 462,
+   "status": "modelled"
+  },
+  {
+   "id": "shop.phone-shop",
+   "name": "TELO Mobile shop",
+   "what": "A glass-fronted phone shop with an orange fascia, phones on stands, a counter, a NO BUTTONS. poster, the launch-day queue barrier.",
+   "size": [
+    10.2,
+    4.206,
+    9.64
+   ],
+   "pivot": "ground, centre of footprint; front +Z",
+   "tris": 2248,
+   "status": "modelled"
+  },
+  {
+   "id": "space.satellite",
+   "name": "Satellite",
+   "what": "Gold-foil body, two blue solar wings, a dish and a horn; about 4 m across.",
+   "size": [
+    5.3,
+    1.2,
+    1.38
+   ],
+   "pivot": "centre of the body",
+   "tris": 324,
+   "status": "modelled"
+  },
+  {
+   "id": "space.rocket",
+   "name": "Launcher",
+   "what": "A two-stage white rocket with black bands and fins, T E L O up the side, 24 m tall. Empty payload.",
+   "size": [
+    4.2,
+    24.0,
+    4.2
+   ],
+   "pivot": "base of the engine",
+   "tris": 688,
+   "status": "modelled"
+  },
+  {
+   "id": "space.launch-pad",
+   "name": "Cape Lantern pad",
+   "what": "A concrete pad with a flame trench, a red lattice tower with swing arms, floodlights and a lightning mast. Empty rocket-foot.",
+   "size": [
+    24.0,
+    35.0,
+    25.0
+   ],
+   "pivot": "ground, centre of the deck",
+   "tris": 1452,
+   "status": "modelled"
+  },
+  {
+   "id": "space.ground-dish",
+   "name": "Ground station dish",
+   "what": "A big white dish tilted at the sky on a pedestal, feed on three struts, a hut with an orange door.",
+   "size": [
+    7.851,
+    7.428,
+    4.995
+   ],
+   "pivot": "ground, centre",
+   "tris": 204,
+   "status": "modelled"
+  },
+  {
+   "id": "kit.drone",
+   "name": "Crew drone",
+   "what": "A grey quadcopter with an orange stripe, a camera under the nose and a red tail light.",
+   "size": [
+    0.848,
+    0.147,
+    0.704
+   ],
+   "pivot": "ground under the body",
+   "tris": 352,
+   "status": "modelled"
+  },
+  {
+   "id": "village.parade",
+   "name": "Eastgate parade",
+   "what": "A brick terrace of three shops with flats above on Eastgate High Street: the post office (with a post box), a bakery (awning), and SUDS LAUNDERETTE (machines through the glass).",
+   "size": [
+    19.525,
+    8.75,
+    10.1
+   ],
+   "pivot": "ground, centre of the terrace; front +Z",
+   "tris": 3138,
+   "status": "modelled"
   }
  ]
 }
