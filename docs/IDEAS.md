@@ -20,5 +20,7 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 - 2026-11-18 · **Shop days and the Clue Card** shaped into `docs/SHOP_DAYS.md` (D45, provisional): the day opens and closes at the shop sign, the clock follows the work, before/after hours are the open world, cash register at the counter, the shift grows day → week → month, a Clue Card for the line of progression (33 steps through Act 5). Owner questions in its §11.
 
+- 2026-11-21 · **The Data Centre ends early access** shaped into `docs/DATA_CENTRE_DESIGN.md` (D46–D50): new Act 5 "The Core" on Halden Flats, the pin board (plan by string, fairy lights when lit), the easy rack, crossed patches and follow the lights, Dana / Moss / the night shift, migration night and the lit-board finale. Mobile moves to Act 6. Open: its §13 (Halden vs Eastgate, a look-only pin board from Act 2, second landing vs leasing Nez's cable, migration night length, years).
+
 ## Parked
 *(decided not now; say why)*
