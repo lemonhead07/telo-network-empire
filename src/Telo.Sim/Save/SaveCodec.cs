@@ -52,6 +52,15 @@ public static class SaveCodec
             board.TestedPorts = board.TestedPorts.Select(Move).ToList();
             board.FaultyPorts = board.FaultyPorts.Select(Move).ToList();
         }
+        if (s.Version is >= 16 and < 18 && s.Switch is { } grown)   // v18: villages bring panels (up to 48); the spares move from 40-41 to 64-65
+        {
+            int Move(int port) => port is 40 or 41 ? port - 40 + Net.SwitchRules.SpareBase : port;
+            foreach (var p in grown.Positions) p.Jumper = p.Jumper >= 0 ? Move(p.Jumper) : p.Jumper;
+            grown.TestedPorts = grown.TestedPorts.Select(Move).ToList();
+            grown.FaultyPorts = grown.FaultyPorts.Select(Move).ToList();
+        }
+        if (s.Version < 18 && s.Switch is { } sw && content is not null)
+            sw.ExtraPanels = s.ProjectsDone.Sum(id => content.Project(id)?.Reward.Panels ?? 0);
         s.Version = GameState.CurrentVersion;
         return s;
     }

@@ -225,6 +225,8 @@ public sealed record ProjectRewardDef
 {
     /// <summary>Extra lines in on the Board.</summary>
     public int LinesIn { get; init; }
+    /// <summary>Extra switchboard panels it allows (eight subscribers each): a village comes in on its own panel.</summary>
+    public int Panels { get; init; }
     /// <summary>Added to every live subscriber's monthly bill (a new service on their line).</summary>
     public long PerSubscriber { get; init; }
     public long MonthlyRevenue { get; init; }

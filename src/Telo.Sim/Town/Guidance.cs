@@ -49,7 +49,7 @@ public static class Guidance
             return ($"Fault on {faulty.Name}'s line. Drive out and fix it (take the toolbox).", faulty.LotId);
 
         // nobody new can be connected until there is room on the board
-        if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s) && s.Switch.Stage < SwitchRules.MaxStage)
+        if (SwitchRules.Unseated(s).Count > 0 && SwitchRules.Full(s) && s.Switch.Stage < SwitchRules.MaxStage(s.Switch))
             return (SwitchRules.CanAddPanel(s) ? $"The switchboard is full. Bolt on another panel (${SwitchRules.PanelPrice})." : $"The switchboard is full. Another panel is ${SwitchRules.PanelPrice}.", null);
 
         // someone is waiting for something they ordered

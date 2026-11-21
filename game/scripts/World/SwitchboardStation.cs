@@ -110,7 +110,7 @@ public partial class SwitchboardStation : Node3D
         _hots.Add(new Hot(new Rect2(HookAt.X - 0.085f, HookAt.Y - 0.07f, 0.17f, 0.18f), Spot.Hook, 0, "hook"));
         _hots.Add(new Hot(new Rect2(DirtyAt.X - 0.055f, DirtyAt.Y - 0.07f, 0.11f, 0.18f), Spot.DirtyHook, 0, "dirty"));
         _hots.Add(new Hot(new Rect2(SwitchAt.X - 0.09f, SwitchAt.Y - 0.11f, 0.18f, 0.24f), Spot.Switch, 0, "switch"));
-        if (B.Stage < SwitchRules.MaxStage)
+        if (B.Stage < SwitchRules.MaxStage(B))
         {
             lp.Box(new Vector3(PanelAt.X, PanelAt.Y, Face + 0.005f), new Vector3(0.28f, 0.06f, 0.01f), new Color(0.3f, 0.3f, 0.32f));
             Text($"+ PANEL ${SwitchRules.PanelPrice}", new Vector3(PanelAt.X, PanelAt.Y, Face + 0.012f), 0.026f, light);

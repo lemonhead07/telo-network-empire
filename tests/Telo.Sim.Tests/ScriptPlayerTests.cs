@@ -90,10 +90,10 @@ public class ScriptPlayerTests
         Assert.True(s.ActIndex >= 5,
             $"stuck in act {s.ActIndex} on {s.Date}: subs={s.TotalSubscribers} cash={s.Cash} archive={s.Archive} projects={string.Join(",", s.ProjectsDone)}\n" +
             $"next: {Guidance.Next(s, sim.Content).Text}\n" + string.Join("\n", acts) + "\nLast actions:\n" + string.Join("\n", log.TakeLast(12)));
-        // EA2e: the pace (D42). A perfect player: no act drags past 8 real hours, the whole run stays under 30, and no
-        // shortcut skips the work (the floor). Acts 1-2 are still short: more asks come with the Yard and the far towns.
+        // EA2e/EA2f: the pace (D42). A perfect player: no act drags past 8 real hours, the whole run stays in 20-30, and no
+        // shortcut skips the work (the floor). Acts 1-2 fill with hand work in Wrenfold, Kettle Cross and Highmoor (EA2f).
         for (int i = 1; i < hours.Count; i++) Assert.True(hours[i] - hours[i - 1] <= 8, $"act {i - 1} took {hours[i] - hours[i - 1]:0.0} real hours\n" + string.Join("\n", acts));
-        Assert.InRange(hours[^1], 12, 30);
+        Assert.InRange(hours[^1], 20, 30);
         // EA1: money stays tight enough to matter (bands in DECISIONS.md D41), and a year into Act 5 it hasn't run away.
         // Acts 3 and 4 begin the day the last project is paid for, so their floor is "not in debt" rather than savings.
         var bands = new (long Lo, long Hi)[] { (0, long.MaxValue), (300, 3_000), (500, 6_000), (0, 20_000), (1_500, 25_000), (8_000, 80_000) };

@@ -82,4 +82,22 @@ public class SwitchboardTests
         var old = SaveCodec.FromJson(node.ToJsonString(), sim.Content);
         Assert.Contains(old.Switch.Positions, p => p.CustomerId == ninth.Id && p.Jumper >= 0);   // old saves get their wires
     }
+
+    [Fact]
+    public void A_village_brings_a_panel_and_old_saves_keep_their_spare_wires()
+    {
+        var (sim, custs) = Seated(2);
+        var s = sim.State;
+        Assert.Equal(SwitchRules.BaseStage, SwitchRules.MaxStage(s.Switch));
+        Telo.Sim.Build.ProjectRules.Finish(s, sim.Content, sim.Content.Project("proj-wrenfold-poles")!);
+        Assert.Equal(SwitchRules.BaseStage + 1, SwitchRules.MaxStage(s.Switch));   // Wrenfold comes in on its own panel
+
+        // a v17 save: a wire on spare 40 moves to the new spare, and the panel is worked out from what was built
+        SwitchRules.Pos(s, custs[0].Id)!.Jumper = 40;
+        var node = System.Text.Json.Nodes.JsonNode.Parse(SaveCodec.ToJson(s))!;
+        node["version"] = 17; node["switch"]!["extraPanels"] = 0;
+        var old = SaveCodec.FromJson(node.ToJsonString(), sim.Content);
+        Assert.Equal(SwitchRules.SpareBase, SwitchRules.Pos(old, custs[0].Id)!.Jumper);
+        Assert.Equal(1, old.Switch.ExtraPanels);
+    }
 }

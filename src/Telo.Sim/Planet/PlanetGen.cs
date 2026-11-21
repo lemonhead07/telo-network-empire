@@ -45,15 +45,23 @@ public sealed class PlanetGen
             _sites.Add(village);
             _roads.Add(BuildRoad("road-town-eastgate", Town, village));
         }
+        // EA2f: two more villages for hand work, opened by projects in Acts 1 and 2 (added last so the others are unchanged)
+        foreach (var (id, near, far, apart, steep) in new[] { ("wrenfold", 520, 820, 0.6, 9.0), ("kettle-cross", 450, 1200, 0.92, 20.0), ("highmoor", 550, 1400, 0.95, 22.0) })
+            if (FindVillageSite(null, id, near, far, apart, steep) is { } more)
+            {
+                _sites.Add(more);
+                _roads.Add(BuildRoad($"road-town-{id}", Town, more));
+            }
     }
 
     /// <summary>
     /// A village a short drive from town, away from the farm road: gentle dry ground with an overland route back that
     /// crosses no sea and no cliff. Deterministic for a seed.
     /// </summary>
-    private Site? FindVillageSite(Site? avoid)
+    private Site? FindVillageSite(Site? avoid, string id = "eastgate", int near = 480, int far = 780, double apart = 0.6, double steep = 9)
     {
-        var rng = new DetRng(DetRng.Derive(Seed, "eastgate-site"));
+        var rng = new DetRng(DetRng.Derive(Seed, $"{id}-site"));
+        var others = _sites.Skip(1).ToList();   // later villages keep clear of every settlement and road out of town
         var town = Town.Dir;
         var east = new V3(0, 1, 0).Cross(town).Normalized();
         var north = town.Cross(east);
@@ -63,7 +71,7 @@ public sealed class PlanetGen
             double dx = rng.Next(2001) / 1000.0 - 1, dz = rng.Next(2001) / 1000.0 - 1;
             double len = Math.Sqrt(dx * dx + dz * dz);
             if (len is < 0.2 or > 1) continue;
-            double dist = 480 + rng.Next(300);
+            double dist = near + rng.Next(far - near);
             var heading = east * (dx / len) + north * (dz / len);
             var c = (town + heading * (dist / RadiusM)).Normalized();
             double h = RawHeight(c);
@@ -73,6 +81,13 @@ public sealed class PlanetGen
                 // well away from the farm, and not out along the farm road
                 if ((c - avoid.Dir).Length * RadiusM < 500) continue;
                 if ((avoid.Dir - town).Normalized().Dot((c - town).Normalized()) > 0.5) continue;
+            }
+            else if (id != "eastgate")
+            {
+                bool clash = false;
+                foreach (var o in others)
+                    if ((c - o.Dir).Length * RadiusM < 420 || (o.Dir - town).Normalized().Dot((c - town).Normalized()) > apart) clash = true;
+                if (clash) continue;
             }
             double worst = 0, low = double.MaxValue, prev = Town.HeightM, rough = 0;
             int steps = (int)(dist / 25);
@@ -84,11 +99,11 @@ public sealed class PlanetGen
                 prev = hk;
             }
             foreach (var (rx, rz) in Ring) rough = Math.Max(rough, Math.Abs(RawHeight((c + east * (rx * 60 / RadiusM) + north * (rz * 60 / RadiusM)).Normalized()) - h));
-            if (low < 3 || worst > 9) continue;
+            if (low < 3 || worst > steep) continue;
             double score = -worst * 3 - rough * 2 - Math.Abs(h - 15) / 10;
             if (score > bestScore) { bestScore = score; best = c; }
         }
-        return best is { } b ? new Site("eastgate", b, 70, RawHeight(b)) : null;
+        return best is { } b ? new Site(id, b, 70, RawHeight(b)) : null;
     }
 
     public Site Town => _sites[0];

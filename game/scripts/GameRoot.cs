@@ -1265,6 +1265,10 @@ public partial class GameRoot : Node3D
             await Shot("-farm", TownBuilder.Place(_planet, farm, -25, 45, 0, 9).Origin, f + f.Normalized() * 2);
             await Shot("-road", ((hq + f) / 2).Normalized() * (hq.Length() + 260), (hq + f) / 2, (f - hq).Normalized());
         }
+        // EA2f: the villages opened by projects in Acts 1-2
+        foreach (var id in new[] { "wrenfold", "kettle-cross", "highmoor" })
+            if (_planet.SiteById(id) is { } v)
+                await Shot($"-{id}", TownBuilder.Place(_planet, v, -10, 62, 0, 14).Origin, TownBuilder.Place(_planet, v, 0, 4, 0, 2).Origin);
         // a house part-way through an install: outside wall, then indoors
         Customer? shown = null;
         for (int i = 0; i < 10 && (shown is null || _town.Lots.First(l => l.Lot.Id == shown.LotId).Install is null); i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }

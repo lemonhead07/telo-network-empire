@@ -21,6 +21,88 @@
       { "verb": "Test every pair", "clicks": 1, "minutes": 10 }
     ] },
 
+  { "id": "proj-wrenfold-poles", "model": "site.pole-stack", "name": "Poles out to Wrenfold", "act": 1, "site": "wrenfold", "east": -46, "south": 2, "cost": 300,
+    "requiresProjects": ["proj-eastgate-cabinet"], "requires": [ { "kind": "subscribers", "value": 20 } ],
+    "story": "Wrenfold, up the other road, is ten houses, a school and a shop that NezTel calls 'uneconomic' in writing. Nobody there has had a new line since 1971. Run your own poles in along the lane and they're yours to sign up, one door at a time.",
+    "doneText": "Wrenfold has wire. Ten front doors to knock on, and the school has already written to ask.",
+    "reward": { "panels": 1 },
+    "steps": [
+      { "verb": "Plant poles along the Wrenfold lane", "clicks": 4, "minutes": 30, "needs": ["pole"] },
+      { "verb": "String the wire in from the road", "clicks": 3, "minutes": 15, "needs": ["cableDrum", "ladder"] },
+      { "verb": "Wait for the council to pass the wayleave", "clicks": 1, "minutes": 10, "waitDays": 9, "waitText": "the parish council is arguing about the poles" },
+      { "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
+    ] },
+
+  { "id": "proj-wrenfold-room", "model": "site.street-cabinet", "name": "A Board terminal in Wrenfold's reading room", "act": 1, "site": "wrenfold", "east": 46, "south": 2, "cost": 180,
+    "requiresProjects": ["proj-wrenfold-poles"], "requires": [ { "kind": "subscribers", "value": 34 } ],
+    "story": "Half of Wrenfold has a line now, and the other half comes to the reading room to see what the fuss is about. Put a terminal on the Board in there, on the parish's account, and teach the Thursday club to use it.",
+    "doneText": "The reading room's terminal is on the Board. The Thursday club has already started a file area about marrows.",
+    "reward": { "monthlyRevenue": 20 },
+    "steps": [
+      { "verb": "Carry the terminal in and set it up", "clicks": 1, "minutes": 25, "needs": ["toolbox"] },
+      { "verb": "Run a line from the terminal box", "clicks": 2, "minutes": 15, "needs": ["cableDrum", "ladder"] },
+      { "verb": "Fit the socket and the acoustic coupler", "clicks": 2, "minutes": 15, "needs": ["toolbox"] },
+      { "verb": "Show the Thursday club how to log in", "clicks": 2, "minutes": 30 }
+    ] },
+
+  { "id": "proj-kettle-poles", "model": "site.pole-stack", "name": "Poles over to Kettle Cross", "act": 1, "site": "kettle-cross", "east": -46, "south": 2, "cost": 450,
+    "requiresProjects": ["proj-wrenfold-room"],
+    "story": "Kettle Cross sits at a crossroads nobody uses since the bypass, with a garage, a pub, a surgery and a waiting list NezTel keeps in a drawer. It is a long run of poles from town, but at the end of it are ten more doors.",
+    "doneText": "Kettle Cross is on your wire. The Drover's Arms has put your number on a beer mat.",
+    "reward": { "panels": 1 },
+    "steps": [
+      { "verb": "Plant poles along the old crossroads road", "clicks": 5, "minutes": 30, "needs": ["pole"] },
+      { "verb": "String the wire in from the road", "clicks": 4, "minutes": 15, "needs": ["cableDrum", "ladder"] },
+      { "verb": "Wait for NezTel to move its old drop wire", "clicks": 1, "minutes": 10, "waitDays": 8, "waitText": "NezTel's linesman is 'scheduled'" },
+      { "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
+    ] },
+
+  { "id": "proj-kettle-surgery", "model": "site.street-cabinet", "name": "A private line for the Kettle Cross surgery", "act": 1, "site": "kettle-cross", "east": 46, "south": 2, "cost": 250,
+    "requiresProjects": ["proj-kettle-poles"], "requires": [ { "kind": "subscribers", "value": 42 } ],
+    "story": "The surgery wants its records sent to the hospital at night, by modem, on a line nobody else can pick up. Dr. Achterberg has drawn you a diagram. It is wrong, but she means well.",
+    "doneText": "The surgery's night line works. The hospital rang to ask who you were.",
+    "reward": { "monthlyRevenue": 30 },
+    "steps": [
+      { "verb": "Run a separate pair from the terminal box", "clicks": 2, "minutes": 20, "needs": ["cableDrum", "ladder"] },
+      { "verb": "Fit the surgery's modem and lock", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Send a night's records as a test", "clicks": 1, "minutes": 30 }
+    ] },
+
+  { "id": "proj-eastgate-trunk", "model": "site.street-cabinet", "name": "A second trunk cable to Eastgate", "act": 1, "site": "eastgate", "east": -62, "south": 2, "cost": 150,
+    "requiresProjects": ["proj-kettle-surgery"], "requires": [ { "kind": "subscribers", "value": 46 } ],
+    "story": "The pairs you ran back from the Eastgate cabinet are all taken, and Kettle Cross and Wrenfold both ride through it. A second trunk cable down the road, in NezTel's old duct if they'll let you, or on your own poles if they won't.",
+    "doneText": "The second trunk is in. NezTel let you use the duct in the end, and then invoiced you for the privilege of being let.",
+    "steps": [
+      { "verb": "Rod the old duct along the road", "clicks": 3, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Wait for NezTel to answer about the duct", "clicks": 1, "minutes": 10, "waitDays": 12, "waitText": "NezTel's wayleave office is 'considering' your letter" },
+      { "verb": "Pull the cable through", "clicks": 4, "minutes": 15, "needs": ["cableDrum"] },
+      { "verb": "Joint it into the cabinet", "clicks": 2, "minutes": 25, "needs": ["toolbox"] },
+      { "verb": "Test every new pair", "clicks": 1, "minutes": 15 }
+    ] },
+
+  { "id": "proj-highmoor-poles", "model": "site.pole-stack", "name": "Poles up to Highmoor", "act": 2, "site": "highmoor", "east": -58, "south": 2, "cost": 600,
+    "requiresProjects": ["proj-eastgate-trunk"],
+    "story": "Highmoor is a mile up the hill, twelve doors and a weather station, and NezTel's only line up there is the one the weather station shares with the pub. It is the longest run of poles you've attempted, and the wind up there has opinions.",
+    "doneText": "Highmoor has wire. The weather station recorded the moment, as a gust.",
+    "reward": { "panels": 1 },
+    "steps": [
+      { "verb": "Plant poles up the hill road", "clicks": 6, "minutes": 30, "needs": ["pole"] },
+      { "verb": "String the wire up the hill", "clicks": 5, "minutes": 15, "needs": ["cableDrum", "ladder"] },
+      { "verb": "Wait for a day calm enough to tension the span", "clicks": 1, "minutes": 10, "waitDays": 6, "waitText": "it's blowing a gale on Highmoor" },
+      { "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
+    ] },
+
+  { "id": "proj-highmoor-weather", "model": "site.street-cabinet", "name": "The weather station's data line", "act": 2, "site": "highmoor", "east": 58, "south": 2, "cost": 300,
+    "requiresProjects": ["proj-highmoor-poles"], "requires": [ { "kind": "subscribers", "value": 48 } ],
+    "story": "The weather station sends its readings to the coast every hour by a man in a van. Give it a modem and a line of its own and the forecast gets six hours better. Nobody will thank you, but the fishermen will stop shouting at the radio.",
+    "doneText": "Highmoor's readings go down the line on the hour. The coast forecast now says 'fresh' when it is fresh.",
+    "reward": { "monthlyRevenue": 35 },
+    "steps": [
+      { "verb": "Run a pair up the mast to the hut", "clicks": 2, "minutes": 20, "needs": ["cableDrum", "ladder"] },
+      { "verb": "Fit the modem and the timer", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "verb": "Watch the first hour's readings go", "clicks": 1, "minutes": 30 }
+    ] },
+
   { "id": "proj-modem-bank", "model": "site.modem-bank", "name": "Rack the modem bank", "act": 2, "site": "town-start", "east": 57, "south": 27, "cost": 400,
     "requiresEntry": "alm-14k", "requiresDepot": true,
     "story": "The dial-up years: one modem per caller won't do. A rack of them in the depot, answering in turn, is what the Almanac page describes.",

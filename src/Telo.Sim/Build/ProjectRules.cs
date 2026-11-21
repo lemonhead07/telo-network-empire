@@ -108,6 +108,7 @@ public static class ProjectRules
         if (!s.ProjectsDone.Add(p.Id)) return;
         s.Projects.Remove(p.Id);
         if (p.Reward.LinesIn > 0) BoardRules.Home(s).LinesIn += p.Reward.LinesIn;
+        s.Switch.ExtraPanels += p.Reward.Panels;
         if (p.Reward.Region > 0) s.RegionSigned.TryAdd(p.Id, 0);
         s.Emit(EventKind.Milestone, p.DoneText.Length > 0 ? p.DoneText : $"{p.Name}: built.", p.Id);
     }

@@ -180,6 +180,8 @@ public sealed class BoardPosition
 public sealed class BoardState
 {
     public int Stage { get; set; }
+    /// <summary>Panels beyond the town's four that built projects allow (a village comes in on its own panel). Recomputed on load from v17 saves.</summary>
+    public int ExtraPanels { get; set; }
     public List<BoardPosition> Positions { get; set; } = new();
     public List<int> FaultyPorts { get; set; } = new();
     public List<int> TestedPorts { get; set; } = new();
@@ -197,7 +199,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 17;
+    public const int CurrentVersion = 18;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }

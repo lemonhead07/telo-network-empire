@@ -4,6 +4,11 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 ## Inbox
 *(one line each: date, idea, where it came from)*
+- 2026-11-21 · [gameplay] **Act 2 now runs 6.4 h** (target 4–5): Highmoor plus the archive wait for the modem bank. If it drags in play, shorten Highmoor's gale wait or let the modem bank page be read sooner. From EA2f.
+- 2026-11-21 · [gameplay] **A 56-row switchboard is cramped** (rows ~1.7 cm at full size). Grow the board taller per panel, or give each village its own small board on the wall beside it. From EA2f.
+- 2026-11-21 · [gameplay] **Odd jobs are offered in villages you haven't wired yet** (Wrenfold on 4 Jan). Fine as a way to meet them first, or gate on `needsProject`. From EA2f.
+- 2026-11-21 · [gameplay] **The bot waits 0.9 h in Act 2 for $120 to bolt on a panel.** Cash is tight there (good), but the phone could suggest an odd job instead of waiting. From EA2f.
+- 2026-11-21 · [geometry] **The three new villages are copies of one street.** Give each a look: Wrenfold a green and a school, Kettle Cross a slipway and the Drover's Arms on the crossroads, Highmoor the weather station's mast and a chapel. From EA2f.
 - 2026-11-18 · **Opening the neighbourhood further.** Houses are now 20 m apart with real gardens and fields round each settlement. Next steps if wanted: a village green or churchyard on Church Lane, a back lane between the gardens you can walk, collision on fences and hedges (needs the bot and van routes checked), lamps that light at dusk, a second road out of town. Note: the Act 2 cash band (D41) is on a knife-edge, and a 22 m spacing with Church Lane at −46 tipped it to $319. From the owner ("open up the neighbourhood").
 - 2026-11-18 · **The calendar now runs fast again: Act 5 arrives in Dec 1983.** With the pace fixed, a year of play covers the whole early access. Decide whether the dates should lag (each act's page only readable from a real year, or Echo biting harder when you build early) or whether racing ahead of history is the time-travel joke. From EA2e.
 - 2026-11-18 · **The bot is a perfect player.** Measure a human against it once (one evening of the owner playing, timed per act) so the 20–30 h target can be set for people, not the script. From EA2e.

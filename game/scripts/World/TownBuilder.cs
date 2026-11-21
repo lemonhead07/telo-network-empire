@@ -166,6 +166,9 @@ public static class TownBuilder
         new("town-start", false, -40f, -86f, 84f, "Church Lane"),          // its east end meets the road out to the farm
         new("town-start", true, -86f, -40f, StreetSouth, "Mill Row"),           // joins Church Lane to Main Street
         new("eastgate", false, 8f, -64f, 48f, "Eastgate High Street"),  // west end reaches the two houses moved off the town road (2026-11-19)
+        new("wrenfold", false, 8f, -48f, 48f, "Wrenfold Green"),            // EA2f: the first Act 1 village, opened by your own poles
+        new("kettle-cross", false, 8f, -48f, 48f, "Kettle Cross Row"),       // EA2f: the second Act 1 village, by the shore
+        new("highmoor", false, 8f, -60f, 60f, "Highmoor Street"),            // EA2f: the Act 2 village, a long drive up the hill
     };
 
     /// <summary>The east-west street a building fronts on: the nearest one on its site that runs past it. Null for the farm.</summary>

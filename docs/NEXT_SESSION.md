@@ -1,12 +1,22 @@
 # Next Session — start here
 
-*Left off: 2026-11-18 (cloud dev session, EA2e). Branch: `feature/gameplay-rapid`. 82 sim tests and `--smoke` pass. Saves are at v17. The owner wants **early access to cover Acts 0–5**, gameplay first, models later.*
+*Left off: 2026-11-21 (cloud dev session, EA2f, branch `ccr-b18c508c-ri8rrp`, gameplay lane). 85 sim tests and `--smoke` pass. Saves are at v18. The owner wants **early access to cover Acts 0–5**, gameplay first, models later.*
 
-**Start here:** `BUILD_PLAN.md` → "Early access: Acts 0–5". Next up: **EA2f** (Acts 1–2 ask for more), then EA2b (the Yard), EA2c, EA2d, EA3–EA6. Before committing a rules change, run `dotnet test tests/Telo.Sim.Tests` (the Act 5 script player is in it) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act5` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front).
+**Start here:** `BUILD_PLAN.md` → "Early access". EA2f is done; next up is **DC1** (Act 5 becomes The Core, content only), then EA2b (the Yard), EA2c, EA3–EA6 and DC2–DC9. Before committing a rules change, run `dotnet test Telo.slnx` (the Act 5 script player is in it) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act5` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front).
+
+## Newest (2026-11-21): three villages of hand work (EA2f)
+
+- **Owner, mid-session:** "feel free to add more towns for hand work, I'm happy to fill out the world more."
+- **Wrenfold** (Act 1, under the mountains, 514 m out), **Kettle Cross** (Act 1, on the dunes by the sea, 483 m) and **Highmoor** (Act 2, 1.2 km up the hill): 32 households in all. Pictures: `docs/img/village-*.png`; `--shot` now saves `x-wrenfold`, `x-kettle-cross`, `x-highmoor`.
+- Each opens with a pole project (plant, string, a bureaucratic wait, the terminal box), then a smaller job there once enough people are on: Wrenfold's reading-room terminal, the Kettle Cross surgery's night line, Highmoor's weather-station data line. Plus **a second trunk cable to Eastgate** at the end of Act 1.
+- **The switchboard grows with the villages:** each village project allows one more $120 panel (`panels` reward → `BoardState.ExtraPanels`), so 56 subscribers at most. The spare ports moved from 40–41 to 64–65 (v18 migration, tested).
+- **Act exits:** Act 1 now needs 44 subscribers and 7 projects; then 13 / 16 / 19 / 22 projects for Acts 2–5. When DC1 shifts the acts, start from these numbers.
+- **Pace: the Act 5 script player now takes 21.8 real hours (1.0 / 3.2 / 6.4 / 4.7 / 6.5 per act)**; the test's floor is now 20 h. Cash bands all held. Act 2 is a bit long (IDEAS inbox).
+- **Why villages and not just more projects:** the hours are busy game days (3 game minutes a real second, so a 15-hour working day is 5 real minutes). A project's clicks add minutes; households add weeks of installs, orders, odd jobs and faults. The switchboard's 32 was the real ceiling on hand work.
 
 ## Decided 2026-11-21 (idea session): early access ends in a data centre
 
-New Act 5, **The Core**: build a data centre on Halden Flats, plan the network on a pin board with string, patch it in at an easy rack, play crossed patches and follow the lights, then hire Dana, Moss and the night shift. Mobile moves to Act 6. Design: `DATA_CENTRE_DESIGN.md` (concept sheet `img/dc-concept.png`); decisions D46–D50; build items DC1–DC9 in `BUILD_PLAN.md`. **DC1 (the act swap, content only) comes right after EA2f.** EA2d (masts) is no longer early access.
+New Act 5, **The Core**: build a data centre on Halden Flats, plan the network on a pin board with string, patch it in at an easy rack, play crossed patches and follow the lights, then hire Dana, Moss and the night shift. Mobile moves to Act 6. Design: `DATA_CENTRE_DESIGN.md` (concept sheet `img/dc-concept.png`); decisions D46–D50; build items DC1–DC9 in `BUILD_PLAN.md`. **DC1 (the act swap, content only) is next.** EA2d (masts) is no longer early access.
 
 ## Branches (2026-11-19)
 

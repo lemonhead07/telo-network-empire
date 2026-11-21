@@ -18,13 +18,15 @@ public enum ThrowResult { Live, Dead, Crossed }
 /// </summary>
 public static class SwitchRules
 {
-    public const int Spares = 2, MaxStage = 3;
+    public const int Spares = 2, BaseStage = 3;
+    /// <summary>Four panels (32) in town; each village wired in by a project brings one more (EA2f).</summary>
+    public static int MaxStage(BoardState b) => BaseStage + b.ExtraPanels;
     public const long PanelPrice = 120;
 
     /// <summary>Eight subscribers a panel; up to four panels (32) before the next act's equipment takes over.</summary>
     public static int Size(BoardState b) => 8 * (b.Stage + 1);
     /// <summary>The two spare ports keep the same numbers however big the board grows, so a wire on one never has to move.</summary>
-    public const int SpareBase = 40;   // past the biggest board (32), so a wire on a spare never has to move (saves before v16 used 16)
+    public const int SpareBase = 64;   // past the biggest board, so a wire on a spare never has to move (saves before v16 used 16, before v18 40)
     public static IEnumerable<int> SparePorts => Enumerable.Range(SpareBase, Spares);
     /// <summary>Every port on the board: one per subscriber terminal, then the spares.</summary>
     public static List<int> PortList(BoardState b) => Enumerable.Range(0, Size(b)).Concat(SparePorts).ToList();
@@ -180,7 +182,7 @@ public static class SwitchRules
         return true;
     }
 
-    public static bool CanAddPanel(GameState s) => s.Switch.Stage < MaxStage && s.Cash >= PanelPrice;
+    public static bool CanAddPanel(GameState s) => s.Switch.Stage < MaxStage(s.Switch) && s.Cash >= PanelPrice;
 
     /// <summary>Bolt another panel on: room for more subscribers.</summary>
     public static bool AddPanel(GameState s)
@@ -204,7 +206,7 @@ public static class SwitchRules
     {
         foreach (var cust in s.Customers.Where(x => x.Live && x.LotId is not null && x.SocketFitted).OrderBy(x => x.JoinedDay))
         {
-            if (Full(s) && s.Switch.Stage < MaxStage) s.Switch.Stage++;
+            if (Full(s) && s.Switch.Stage < MaxStage(s.Switch)) s.Switch.Stage++;
             if (!Seat(s, cust) || !cust.Installed) continue;
             var p = Pos(s, cust.Id)!;
             s.Switch.FaultyPorts.Remove(p.AssignedPort);
