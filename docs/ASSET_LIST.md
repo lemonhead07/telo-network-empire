@@ -9,6 +9,15 @@ Written 2026-11-12 after the owner's first 10-minute playtest ("pacing good, mis
 
 **Model requests (D30, 2026-11-15).** Each asset becomes a named prop with a brief (size, anchors, three takes, a charm detail) in `game/content/props.json`; a model that keeps the brief's size, pivot and anchors drops in with no code change. How to write one: `MODELS_AND_VARIETY.md`. First batch: the switchboard (`docs/props/switchboard.json`).
 
+**Your room's working wall, modelled 2026-11-19** (`tools/models/room.py`, written in Godot coordinates like `town.py`): the switchboard and its parts (`room.switchboard`, `switch.terminal`, `switch.port`, `switch.port-lamp`, `switch.tag`, `switch.jumper-plug`, `switch.jumper-hook`, `switch.throw-switch`, `switch.upgrade-panel`, `tool.tone-probe`, `tool.test-set`), the line rack (`room.line-rack`, with `wp-01-place` / `wp-02-plug` / `wp-03-screw` at the next empty card slot) and the wall boards (`room.ticket-rail`, `room.wall-calendar`, `room.timesheet`, `room.ad-board`). Contact sheets: `docs/img/props/lineup-room.png`, and each switchboard part's three takes (plain / old / bodge) in `docs/img/props/takes-switchboard.png` for the owner to pick from (the game uses *plain*). In the game: `docs/img/room-models.png`.
+
+**More modelled 2026-11-21** (cloud, geometry lane; each script imports `town.py`'s Godot-space helpers):
+- `tools/models/village.py`: a landmark pair per village so they stop looking like one street copied three times: `village.school`, `village.green` (Wrenfold), `village.pub` (the Drover's Arms), `village.boatyard` (Kettle Cross), `village.chapel`, `village.weather-station` (Highmoor). Placed by `World/VillageLandmarks.cs` with box collision; sheet `docs/img/props/lineup-villages.png`, in game `docs/img/villages-landmarks.png`. Eastgate's `village.parade` (post office, bakery, launderette) stands on the High Street where the north row runs out.
+- `tools/models/dc.py`: every Data Centre prop `DATA_CENTRE_DESIGN.md` §12 lists, under those ids: the 42U rack (empties `u01`, `u42`), 12U cabinet, 6U wall box, router / switch / patch panel / fibre tray (19-inch, empty `port-1`), PDU, patch-lead end, trolley, test plug, fibre pen, battery string, generator, load dial (`needle-pivot`), cooling unit, pin board (pins `site-*`, string by link kind, fairy lights, the big switch), clip rail, fibre wall (ODF), customer cage, NOC desk (`screen-0..3`), slab with site office, the hall shell (32 × 24 × 7 m, hollow, `door-people`, `door-roller`), and Dana, Moss and two night-shift people. Sheets `lineup-dc-rack.png`, `lineup-dc-rooms.png`. Not placed yet: DC2–DC9 do that.
+- `tools/models/modern.py`: later ages ahead of their systems: PIP's handset by era (`phone.brick`, `phone.flip`, `phone.touch`), screens of the dashboard years (`room.flat-monitor`, `room.laptop`, `room.ops-wall`), mobile (`mast.small-cell-bench`, `mast.clock-tower-cell`, `shop.phone-shop`), orbit (`space.rocket`, `space.launch-pad`, `space.satellite`, `space.ground-dish`, `kit.drone`). Every glass a view could be drawn on carries an empty named `screen` (or `screen-N`). Sheet `lineup-later-ages.png`.
+- **The pointer lives on the screen** (`UI/ScreenCursor.cs`, `World/WorldScreen.cs`): leaning into any screen hides the system mouse and draws the pointer on the glass in the instrument's style: a pencil on paper, a pulsing block on the green terminal, a chunky arrow on database forms, a modern arrow that becomes a pointing hand over a button on dashboards. Shots: `x-pointer-paper`, `x-pointer-database`, `x-pointer-dashboard`, `x-terminal`; picture `docs/img/pointers-on-screens.png`.
+- **Screens on models light up** (`World/ScreenFaces.Light(model, "screen-", sizeM, px, i => view)`): puts a live SubViewport face on every `screen*` empty of a model (the NOC desk's monitors, the ops wall, a phone). The Showroom uses it with stand-in pictures (`Dev/ScreenDemo.cs`) in two new corners: a Data Centre corner (a dressed 42U rack with patch panels, fibre tray, two routers, two switches and PDUs, the trolley, Dana, the pin board, the night-shift desk, the load dial, batteries, a cooling unit) and an operations room with PIP's handsets by era. `godot --path game res://scenes/Showroom.tscn -- --shot=/abs/x.png` saves `x-dc`, `x-dc-rack`, `x-ops`, `x-phones`; picture `docs/img/showroom-dc-and-screens.png`.
+
 Priority: **A** = the demo needs it, **B** = the trailer needs it, **C** = later.
 
 ## 1. Characters
@@ -55,7 +64,7 @@ Each person needs a **speech bubble** above their head (same look as PIP's bubbl
 | A | Toolbox | Red metal, cantilever lid. |
 | A | Boxed modem and the modem itself | Beige box with lights; cardboard carton with a printed label. |
 | A | Line pole | With crossarm, insulators and climbing steps. |
-| B | Tone probe, screwdriver, staple gun, hand drill | Shown in the hand during install steps. |
+| B | Tone probe, screwdriver, staple gun, hand drill | Shown in the hand during install steps. Tone probe and test set ✅ 2026-11-19 (`tool.*`, held at the switchboard). |
 
 ## 5. Install and network parts
 
@@ -66,7 +75,7 @@ Each person needs a **speech bubble** above their head (same look as PIP's bubbl
 | A | Wall socket (backplate and faceplate) | Indoors. |
 | A | Cable staple, cable runs | Skirting cable; a drooping drop wire to the pole. |
 | A | Telephone, rotary | The customer's own phone; lift the handset to test. |
-| A | Frame terminal blocks, jumper wire, labels | For making the frame physical. |
+| A | Frame terminal blocks, jumper wire, labels | ✅ 2026-11-19: the switchboard batch in `tools/models/room.py` (the wire itself stays drawn in code). |
 | B | Sagging overhead line | Replace the straight wire between poles. |
 
 ## 6. Desk and room props (replacing the on-screen text)
@@ -76,7 +85,7 @@ Each person needs a **speech bubble** above their head (same look as PIP's bubbl
 | A | PIP's handset | The talking device: small screen, antenna, a light that pulses when PIP speaks. |
 | A | Answering machine | Blinking light, cassette window. |
 | A | Company notebook | Open book with ruled pages. |
-| A | Wall calendar | Shows the date (replaces the date text). |
+| A | Wall calendar | ✅ 2026-11-19 `room.wall-calendar` (the game still writes the week on it). Also modelled: ticket rail, timesheet clipboard, ad board, line rack. |
 | A | Cash tin | Shows your money. |
 | B | Pager, fax roll | Replace the "what next" line and the event feed. |
 | B | Job sheet clipboard | By the customer's door. |

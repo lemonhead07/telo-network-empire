@@ -14,6 +14,7 @@ public partial class WorldScreen : Node3D
 
     public ModalView View { get; private set; } = null!;
     private SubViewport _vp = null!;
+    private ScreenCursor _cursor = null!;
     private float _w, _h;
 
     public static WorldScreen Create(ModalView view, float widthM, bool glows, bool onTop = false)
@@ -23,6 +24,8 @@ public partial class WorldScreen : Node3D
         s.AddChild(s._vp);
         view.InWorld = true;
         s._vp.AddChild(view);
+        s._cursor = new ScreenCursor();   // the pointer is drawn on the screen itself, on top of the view
+        s._vp.AddChild(s._cursor);
 
         var tex = s._vp.GetTexture();
         var mat = new StandardMaterial3D { AlbedoTexture = tex, TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic };
@@ -49,6 +52,46 @@ public partial class WorldScreen : Node3D
         return cam.UnprojectPosition(GlobalTransform * local);
     }
 
+    public override void _Process(double delta)
+    {
+        if (!View.IsOpen && _cursor.Visible) _cursor.Visible = false;
+    }
+
+    /// <summary>The screen a view is drawn on, if it is drawn in the world.</summary>
+    public static WorldScreen? Of(ModalView view) => view.GetParent()?.GetParent() as WorldScreen;
+
+    /// <summary>Draw the pointer at a pixel of this screen without touching the system mouse (screenshots).
+    /// With <paramref name="onButton"/>, it goes to the middle of the first button that can be pressed instead.</summary>
+    public void ShowPointer(Vector2 px, bool onButton = false)
+    {
+        if (onButton && FirstButton(View) is { } b) px = b.GetGlobalRect().GetCenter();
+        _cursor.Tier = View.Tier;
+        _cursor.MoveTo(px, onButton ? FirstButton(View) : null);
+    }
+
+    private static BaseButton? FirstButton(Node n)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c is BaseButton { Disabled: false, Visible: true } b) return b;
+            if (FirstButton(c) is { } found) return found;
+        }
+        return null;
+    }
+
+    /// <summary>Hide the system pointer while it is over this screen (the screen draws its own), show it again off the edge.</summary>
+    private void PointerOnScreen(bool on, Vector2 px)
+    {
+        if (on)
+        {
+            _cursor.Tier = View.Tier;
+            _cursor.MoveTo(px, _vp.GuiGetHoveredControl());
+        }
+        else _cursor.Visible = false;
+        var want = on ? Input.MouseModeEnum.Hidden : Input.MouseModeEnum.Visible;
+        if (Input.MouseMode != want && Input.MouseMode != Input.MouseModeEnum.Captured) Input.MouseMode = want;
+    }
+
     public override void _Input(InputEvent e)
     {
         if (!View.IsOpen) return;
@@ -68,11 +111,13 @@ public partial class WorldScreen : Node3D
         if (t < 0) return;
         var local = GlobalTransform.AffineInverse() * (origin + dir * t);
         var px = new Vector2((local.X / _w + 0.5f) * PxW, (0.5f - local.Y / _h) * PxH);
+        bool on = px.X >= 0 && px.X <= PxW && px.Y >= 0 && px.Y <= PxH;
 
         var copy = (InputEventMouse)m.Duplicate();
         copy.Position = px;
         copy.GlobalPosition = px;
         _vp.PushInput(copy, true);
+        if (m is InputEventMouseMotion) PointerOnScreen(on, px);
         GetViewport().SetInputAsHandled();
     }
 }

@@ -36,6 +36,7 @@ godot --path game                                       # play
 godot --editor --path game                              # open editor
 blender -b --factory-startup --python tools/models/batch.py -- all   # build every model (or name ids): game/assets/models/<id>.glb, docs/img/props/<id>.png, briefs in props.json (then --import)
 blender -b --factory-startup --python tools/models/town.py -- all   # houses, shop, depot, farm, your room and its furniture, people, cars, trees, street things, Nadir, the barrier ("person.*" for a group)
+blender -b --factory-startup --python tools/models/dc.py -- all     # Data Centre props (DATA_CENTRE_DESIGN §12 ids); also village.py (village landmarks), modern.py (later ages: phones, screens, masts, orbit)
 blender -b --factory-startup --python tools/models/lineup.py -- site. --out sites  # contact sheet of models by id prefix → docs/img/props/lineup-sites.png
 godot --path game res://scenes/Showroom.tscn [-- --shot=/abs/x.png]  # every model on a lawn in the real renderer (orbit with the mouse)
 ```

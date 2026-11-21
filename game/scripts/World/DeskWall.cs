@@ -27,8 +27,8 @@ public partial class TicketRail : Node3D
     public TicketRail()
     {
         Name = "TicketRail";
-        AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(1.36f, 1.0f, 0.03f), new Color(0.62f, 0.47f, 0.3f))
-            .Box(new Vector3(0, 0.36f, 0.025f), new Vector3(1.3f, 0.03f, 0.03f), new Color(0.3f, 0.3f, 0.32f)).Instance());
+        AddChild(Props.Make("room.ticket-rail", () => new LowPoly().Box(Vector3.Zero, new Vector3(1.36f, 1.0f, 0.03f), new Color(0.62f, 0.47f, 0.3f))
+            .Box(new Vector3(0, 0.36f, 0.025f), new Vector3(1.3f, 0.03f, 0.03f), new Color(0.3f, 0.3f, 0.32f)).Instance()));   // cork, a rail over each row of slips
         AddChild(new Label3D { Text = "JOB TICKETS", Position = new Vector3(0, 0.44f, 0.02f), FontSize = 40, PixelSize = 0.0016f, Modulate = new Color(0.14f, 0.1f, 0.06f), OutlineSize = 0 });
         for (int i = 0; i < Slots; i++)
         {
@@ -75,8 +75,8 @@ public partial class WallCalendar : Node3D
     public WallCalendar()
     {
         Name = "WallCalendar";
-        AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.7f, 0.86f, 0.02f), new Color(0.95f, 0.93f, 0.86f))
-            .Box(new Vector3(0, 0.37f, 0.012f), new Vector3(0.7f, 0.12f, 0.01f), new Color(0.6f, 0.14f, 0.12f)).Instance());
+        AddChild(Props.Make("room.wall-calendar", () => new LowPoly().Box(Vector3.Zero, new Vector3(0.7f, 0.86f, 0.02f), new Color(0.95f, 0.93f, 0.86f))
+            .Box(new Vector3(0, 0.37f, 0.012f), new Vector3(0.7f, 0.12f, 0.01f), new Color(0.6f, 0.14f, 0.12f)).Instance()));
         _text = new Label3D { Position = new Vector3(0, -0.04f, 0.014f), FontSize = 32, PixelSize = 0.00115f, Modulate = new Color(0.1f, 0.08f, 0.06f), OutlineSize = 0, Width = 560, AutowrapMode = TextServer.AutowrapMode.WordSmart, HorizontalAlignment = HorizontalAlignment.Left };
         AddChild(_text);
     }
@@ -121,8 +121,8 @@ public partial class Timesheet : Node3D
     public Timesheet()
     {
         Name = "Timesheet";
-        AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.62f, 0.86f, 0.02f), new Color(0.93f, 0.95f, 0.9f))
-            .Box(new Vector3(0, 0.37f, 0.012f), new Vector3(0.62f, 0.1f, 0.01f), new Color(0.16f, 0.2f, 0.36f)).Instance());
+        AddChild(Props.Make("room.timesheet", () => new LowPoly().Box(Vector3.Zero, new Vector3(0.62f, 0.86f, 0.02f), new Color(0.93f, 0.95f, 0.9f))
+            .Box(new Vector3(0, 0.37f, 0.012f), new Vector3(0.62f, 0.1f, 0.01f), new Color(0.16f, 0.2f, 0.36f)).Instance()));
         AddChild(new Label3D { Text = "TIMESHEET", Position = new Vector3(0, 0.37f, 0.02f), FontSize = 32, PixelSize = 0.0014f, Modulate = new Color(0.93f, 0.95f, 0.9f), OutlineSize = 0 });
         _text = new Label3D { Position = new Vector3(-0.28f, -0.04f, 0.014f), FontSize = 32, PixelSize = 0.0009f, Modulate = new Color(0.1f, 0.1f, 0.18f), OutlineSize = 0, Width = 620, AutowrapMode = TextServer.AutowrapMode.WordSmart, HorizontalAlignment = HorizontalAlignment.Left };
         AddChild(_text);
@@ -146,9 +146,9 @@ public partial class AdBoard : Node3D
     public AdBoard()
     {
         Name = "AdBoard";
-        AddChild(new LowPoly().Box(Vector3.Zero, new Vector3(0.8f, 0.6f, 0.03f), new Color(0.55f, 0.42f, 0.28f))
+        AddChild(Props.Make("room.ad-board", () => new LowPoly().Box(Vector3.Zero, new Vector3(0.8f, 0.6f, 0.03f), new Color(0.55f, 0.42f, 0.28f))
             .Box(new Vector3(-0.22f, 0.08f, 0.02f), new Vector3(0.22f, 0.22f, 0.005f), new Color(0.95f, 0.9f, 0.55f))
-            .Box(new Vector3(0.2f, 0.08f, 0.02f), new Vector3(0.28f, 0.2f, 0.005f), new Color(0.92f, 0.92f, 0.88f)).Instance());
+            .Box(new Vector3(0.2f, 0.08f, 0.02f), new Vector3(0.28f, 0.2f, 0.005f), new Color(0.92f, 0.92f, 0.88f)).Instance()));
         AddChild(new Label3D { Text = "ADVERTISING", Position = new Vector3(0, 0.25f, 0.025f), FontSize = 32, PixelSize = 0.0014f, Modulate = new Color(0.15f, 0.1f, 0.06f), OutlineSize = 0 });
         _text = new Label3D { Position = new Vector3(0, -0.2f, 0.03f), FontSize = 32, PixelSize = 0.001f, Modulate = new Color(0.12f, 0.1f, 0.08f), OutlineSize = 0, Width = 760, AutowrapMode = TextServer.AutowrapMode.WordSmart };
         AddChild(_text);
