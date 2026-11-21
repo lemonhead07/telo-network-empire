@@ -18,6 +18,8 @@ public abstract partial class ModalView : Control
     public bool InWorld { get; set; }
     /// <summary>The player is currently using this view.</summary>
     public bool IsOpen { get; private set; }
+    /// <summary>The instrument's era (paper, terminal, database, dashboard): sets the look, and the pointer drawn on it in the world.</summary>
+    public InterfaceTier Tier { get; private set; }
 
     public override void _Ready()
     {
@@ -56,12 +58,14 @@ public abstract partial class ModalView : Control
     /// <summary>Set the look (paper, terminal, …) and redraw. Used for screens that are visible even when nobody is using them.</summary>
     public void Show(InterfaceTier tier)
     {
+        Tier = tier;
         Sheet.Theme = TierStyle.For(tier);
         if (!IsOpen) Rebuild();
     }
 
     public void Open(InterfaceTier tier)
     {
+        Tier = tier;
         Sheet.Theme = TierStyle.For(tier);
         Visible = true;
         IsOpen = true;

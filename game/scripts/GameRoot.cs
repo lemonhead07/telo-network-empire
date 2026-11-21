@@ -110,6 +110,7 @@ public partial class GameRoot : Node3D
         _sky = new PlanetSky(); AddChild(_sky);
         _sky.Setup(radius, PlanetBuilder.ToGodot(_planet.Town.Dir));
         _town = TownBuilder.Build(this, _planet, _content);
+        VillageLandmarks.Build(_town.Root, _planet);   // looks: each village's school, pub, chapel...
         foreach (var lot in _town.Lots) WireLot(lot);
         _ = BuildRoadsWhenPhysicsIsReady();
         BuildProjects();   // project sites (Projects.cs): shown once open to you
@@ -1269,6 +1270,8 @@ public partial class GameRoot : Node3D
         foreach (var id in new[] { "wrenfold", "kettle-cross", "highmoor" })
             if (_planet.SiteById(id) is { } v)
                 await Shot($"-{id}", TownBuilder.Place(_planet, v, -10, 62, 0, 14).Origin, TownBuilder.Place(_planet, v, 0, 4, 0, 2).Origin);
+        foreach (var (prop, mark) in VillageLandmarks.Placed)
+            await Shot($"-{prop}", mark.ToGlobal(new Vector3(7f, 6f, 20f)), mark.ToGlobal(new Vector3(0, 2f, 0)));
         // a house part-way through an install: outside wall, then indoors
         Customer? shown = null;
         for (int i = 0; i < 10 && (shown is null || _town.Lots.First(l => l.Lot.Id == shown.LotId).Install is null); i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }
@@ -1332,6 +1335,13 @@ public partial class GameRoot : Node3D
         _switch.Open(); await Inside("-switchboard"); _switch.Close(); await ToSignal(GetTree().CreateTimer(0.5), SceneTreeTimer.SignalName.Timeout);
         _almanac.Open(InterfaceTier.Terminal); await Inside("-pip"); _almanac.Close(); await ToSignal(GetTree().CreateTimer(0.5), SceneTreeTimer.SignalName.Timeout);
         _notebook.Open(InterfaceTier.Paper); await Inside("-notebook"); _notebook.Close();
+        // the pointer drawn on each kind of screen: pencil, block, arrow, and the modern hand over a button
+        foreach (var (view, tier, name) in new (ModalView, InterfaceTier, string)[] { (_notebook, InterfaceTier.Paper, "paper"), (_notebook, InterfaceTier.Database, "database"), (_almanac, InterfaceTier.Dashboard, "dashboard") })
+        {
+            await ToSignal(GetTree().CreateTimer(0.5), SceneTreeTimer.SignalName.Timeout);
+            view.Open(tier); WorldScreen.Of(view)?.ShowPointer(new Vector2(700, 380), onButton: tier == InterfaceTier.Dashboard);
+            await Inside($"-pointer-{name}"); view.Close();
+        }
         // the Board at half past seven with the whole town on two lines
         for (int i = 0; i < 12 && (Sim.State.Staff == 0 || TownRules.Prospects(Sim.State, _content).Any() || !_lines.All(l => LineRules.Complete(Sim.State, _planet, l.Premise))); i++) Sim.GodNextStage(_planet);
         Sim.AdvanceDays(2);
@@ -1383,7 +1393,7 @@ public partial class GameRoot : Node3D
         Sim.GodNextAct(); Sim.AdvanceDays(8);
         Sim.State.Customers.First(c => c.Live && c.Installed).HasAccount = false;
         await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
-        _board.Open(InterfaceTier.Terminal); await Inside("-terminal"); _board.Press(2); await Inside("-terminal-files"); _board.Close();
+        _board.Open(InterfaceTier.Terminal); WorldScreen.Of(_board)?.ShowPointer(new Vector2(660, 430)); await Inside("-terminal"); _board.Press(2); await Inside("-terminal-files"); _board.Close();
         // Nez: grow past the point it notices you, let a few weeks go by, and look down the street
         for (int i = 0; Sim.State.LiveSubscribers < Telo.Sim.Nez.NezRules.TerritoryAt + 1 && i < 30; i++) Sim.AddCustomer($"Caller {i}", "family", 30);
         Sim.AdvanceDays(21); SyncNez();
