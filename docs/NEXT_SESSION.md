@@ -1,10 +1,25 @@
 # Next Session — start here
 
-*Left off: 2026-11-21 (cloud dev session, DC1, branch `claude/awesome-gates-qdvx3n`, gameplay lane). 86 sim tests and `--smoke` pass. Saves are at v19. The owner wants **early access to cover Acts 0–5**, gameplay first, models later; Act 5 is now The Core, the data centre (D46).*
+*Left off: 2026-11-22 (cloud dev session, EA2b the Yard, gameplay lane, branch `ccr-07a608a6-jndwwk`). 87 sim tests and `--smoke` pass. Saves are at v20. The owner wants **early access to cover Acts 0–5**, gameplay first, models later; Act 5 is The Core, the data centre (D46).*
 
-**Start here:** `BUILD_PLAN.md` → "Early access". DC1 is done; next up is **EA2b** (the Yard), then EA2c, EA3–EA6 and DC2–DC9 (DC2, the hall, no longer needs the site or road). Before committing a rules change, run `dotnet test Telo.slnx` (the script player is in it, now `The_bot_plays_from_the_first_message_through_act_5`) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act6` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front). To start on Halden Flats: `godot --path game -- --from=act5`.
+**Start here:** `BUILD_PLAN.md` → "Early access". EA2b (the Yard) is done; next up is **EA2c** (people who walk), then EA3–EA6 and DC2–DC9. Before committing a rules change, run `dotnet test Telo.slnx` (the script player is in it, `The_bot_plays_from_the_first_message_through_act_5`) and `--smoke`. To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act6` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front). To start on Halden Flats: `godot --path game -- --from=act5`. In a fresh cloud container run `godot --headless --path game --import` first: models merged since the last import show as load errors in `--shot` otherwise.
 
-## Newest (2026-11-21): Act 5 is The Core (DC1)
+## Newest (2026-11-22): the Yard (EA2b)
+
+- **Gorse's Yard** (`lot-yard`, `LotKind.Yard`) stands at the east end of Main Street (east 100, south 40, facing the street): a grey-green trade shed, a counter hatch under a red canopy with a man in overalls behind it, poles, drums and cabinets stacked out the west side, and round the east side a loading dock with the Yard's green flatbed, shown from Act 2 (D43: the Yard grows). Picture `docs/img/yard.png`; `--shot` saves `x-yard`, `x-yard-counter` and `x-crate` (a crate on the van's roof rack).
+- **Every project's parts are bought there** (`Build/YardRules.cs`). A project's `cost` moved from "start" to the counter. Then:
+  - `"parts": "van"` (default, 15 projects): a **parts crate** (`Tools.Parts`, a new piece of van kit, two hands, roped on the roof rack) rides on the van; carry it to the site, and the first action there unloads it and starts the project.
+  - `"parts": "lorry"` (16, from Millbrook on: racks, steel, generators, cable): the Yard's lorry leaves them at the site the next working morning (never a Sunday); crates appear at the site that day.
+  - `"parts": "none"` (4: the leased line, migration night, lighting the board, peering): paperwork, paid when you start, as before.
+- **Starting is now its own action** (`ProjectRules.StartVerb`: "Unload the parts crate and start", ten minutes); the steps follow. Nothing starts without its parts (`ProjectRules.Blocked` → `YardRules.NotOnSite`).
+- **Trade hours:** seven till five, Monday to Saturday (`YardRules.Shut`, through `HomeRules.WhyNot`). On a Sunday the "what next" line skips the Yard so other work (or sleep) comes first.
+- **The line and the bot:** "Project: X: buy the parts at Gorse's Yard ($N)" → "take the parts crate from the van to the site" → the steps. The bot follows it (target `yard:`; the crate is fetched like any kit).
+- **Saves v20:** `GameState.Parts` (bought, not yet unloaded). Older saves get an empty list; a project already under way carries on.
+- **Pace and money:** the Act 5 script player now takes **24.6 h** (0.8 / 3.3 / 4.0 / 5.3 / 5.4 / 5.8 per act; was 26.8 h); Act 5 opens with $12,875 and Act 6 with $12,557. Act 2's drop from 6.4 h is the seeded run reshuffling, not the Yard (IDEAS inbox).
+- **For god keys, autoplay skips and act starts:** `ProjectRules.GodBuild` pays for the parts unless they were bought, and `Finish` clears any order.
+- **Not done:** the crane, ordering by phone, a delivery fee or your own flatbed (IDEAS inbox); models for `yard.counter`, `yard.bay`, `kit.parts-crate` (briefs in `props.json`).
+
+## 2026-11-21: Act 5 is The Core (DC1)
 
 - **Acts:** `act5-core` "The Core" is Act 5 (gate `ann-core` "Server farms", Sept 2006; Almanac page `alm-core` "The carrier hotel", 35 Archive, readable in Act 4). Mobile (`act5-mobile`, ids never change) is Act 6, Platform 7, Intelligent 8. `alm-smartphone` is now readable in Act 5 and needs `alm-core`. A v18 save in mobile or later moves up one act (v19 migration, tested).
 - **Thirteen data-centre projects** (`projects.json`, design §6) as placeholder steps on today's click-and-hold mechanic: slab ($1,500, 5-day cure), hall (roller door on a lorry, 7 days), power (generator, 6 days), cold aisle, Meet-Me Room (+$300/month cross-connects), core rack, then bring home the valley, Eastgate (the first ring), migration night (ends the cold store's bill, +$600 colo), Millbrook and Farland (a leased second path from Nez), and light the board (+$1,500). Peering with NezTel is optional and listed after the finale. Monthly bills add up to $2,450. The masts moved to Act 6 and wait on `proj-dc-lit`.

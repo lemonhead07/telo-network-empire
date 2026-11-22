@@ -108,9 +108,7 @@ public static class Guidance
                 : $"Pole line to {far.Name}: plant pole {line.Planted + 1} along the farm road (poles are on the van, ${far.PoleLine!.PoleCost} each).", null);
         }
         // the next thing to build: each project opens the next part of the game (a lane, a village, the dial-up years)
-        if (Build.ProjectRules.Next(s, c) is { } proj && Build.ProjectRules.Step(s, proj) is { } pst
-            && Build.ProjectRules.ProgressOf(s, proj.Id).WaitUntil <= s.Day && (Build.ProjectRules.Started(s, proj.Id) || Build.ProjectRules.CanAffordStart(s, c, proj)))
-            return ($"Project: {proj.Name}: {pst.Verb.ToLowerInvariant()}{(Build.ProjectRules.Started(s, proj.Id) ? "" : $" (${proj.Cost} to start)")}.", Act.Places.Project(proj.Id));
+        if (ProjectLine(s, c) is { } build) return build;
         // the next project is waiting on something you can do: remember a page, lease the depot
         if (Build.ProjectRules.Waiting(s, c) is { } wait)
         {
@@ -136,6 +134,25 @@ public static class Guidance
         if (prospect is not null) return ($"Knock on doors to find customers. Try {prospect.Resident}'s.", prospect.Id);
         if (BestJob(s, c) is { } any) return ($"Odd job: {any.Title.ToLowerInvariant()} at {Who(c, any)}'s (${any.Pay}).", any.LotId);
         return (QuietText, null);
+    }
+
+    /// <summary>
+    /// The next project, step by step: buy its parts at the Yard, bring the crate (or wait for the lorry), start it, build it (EA2b).
+    /// Null while it waits (the concrete, the council, the lorry), so other work comes first.
+    /// </summary>
+    private static (string Text, string? LotId)? ProjectLine(GameState s, ContentDb c)
+    {
+        if (Build.ProjectRules.Next(s, c) is not { } proj || Build.ProjectRules.Step(s, proj) is not { } pst) return null;
+        var site = Act.Places.Project(proj.Id);
+        if (Build.ProjectRules.Started(s, proj.Id))
+            return Build.ProjectRules.ProgressOf(s, proj.Id).WaitUntil <= s.Day ? ($"Project: {proj.Name}: {pst.Verb.ToLowerInvariant()}.", site) : null;
+        if (!Build.YardRules.NeedsParts(proj))
+            return Build.ProjectRules.CanAffordStart(s, c, proj) ? ($"Project: {proj.Name}: {pst.Verb.ToLowerInvariant()} (${proj.Cost} to start).", site) : null;
+        if (s.Parts.TryGetValue(proj.Id, out var order))
+            return !order.Lorry ? ($"Project: {proj.Name}: take the parts crate from the van to the site.", site)
+                : order.ArrivesDay <= s.Day ? ($"Project: {proj.Name}: the Yard's lorry has left the parts on site. Check them and start.", site) : null;
+        if (!Build.ProjectRules.CanAffordStart(s, c, proj) || Build.YardRules.ShutAllDay(s, c) || Build.YardRules.Lot(c) is not { } yard) return null;
+        return ($"Project: {proj.Name}: buy the parts at {yard.Resident} (${proj.Cost}{(proj.Parts == PartsBy.Lorry ? ", delivered by lorry" : "")}).", yard.Id);
     }
 
     private static OddJob? BestJob(GameState s, ContentDb c) => s.Jobs.OrderByDescending(j => j.Pay).FirstOrDefault();

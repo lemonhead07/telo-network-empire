@@ -115,7 +115,7 @@
       { "verb": "Watch the lamps come up", "clicks": 1, "minutes": 10 }
     ] },
 
-  { "id": "proj-leased-line", "model": "site.leased-line", "name": "Leased line from NezTel", "act": 2, "site": "town-start", "east": -9, "south": 9, "cost": 50,
+  { "id": "proj-leased-line", "model": "site.leased-line", "name": "Leased line from NezTel", "act": 2, "site": "town-start", "east": -9, "south": 9, "cost": 50, "parts": "none",
     "requiresProjects": ["proj-modem-bank"],
     "story": "The web is out there and the only road to it is NezTel's trunk. Ask for a leased line: a form, a waiting list, an engineer who comes when he comes.",
     "doneText": "The leased line is live. Your subscribers can dial in to the web for $5 a month more. NezTel will bill you $120 a month for the privilege.",
@@ -137,7 +137,7 @@
       { "verb": "Test the hop end to end", "clicks": 1, "minutes": 10 }
     ] },
 
-  { "id": "proj-millbrook", "model": "site.exchange-hut", "name": "Millbrook exchange", "act": 2, "site": "farm-hollow", "east": -30, "south": -30, "cost": 1200,
+  { "id": "proj-millbrook", "model": "site.exchange-hut", "name": "Millbrook exchange", "act": 2, "site": "farm-hollow", "east": -30, "south": -30, "cost": 1200, "parts": "lorry",
     "requiresProjects": ["proj-microwave"],
     "story": "Millbrook, the market town over the hills, has one NezTel exchange and a waiting list longer than the high street. A relay hut on the hill past the farm puts it within your reach.",
     "doneText": "The Millbrook relay is up. The town's waiting list is about to become your customer list.",
@@ -149,7 +149,7 @@
       { "verb": "Cut Millbrook's lines over", "clicks": 2, "minutes": 20, "needs": ["cableDrum"] }
     ] },
 
-  { "id": "proj-cold-store", "model": "site.cold-store", "name": "Fit out the old cold store", "act": 3, "site": "eastgate", "east": -64, "south": -1, "cost": 1500,
+  { "id": "proj-cold-store", "model": "site.cold-store", "name": "Fit out the old cold store", "act": 3, "site": "eastgate", "east": -64, "south": -1, "cost": 1500, "parts": "lorry",
     "requiresProjects": ["proj-microwave"],
     "story": "The boom: everybody wants a web page and somewhere to keep it. Eastgate's old cold store is cold, has power, and nobody wants it. A datacentre, then.",
     "doneText": "Racks hum in the old cold store. Hosting pays $400 a month, and the first customer is Sol, who wants his shop on the web.",
@@ -161,7 +161,7 @@
       { "verb": "Pull the mains to test the generator", "clicks": 1, "minutes": 15 }
     ] },
 
-  { "id": "proj-landing", "model": "site.cable-landing", "name": "Kestrel Point landing station", "act": 3, "site": "eastgate", "east": 0, "south": 62, "cost": 2000,
+  { "id": "proj-landing", "model": "site.cable-landing", "name": "Kestrel Point landing station", "act": 3, "site": "eastgate", "east": 0, "south": 62, "cost": 2000, "parts": "lorry",
     "requiresProjects": ["proj-cold-store"],
     "story": "NezTel owns the only ocean cable and charges you by the byte to use it. A landing station on the shore below Eastgate is where your own will come ashore. NezTel has objected to the planning permission, twice.",
     "doneText": "The landing station stands on the shore, empty, waiting for its cable.",
@@ -172,7 +172,7 @@
       { "verb": "Fit out the power and the racks", "clicks": 2, "minutes": 25, "needs": ["cableDrum", "toolbox"] }
     ] },
 
-  { "id": "proj-ocean-cable", "model": "site.cable-reel", "name": "Ocean cable to Farland", "act": 3, "site": "eastgate", "east": 18, "south": 64, "cost": 4000,
+  { "id": "proj-ocean-cable", "model": "site.cable-reel", "name": "Ocean cable to Farland", "act": 3, "site": "eastgate", "east": 18, "south": 64, "cost": 4000, "parts": "lorry",
     "requiresProjects": ["proj-landing"],
     "story": "A chartered ship lays your cable across to Farland's near coast. The last splice is on the beach, by hand, as the tide comes in.",
     "doneText": "The last fibre is spliced on the beach. Farland's coast towns are on your network, and NezTel's ocean bill is the past.",
@@ -184,7 +184,7 @@
       { "verb": "Light it up end to end", "clicks": 1, "minutes": 10 }
     ] },
 
-  { "id": "proj-dslam", "model": "site.dslam-cabinet", "name": "Broadband in the exchange", "act": 4, "site": "town-start", "east": 66, "south": -22, "cost": 2500,
+  { "id": "proj-dslam", "model": "site.dslam-cabinet", "name": "Broadband in the exchange", "act": 4, "site": "town-start", "east": 66, "south": -22, "cost": 2500, "parts": "lorry",
     "requiresEntry": "alm-adsl", "requiresProjects": ["proj-ocean-cable"],
     "story": "Always on, over the copper already in the ground. Racks of broadband kit in the exchange, and every line a short drive from it gets faster overnight.",
     "doneText": "Broadband is on. Everybody's line is always on, and pays $10 a month more for it.",
@@ -195,7 +195,7 @@
       { "verb": "Test a line at every distance", "clicks": 2, "minutes": 10 }
     ] },
 
-  { "id": "proj-fibre-ring", "model": "site.fibre-joint", "name": "Fibre ring round the bay", "act": 4, "site": "eastgate", "east": -60, "south": -20, "cost": 4500,
+  { "id": "proj-fibre-ring", "model": "site.fibre-joint", "name": "Fibre ring round the bay", "act": 4, "site": "eastgate", "east": -60, "south": -20, "cost": 4500, "parts": "lorry",
     "requiresProjects": ["proj-dslam"],
     "story": "Easthaven and the bay towns want broadband too. A ring of fibre round the bay reaches all of them, and if any one bit is cut the light goes the other way round.",
     "doneText": "The ring is closed. Easthaven and every town round the bay can sign up.",
@@ -207,7 +207,7 @@
       { "verb": "Splice the ring closed", "clicks": 2, "minutes": 15, "needs": ["toolbox"] }
     ] },
 
-  { "id": "proj-farland-city", "model": "site.exchange-hut", "name": "Farland city exchange", "act": 4, "site": "farm-hollow", "east": -25, "south": 30, "cost": 6000,
+  { "id": "proj-farland-city", "model": "site.exchange-hut", "name": "Farland city exchange", "act": 4, "site": "farm-hollow", "east": -25, "south": 30, "cost": 6000, "parts": "lorry",
     "requiresProjects": ["proj-fibre-ring"],
     "story": "Farland's capital has broadband from NezTel at twice your price and half your speed. An exchange of your own there, fed by the ocean cable, settles it.",
     "doneText": "Farland city is on your network. NezTel's local manager has asked to meet you for lunch.",
@@ -218,7 +218,7 @@
       { "verb": "Commission the exchange", "clicks": 3, "minutes": 15, "needs": ["cableDrum", "toolbox"] }
     ] },
 
-  { "id": "proj-dc-slab", "name": "Pour the slab on Halden Flats", "act": 5, "site": "halden", "east": -24, "south": -18, "cost": 1500,
+  { "id": "proj-dc-slab", "name": "Pour the slab on Halden Flats", "act": 5, "site": "halden", "east": -24, "south": -18, "cost": 1500, "parts": "lorry",
     "requiresProjects": ["proj-farland-city"],
     "story": "Your network is a mess, and you built the mess yourself: a modem bank behind 1 Main Street, a cabinet in Eastgate, hosting in a fish store, one microwave hop and one ocean cable. Everything should go through one proper building. Halden Flats is flat, boring and empty, and every cable you own already passes it. The council is delighted that anyone wants it.",
     "doneText": "A concrete slab on Halden Flats, and a portacabin on it with your name on the door. The council sent a card.",
@@ -230,7 +230,7 @@
       { "verb": "Put the portacabin on the slab", "clicks": 1, "minutes": 20, "needs": ["toolbox"], "waitDays": 5, "waitText": "the slab is curing" }
     ] },
 
-  { "id": "proj-dc-shell", "name": "Raise the hall", "act": 5, "site": "halden", "east": 0, "south": -18, "cost": 2500,
+  { "id": "proj-dc-shell", "name": "Raise the hall", "act": 5, "site": "halden", "east": 0, "south": -18, "cost": 2500, "parts": "lorry",
     "requiresProjects": ["proj-dc-slab"],
     "story": "A slab is a promise. A steel frame, cladding and a roller door make it a building. The crane comes from the Yard with a driver who has opinions about wind.",
     "doneText": "The hall stands on Halden Flats: a big grey shed with a roller door, empty and echoing. Somebody has already parked in front of the door.",
@@ -242,7 +242,7 @@
       { "verb": "Mark out the rooms on the floor in chalk", "clicks": 2, "minutes": 15 }
     ] },
 
-  { "id": "proj-dc-power", "name": "Power: grid, batteries, generator", "act": 5, "site": "halden", "east": 24, "south": -18, "cost": 3000,
+  { "id": "proj-dc-power", "name": "Power: grid, batteries, generator", "act": 5, "site": "halden", "east": 24, "south": -18, "cost": 3000, "parts": "lorry",
     "requiresProjects": ["proj-dc-shell"],
     "story": "Racks without power are furniture. A feed from the substation, a string of batteries to catch a cut, and a generator to take over before the batteries run flat. Then the test nobody likes: pull the mains on purpose.",
     "doneText": "A and B power in the hall. You pulled the mains, the batteries took it, and the generator coughed and caught. From now on it's a Sunday ritual.",
@@ -254,7 +254,7 @@
       { "verb": "Pull the mains on purpose", "clicks": 1, "minutes": 15 }
     ] },
 
-  { "id": "proj-dc-cooling", "name": "The cold aisle", "act": 5, "site": "halden", "east": -24, "south": 8, "cost": 1500,
+  { "id": "proj-dc-cooling", "name": "The cold aisle", "act": 5, "site": "halden", "east": -24, "south": 8, "cost": 1500, "parts": "lorry",
     "requiresProjects": ["proj-dc-power"],
     "story": "Every box you plug in turns electricity into heat. Cooling units, a raised floor, and the racks faced the right way: cold air in at the front, hot air out at the back. Face one backwards and it cooks.",
     "doneText": "The hall is cold, loud and faintly smells of new carpet tiles. The racks face the right way. You checked twice.",
@@ -276,7 +276,7 @@
       { "verb": "Label every tray and duct", "clicks": 2, "minutes": 10 }
     ] },
 
-  { "id": "proj-dc-core", "name": "The core rack", "act": 5, "site": "halden", "east": 24, "south": 8, "cost": 2500,
+  { "id": "proj-dc-core", "name": "The core rack", "act": 5, "site": "halden", "east": 24, "south": 8, "cost": 2500, "parts": "lorry",
     "requiresProjects": ["proj-dc-meetme"],
     "story": "The heart of it: one full rack with two routers (one is the spare), the switches, the patch panels, and power from both A and B. Everything else in the building will plug into this.",
     "doneText": "The core rack is up and every lamp on it is green. The big brass pin on the board is lit. Now bring the rest of the network home to it.",
@@ -312,7 +312,7 @@
       { "verb": "Patch both strings and test each way round", "clicks": 2, "minutes": 15 }
     ] },
 
-  { "id": "proj-migration", "name": "Migration night", "act": 5, "site": "halden", "east": -24, "south": 32, "cost": 1000,
+  { "id": "proj-migration", "name": "Migration night", "act": 5, "site": "halden", "east": -24, "south": 32, "cost": 1000, "parts": "none",
     "requiresProjects": ["proj-home-eastgate"],
     "story": "Every hosting customer's server lives in a fish cold store in Eastgate. Move them all to the hall in one night, between one and five, before Sol opens up and finds his web page down. Carry, fasten, connect, bring up, check every light.",
     "doneText": "Every server is in the hall and every light is green, at ten to five. Sol's web page never blinked. The cold store has gone back to fish.",
@@ -336,7 +336,7 @@
       { "verb": "Patch both ends and test each way round", "clicks": 1, "minutes": 15 }
     ] },
 
-  { "id": "proj-home-farland", "name": "Bring Farland home", "act": 5, "site": "eastgate", "east": -20, "south": 60, "cost": 3000,
+  { "id": "proj-home-farland", "name": "Bring Farland home", "act": 5, "site": "eastgate", "east": -20, "south": 60, "cost": 3000, "parts": "lorry",
     "requiresProjects": ["proj-home-millbrook"],
     "story": "All of Farland comes ashore on one ocean cable at Kestrel Point. Trench from the landing station up to Halden's Meet-Me Room. That still leaves one cable under the sea, so lease a second path on NezTel's old one: pride against resilience, signed by post with Nadir.",
     "doneText": "Farland's string runs from Kestrel Point to the Meet-Me Room, and a second path on NezTel's old cable backs it up. Nez's letter of agreement is very polite, which is worse.",
@@ -348,7 +348,7 @@
       { "verb": "Splice in the leased path and test both", "clicks": 2, "minutes": 20, "needs": ["toolbox"], "waitDays": 10, "waitText": "NezTel's legal department is reading the lease, slowly" }
     ] },
 
-  { "id": "proj-dc-lit", "name": "Light the board", "act": 5, "site": "halden", "east": 0, "south": 32, "cost": 1500,
+  { "id": "proj-dc-lit", "name": "Light the board", "act": 5, "site": "halden", "east": 0, "south": 32, "cost": 1500, "parts": "none",
     "requiresProjects": ["proj-home-farland"],
     "story": "Everyone's here. Walk every string on the board, run the Sunday generator test live with the whole network on it, fix whatever goes dark, and then throw the big switch Jory wired up on the board's frame for the occasion.",
     "doneText": "You pulled the mains with the whole network on it and nothing went dark. Then you threw the big switch, and every fairy light on the board ran along its string, one after another.",
@@ -360,7 +360,7 @@
       { "verb": "Throw the big switch", "clicks": 1, "minutes": 5 }
     ] },
 
-  { "id": "proj-peering", "name": "Shake hands with NezTel", "act": 5, "site": "halden", "east": 24, "south": 32, "cost": 800,
+  { "id": "proj-peering", "name": "Shake hands with NezTel", "act": 5, "site": "halden", "east": 24, "south": 32, "cost": 800, "parts": "none",
     "requiresProjects": ["proj-dc-core"],
     "story": "NezTel has rented a cage in your Meet-Me Room. One short lead between your rack and theirs and your traffic stops going the long way round the planet. Nez's engineer is coming to shake hands. Nez's engineer is nicer than Nez.",
     "doneText": "One lead between your rack and NezTel's, and a handshake. Traffic is cheaper. Nez now knows exactly what's in your building.",
@@ -370,7 +370,7 @@
       { "verb": "Shake hands with NezTel's engineer", "clicks": 1, "minutes": 20 }
     ] },
 
-  { "id": "proj-first-mast", "model": "site.cell-mast", "name": "First cell mast on the ridge", "act": 6, "site": "farm-hollow", "east": 35, "south": -25, "cost": 10000,
+  { "id": "proj-first-mast", "model": "site.cell-mast", "name": "First cell mast on the ridge", "act": 6, "site": "farm-hollow", "east": 35, "south": -25, "cost": 10000, "parts": "lorry",
     "requiresEntry": "alm-smartphone", "requiresProjects": ["proj-dc-lit"],
     "story": "Everyone has a phone in their pocket now and it doesn't need a wall. A mast on the ridge by the farm is your first cell: the whole valley in one sweep.",
     "doneText": "The first mast is live. Phones across the valley show your name in the corner of the screen.",
@@ -382,7 +382,7 @@
       { "verb": "Make the first call on it", "clicks": 1, "minutes": 5 }
     ] },
 
-  { "id": "proj-cell-sites", "model": "site.cell-mast", "name": "Cell sites along the coast", "act": 6, "site": "eastgate", "east": 50, "south": -40, "cost": 15000,
+  { "id": "proj-cell-sites", "model": "site.cell-mast", "name": "Cell sites along the coast", "act": 6, "site": "eastgate", "east": 50, "south": -40, "cost": 15000, "parts": "lorry",
     "requiresProjects": ["proj-first-mast"],
     "story": "One mast was a start. Masts along the whole coast, on church towers, water tanks and the Plough's chimney, and everyone between here and Farland is covered.",
     "doneText": "The coast is covered. The Plough charges you rent for the chimney in pints.",
@@ -394,7 +394,7 @@
       { "verb": "Hand calls between the masts on a drive down the coast", "clicks": 2, "minutes": 15 }
     ] },
 
-  { "id": "proj-backhaul", "model": "site.fibre-joint", "name": "Fibre to every mast", "act": 6, "site": "town-start", "east": -104, "south": -40, "cost": 12000,
+  { "id": "proj-backhaul", "model": "site.fibre-joint", "name": "Fibre to every mast", "act": 6, "site": "town-start", "east": -104, "south": -40, "cost": 12000, "parts": "lorry",
     "requiresProjects": ["proj-cell-sites"],
     "story": "The masts are only as fast as the line behind them, and half of them run on borrowed copper. Fibre to every mast, and the phones in people's pockets get fast.",
     "doneText": "Every mast has fibre behind it. Data on the phones is fast enough that people stop noticing it, which is the point.",

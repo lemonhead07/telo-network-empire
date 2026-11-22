@@ -74,18 +74,23 @@ public static class Actions
         if (here == Places.Room) Room(sim, a, list, onSite);
         else if (c.Lots.TryGetValue(here, out var lot)) Lot(sim, a, lot, list, onSite);
         else if (Places.IsPole(here, out var pid, out int k) && c.Premises.TryGetValue(pid, out var premise)) Pole(sim, gen, premise, k, list, onSite, a);
-        else if (Places.IsProject(here, out var projId) && c.Project(projId) is { } project) Project(sim, project, list, onSite);
+        else if (Places.IsProject(here, out var projId) && c.Project(projId) is { } project) Project(sim, a, project, list, onSite);
         return list;
     }
 
     // ---- a project site ------------------------------------------------------------------------
-    private static void Project(Simulation sim, ProjectDef p, List<GameAction> list, Tools onSite)
+    private static void Project(Simulation sim, ActorState a, ProjectDef p, List<GameAction> list, Tools onSite)
     {
         var s = sim.State;
         if (ProjectRules.Step(s, p) is not { } st) return;
-        var prog = ProjectRules.ProgressOf(s, p.Id);
-        list.Add(new("project:do", $"{st.Verb} ({prog.Click + 1} of {st.Clicks})", st.Minutes, ProjectRules.Blocked(s, sim.Content, p, onSite),
-            () => ProjectRules.Do(s, sim.Content, p, onSite)));
+        bool start = !ProjectRules.Started(s, p.Id);
+        list.Add(new("project:do", ProjectRules.NextVerb(s, p)!, start ? YardRules.UnloadMinutes : st.Minutes, ProjectRules.Blocked(s, sim.Content, p, onSite), () =>
+        {
+            bool crate = start && p.Parts == PartsBy.Van;
+            if (!ProjectRules.Do(s, sim.Content, p, onSite) || !crate) return;
+            // the crate is unloaded here: out of your hands (the next one, if there is one, is still on the van)
+            if (a.Holding == Tools.Parts) a.Holding = Tools.None; else a.Kit.Remove(Tools.Parts);
+        }));
     }
 
     /// <summary>Do it, if nothing is stopping it. The clock moves by the action's minutes unless the presentation lives the time itself.</summary>
@@ -198,6 +203,15 @@ public static class Actions
             if (BoardRules.CanAddLine(s))
                 list.Add(new("buy:card", $"Buy a line card for the Board (${BoardRules.CardPrice})", 5, shut ?? (s.Cash < BoardRules.CardPrice ? "not enough cash" : null),
                     () => BoardRules.BuyCard(s)));
+        }
+        if (lot.Kind == LotKind.Yard)
+        {
+            // the trade counter: the parts for every project open to you, paid for here (EA2b)
+            string? shut = !a.IgnoreHours && YardRules.Shut(s, c, lot) ? YardRules.WhyShut(s) : null;
+            foreach (var p in YardRules.ForSale(s, c))
+                list.Add(new($"yard:buy:{p.Id}", $"Buy the parts for {p.Name} (${p.Cost}{(p.Parts == PartsBy.Lorry ? ", delivered by lorry" : ", in a crate on the van")})",
+                    YardRules.BuyMinutes, shut ?? YardRules.CantBuy(s, c, p), () => YardRules.Buy(s, c, p)));
+            return;
         }
         if (lot.Kind == LotKind.Depot)
         {
@@ -328,6 +342,7 @@ public static class Actions
     {
         Tools.ModemBox => sim.State.Modems - sim.Installs.Values.Count(j => j.IsDone(InstallStep.Modem)) > 0,
         Tools.LineCard => sim.State.LineCards > 0,
+        Tools.Parts => YardRules.OnVan(sim.State) > 0,
         _ => true,
     };
 
@@ -337,7 +352,8 @@ public static class Actions
 
     public static string Cargo(Tools t) => t switch
     {
-        Tools.CableDrum => "cable drum", Tools.Ladder => "ladder", Tools.Toolbox => "toolbox", Tools.ModemBox => "boxed modem", Tools.Pole => "pole", Tools.LineCard => "line card", _ => "kit",
+        Tools.CableDrum => "cable drum", Tools.Ladder => "ladder", Tools.Toolbox => "toolbox", Tools.ModemBox => "boxed modem", Tools.Pole => "pole", Tools.LineCard => "line card",
+        Tools.Parts => "parts crate", _ => "kit",
     };
 
     public static string Names(Tools set) => string.Join(" and ", ActorState.AllKit.Where(t => (set & t) != 0).Select(Cargo));

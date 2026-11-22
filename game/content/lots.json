@@ -14,6 +14,7 @@
   {"id": "lot-shop", "kind": "shop", "site": "town-start", "east": 76, "south": 1, "yaw": 0, "resident": "Sol's Electronics", "archetype": "small-business", "fee": 50},
   {"id": "lot-hollow-farm", "kind": "farm", "site": "farm-hollow", "east": 0, "south": 0, "yaw": 0, "resident": "Ruth Adeyemi", "archetype": "family", "fee": 10, "premise": "prem-adeyemi-farm"},
   {"id": "lot-depot", "kind": "depot", "site": "town-start", "east": 66, "south": 33, "yaw": 180, "resident": "1 Main Street", "archetype": "small-business", "fee": 0},
+  {"id": "lot-yard", "kind": "yard", "site": "town-start", "east": 100, "south": 40, "yaw": 180, "resident": "Gorse's Yard", "archetype": "small-business", "fee": 0},
 
   {"id": "lot-cl-n1", "kind": "house", "site": "town-start", "east": -64, "south": -56, "yaw": 0, "resident": "Father Declan Roe", "archetype": "tech-inexperienced", "fee": 16, "opensAt": 6, "needsProject": "proj-church-poles"},
   {"id": "lot-cl-n2", "kind": "house", "site": "town-start", "east": -44, "south": -56, "yaw": 0, "resident": "The Haddads", "archetype": "family", "fee": 24, "opensAt": 6, "needsProject": "proj-church-poles"},

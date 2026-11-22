@@ -27,6 +27,8 @@ public sealed class LotView
     public Vector3? Park { get; init; }
     /// <summary>Where the driveway meets the middle of Main Street. Null for places not on Main Street.</summary>
     public Vector3? DriveEntry { get; init; }
+    /// <summary>The Yard's loading bay and lorry (EA2b): built with the Yard, shown once its lorry has big parts to deliver.</summary>
+    public Node3D? Bay { get; init; }
 }
 
 /// <summary>What the rest of the game needs to know about the settlements.</summary>
@@ -107,6 +109,7 @@ public static class TownBuilder
                 LotKind.Shop => "shop.sols",
                 LotKind.Depot => "depot.yard",
                 LotKind.Farm => "farm.hollow",
+                LotKind.Yard => "yard.counter",
                 _ => null,
             };
             Mesh mesh = lot.Kind switch
@@ -114,6 +117,7 @@ public static class TownBuilder
                 LotKind.Shop => ShopMesh(),
                 LotKind.Farm => FarmMesh(solids),
                 LotKind.Depot => DepotMesh(),
+                LotKind.Yard => YardMesh(solids),
                 _ => HouseMesh(palette[i % palette.Length], roofs[i % roofs.Length], wallH, solids),
             };
             i++;
@@ -205,8 +209,8 @@ public static class TownBuilder
 
     private static LotView Building(Node3D root, LotDef lot, Transform3D xf, Mesh mesh, List<(Vector3 Pos, Vector3 Size)> solids, float wallH, float poleDist, Color carColour, Street? street, Node3D? look = null)
     {
-        bool shop = lot.Kind == LotKind.Shop, house = lot.Kind == LotKind.House;
-        float w = shop ? 10 : 8, d = shop ? 8 : 7, front = d / 2;
+        bool shop = lot.Kind == LotKind.Shop, house = lot.Kind == LotKind.House, yard = lot.Kind == LotKind.Yard;
+        float w = shop ? 10 : yard ? 16 : 8, d = shop ? 8 : yard ? 10 : 7, front = d / 2;
         var body = new StaticBody3D { Name = lot.Id, Transform = xf };
         body.AddChild(look ?? new MeshInstance3D { Mesh = mesh });
         if (!house) body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(w, 4, d) }, Position = new Vector3(0, 1.5f, 0) });
@@ -221,7 +225,7 @@ public static class TownBuilder
         {
             bool facingSouth = Mathf.Abs(Mathf.Wrap((float)lot.Yaw, -180f, 180f)) < 90;
             float zStreet = facingSouth ? street.At - (float)lot.South : (float)lot.South - street.At;
-            driveX = lot.Kind switch { LotKind.Shop => -3f, LotKind.Depot => -1.9f, _ => DriveSide(lot, facingSouth, street) * DriveOffset };
+            driveX = lot.Kind switch { LotKind.Shop => -3f, LotKind.Depot => -1.9f, LotKind.Yard => YardDriveX, _ => DriveSide(lot, facingSouth, street) * DriveOffset };
             float start = house ? -2.6f : front, end = zStreet - StreetHalfWidth;
             if (end > start + 2)
             {
@@ -281,13 +285,13 @@ public static class TownBuilder
 
         // the person who lives or works here, when there's a model for them
         Node3D? resident = null;
-        string? who = house ? $"person.res-{lot.Archetype}" : shop ? "person.sol" : null;
+        string? who = house ? $"person.res-{lot.Archetype}" : shop ? "person.sol" : yard ? "person.engineer" : null;
         if (who is not null && Props.HasModel(who))
         {
             resident = Props.Make(who);
             resident.Name = "Resident";
             // in the front room by the left window, turned a little towards the door; Sol behind the counter hatch
-            resident.Position = house ? new Vector3(-2.3f, HouseFloor, 2.2f) : new Vector3(3.0f, 0.02f, 2.75f);
+            resident.Position = house ? new Vector3(-2.3f, HouseFloor, 2.2f) : yard ? new Vector3(-0.3f, 0.02f, 5.35f) : new Vector3(3.0f, 0.02f, 2.75f);
             resident.RotationDegrees = new Vector3(0, house ? 25 : 0, 0);
             body.AddChild(resident);
         }
@@ -303,9 +307,26 @@ public static class TownBuilder
         if (house) { door.CollisionLayer = 2; door.CollisionMask = 0; } // you can look at it and knock, and walk through when the door is open
         var counter = shop ? Hotspot(new Vector3(3f, 1.4f, front + 0.15f), new Vector3(2.6f, 1.6f, 0.4f)) : null;
 
+        // the Yard's loading bay and its lorry, round the east side: shown once there are big parts to deliver (D43: the Yard grows)
+        Node3D? bay = null;
+        if (yard)
+        {
+            bay = Props.Make("yard.bay", () => YardBay().Instance("YardBay"));
+            bay.Position = new Vector3(-w / 2 - 5.5f, 0, -0.5f);
+            bay.Visible = false;
+            body.AddChild(bay);
+            body.AddChild(new Label3D
+            {
+                Text = "TRADE COUNTER", Position = new Vector3(0, 3.0f, front + 1.42f), FontSize = 64, PixelSize = 0.22f / 64f,
+                Modulate = new Color(0.95f, 0.93f, 0.85f), OutlineSize = 0,
+            });
+        }
+
         var name = new Label3D
         {
-            Text = lot.Resident, Position = new Vector3(0, shop ? 3.25f : lot.Kind == LotKind.Depot ? 2.95f : 2.45f, front + 0.12f), FontSize = 64, PixelSize = (shop ? 0.5f : lot.Kind == LotKind.Depot ? 0.36f : 0.16f) / 64f,
+            Text = yard ? $"{lot.Resident.ToUpperInvariant()}\nbuilders' and line merchants" : lot.Resident,
+            Position = new Vector3(0, shop ? 3.25f : yard ? 4.75f : lot.Kind == LotKind.Depot ? 2.95f : 2.45f, front + 0.12f), FontSize = 64,
+            PixelSize = (shop ? 0.5f : yard ? 0.4f : lot.Kind == LotKind.Depot ? 0.36f : 0.16f) / 64f,
             Modulate = shop ? new Color(0.95f, 0.9f, 0.7f) : new Color(0.12f, 0.1f, 0.08f), OutlineSize = 0,
         };
         body.AddChild(name);
@@ -318,7 +339,7 @@ public static class TownBuilder
             Visible = false,
         };
         body.AddChild(marker);
-        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor, Lights = lights, Car = car, Park = park, DriveEntry = entry, Resident = resident };
+        return new LotView { Lot = lot, Door = door, Marker = marker, Counter = counter, Position = xf.Origin, Body = body, Install = install, SetDoor = setDoor, Lights = lights, Car = car, Park = park, DriveEntry = entry, Resident = resident, Bay = bay };
     }
 
     /// <summary>The road surface, laid onto the real terrain by ray-casting down. Call once physics has the terrain.</summary>
@@ -427,6 +448,70 @@ public static class TownBuilder
     }
 
     /// <summary>1 Main Street: a small yard and workshop, to let.</summary>
+    /// <summary>Where a visiting van parks at the Yard: the forecourt on its east side, clear of the stock.</summary>
+    internal const float YardDriveX = -5.5f;
+
+    /// <summary>
+    /// The Yard (EA2b, prop yard.counter): a tall corrugated trade shed, its counter hatch under a canopy in the middle of the
+    /// front (where you buy), sliding doors either side, and stock out in the open on the west side: poles on a rack, cable
+    /// drums, green street cabinets on pallets. Local +Z faces the street; with the lot's yaw of 180, local +X is west.
+    /// </summary>
+    private static Mesh YardMesh(List<(Vector3 Pos, Vector3 Size)> solids)
+    {
+        var wall = new Color(0.44f, 0.52f, 0.47f); var roof = new Color(0.33f, 0.35f, 0.36f); var dark = new Color(0.16f, 0.17f, 0.18f);
+        var wood = new Color(0.56f, 0.42f, 0.26f); var pole = new Color(0.33f, 0.24f, 0.16f); var cab = new Color(0.2f, 0.42f, 0.28f);
+        var lp = new LowPoly()
+            .Box(new Vector3(0, 2.75f, 0), new Vector3(16, 5.5f, 10), wall)
+            .GableRoof(new Vector3(0, 5.5f, 0), 16.6f, 10.6f, 1.4f, roof)
+            .Box(new Vector3(0, 4.75f, 5.03f), new Vector3(9.5f, 1.0f, 0.06f), new Color(0.93f, 0.9f, 0.8f))     // name board
+            .Box(new Vector3(-5.2f, 2.1f, 5.03f), new Vector3(3.6f, 4.2f, 0.08f), new Color(0.36f, 0.42f, 0.4f)) // sliding doors
+            .Box(new Vector3(5.2f, 2.1f, 5.03f), new Vector3(3.6f, 4.2f, 0.08f), new Color(0.36f, 0.42f, 0.4f))
+            // the trade counter: a hatch with a worn top, a bell and a canopy over it
+            .Box(new Vector3(0, 1.75f, 5.02f), new Vector3(2.6f, 1.3f, 0.06f), dark)
+            .Box(new Vector3(0, 1.08f, 5.95f), new Vector3(2.8f, 0.08f, 0.6f), wood)
+            .Box(new Vector3(0, 0.52f, 5.95f), new Vector3(2.8f, 1.04f, 0.5f), new Color(0.62f, 0.6f, 0.55f))
+            .Cylinder(new Vector3(0.9f, 1.12f, 6.0f), 0.07f, 0.03f, 0.07f, 6, new Color(0.85f, 0.75f, 0.35f))
+            .Box(new Vector3(0, 2.75f, 5.7f), new Vector3(3.8f, 0.1f, 1.4f), new Color(0.72f, 0.2f, 0.16f))
+            .Box(new Vector3(0, 3.0f, 6.38f), new Vector3(3.8f, 0.4f, 0.04f), new Color(0.72f, 0.2f, 0.16f))
+            // stock out the west side: a pole rack, cable drums, cabinets on pallets
+            .Box(new Vector3(10.0f, 0.6f, -1f), new Vector3(0.2f, 1.2f, 0.2f), wood).Box(new Vector3(13.0f, 0.6f, -1f), new Vector3(0.2f, 1.2f, 0.2f), wood)
+            .Box(new Vector3(10.0f, 0.6f, -6f), new Vector3(0.2f, 1.2f, 0.2f), wood).Box(new Vector3(13.0f, 0.6f, -6f), new Vector3(0.2f, 1.2f, 0.2f), wood);
+        for (int i = 0; i < 6; i++)   // poles lying on the rack, a pyramid of six
+        {
+            int row = i < 3 ? 0 : i < 5 ? 1 : 2, k = i < 3 ? i : i < 5 ? i - 3 : 0;
+            lp.Box(new Vector3(10.9f + k * 0.55f + row * 0.27f, 1.32f + row * 0.26f, -3.5f), new Vector3(0.26f, 0.26f, 7.4f), pole);
+        }
+        foreach (var (x, z, h) in new[] { (10.4f, 2.6f, 0f), (12.4f, 2.4f, 0f), (11.4f, 2.5f, 0.72f) })   // drums lying on their faces
+            lp.Cylinder(new Vector3(x, h, z), 0.85f, 0.85f, 0.1f, 10, wood).Cylinder(new Vector3(x, h + 0.1f, z), 0.45f, 0.45f, 0.52f, 10, dark)
+              .Cylinder(new Vector3(x, h + 0.62f, z), 0.85f, 0.85f, 0.1f, 10, wood);
+        foreach (var x in new[] { 9.9f, 11.4f, 12.9f })   // street cabinets, still in their wrapping
+            lp.Box(new Vector3(x, 0.08f, 5.4f), new Vector3(1.2f, 0.16f, 0.95f), wood).Box(new Vector3(x, 0.83f, 5.4f), new Vector3(0.95f, 1.35f, 0.5f), cab);
+        solids.Add((new Vector3(11.5f, 0.9f, -3.5f), new Vector3(3.6f, 1.8f, 7.4f)));   // you walk round the stock, not through it
+        solids.Add((new Vector3(11.4f, 0.75f, 2.5f), new Vector3(4.0f, 1.5f, 2.0f)));
+        return lp.Build();
+    }
+
+    /// <summary>The Yard's loading bay (prop yard.bay): a raised concrete dock and the Yard's green flatbed lorry backed up to it.</summary>
+    private static LowPoly YardBay()
+    {
+        var concrete = new Color(0.6f, 0.59f, 0.56f); var green = new Color(0.22f, 0.42f, 0.3f); var cream = new Color(0.9f, 0.87f, 0.76f);
+        var dark = new Color(0.1f, 0.1f, 0.11f); var glass = new Color(0.3f, 0.42f, 0.52f);
+        var lp = new LowPoly()
+            .Box(new Vector3(1.2f, 0.55f, -1.5f), new Vector3(3.2f, 1.1f, 7f), concrete)                    // the dock
+            .Box(new Vector3(-0.3f, 1.16f, -1.5f), new Vector3(0.2f, 0.12f, 7f), new Color(0.85f, 0.7f, 0.2f)) // its yellow edge
+            .Box(new Vector3(-3.0f, 0.03f, 0f), new Vector3(5f, 0.06f, 12f), concrete * 0.92f)                  // apron
+            // the lorry: cab at the street end, flatbed towards the dock
+            .Box(new Vector3(-2.6f, 1.55f, 4.0f), new Vector3(2.3f, 2.1f, 1.9f), cream)
+            .Box(new Vector3(-2.6f, 2.0f, 4.97f), new Vector3(2.0f, 0.8f, 0.04f), glass)
+            .Box(new Vector3(-2.6f, 0.75f, 4.6f), new Vector3(2.35f, 0.5f, 1.0f), green)
+            .Box(new Vector3(-2.6f, 1.05f, -0.4f), new Vector3(2.3f, 0.25f, 6.6f), green)                       // flatbed
+            .Box(new Vector3(-2.6f, 1.6f, 2.95f), new Vector3(2.3f, 0.9f, 0.1f), green)                         // headboard
+            .Box(new Vector3(-2.6f, 1.55f, -1.2f), new Vector3(1.3f, 0.75f, 1.1f), new Color(0.72f, 0.58f, 0.36f)); // a crate on the bed
+        foreach (var (x, z) in new[] { (-3.65f, 4.0f), (-1.55f, 4.0f), (-3.65f, -1.6f), (-1.55f, -1.6f), (-3.65f, -2.9f), (-1.55f, -2.9f) })
+            lp.Box(new Vector3(x, 0.45f, z), new Vector3(0.3f, 0.9f, 0.9f), dark);
+        return lp;
+    }
+
     private static Mesh DepotMesh() => new LowPoly()
         .Box(new Vector3(0, 1.6f, 0), new Vector3(8, 3.8f, 7), new Color(0.6f, 0.38f, 0.3f))
         .Box(new Vector3(0, 3.6f, 0), new Vector3(8.4f, 0.25f, 7.4f), new Color(0.28f, 0.28f, 0.3f))

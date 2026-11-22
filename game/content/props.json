@@ -2256,6 +2256,173 @@
    "pivot": "ground, centre of the terrace; front +Z",
    "tris": 3138,
    "status": "modelled"
+  },
+  {
+   "id": "yard.counter",
+   "name": "Gorse's Yard (the trade counter)",
+   "what": "The builders' and line merchants on the east edge of town where every project's parts are bought (EA2b, D43). A tall corrugated trade shed, the counter hatch under a red canopy in the middle of the front (that hatch is where you buy), sliding doors either side, and stock out in the open on the west side: telephone poles on a rack, cable drums lying on their faces, green street cabinets still in their wrapping on pallets. Front faces +Z (the street); with the lot's yaw of 180, local +X is west.",
+   "size": [
+    30.0,
+    6.9,
+    12.0
+   ],
+   "pivot": "ground, centre of the shed's footprint (the stock runs out to x +14)",
+   "tris": 1200,
+   "colours": [
+    "yard-wall",
+    "yard-roof",
+    "yard-canopy",
+    "yard-counter",
+    "yard-wood",
+    "pole-brown",
+    "cabinet-green"
+   ],
+   "charm": "A brass bell on the counter with a card propped against it: RING ONCE. WE HEARD YOU.",
+   "anchors": {
+    "counter": [
+     0,
+     1.08,
+     5.3
+    ],
+    "name-board": [
+     0,
+     4.75,
+     5.03
+    ],
+    "pole-rack": [
+     11.5,
+     1.3,
+     -3.5
+    ],
+    "drums": [
+     11.4,
+     0,
+     2.5
+    ],
+    "cabinets": [
+     11.4,
+     0,
+     5.4
+    ],
+    "bay": [
+     -13.5,
+     0,
+     -0.5
+    ]
+   },
+   "states": [
+    "open (hatch lit)",
+    "shut (hatch shuttered, sign turned)"
+   ],
+   "takes": {
+    "plain": "Grey-green corrugated sheet, a hand-painted name board, everything stacked square.",
+    "old": "Rust streaks under every bolt, a sun-bleached canopy, the 1931 date over the door.",
+    "bodge": "A shipping container with a hatch cut in the side and the counter balanced on two drums."
+   },
+   "replaces": "TownBuilder.YardMesh",
+   "usedBy": [
+    "lot-yard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "yard.bay",
+   "name": "The Yard's loading bay and lorry",
+   "what": "Round the east side of the Yard: a raised concrete dock with a yellow edge, an apron, and the Yard's green flatbed lorry backed up to it with a crate on the bed. Appears when the lorry starts delivering big parts (Act 2); later a gantry crane over it (D43: counter, then loading bay, then crane).",
+   "size": [
+    8.5,
+    3.0,
+    12.0
+   ],
+   "pivot": "ground, centre of the apron",
+   "tris": 400,
+   "colours": [
+    "dock-concrete",
+    "dock-edge",
+    "lorry-green",
+    "lorry-cream",
+    "tyre",
+    "glass",
+    "crate-wood"
+   ],
+   "charm": "GORSE & DAUGHTER on the cab door, with the ampersand repainted in a different green.",
+   "anchors": {
+    "dock-edge": [
+     -0.3,
+     1.16,
+     -1.5
+    ],
+    "lorry-bed": [
+     -2.6,
+     1.2,
+     -0.4
+    ],
+    "cab": [
+     -2.6,
+     1.55,
+     4.0
+    ]
+   },
+   "states": [
+    "lorry in",
+    "lorry out (delivering)",
+    "crane (Act 4+)"
+   ],
+   "takes": {
+    "plain": "Clean dock, a tidy flatbed.",
+    "old": "Chipped dock edge, a lorry with one odd wheel.",
+    "bodge": "A trailer on bricks with planks for a ramp."
+   },
+   "replaces": "TownBuilder.YardBay",
+   "usedBy": [
+    "lot-yard"
+   ],
+   "status": "box"
+  },
+  {
+   "id": "kit.parts-crate",
+   "name": "Parts crate (on the van)",
+   "what": "A project's parts from the Yard in a slatted crate with the Yard's docket on the lid. Rides roped on the van's roof rack; carried with two hands (you walk slower) and unloaded at the site to start the project. Until it has its own model it borrows site.parts-crate.",
+   "size": [
+    0.83,
+    0.6,
+    0.62
+   ],
+   "pivot": "ground, centre",
+   "tris": 544,
+   "colours": [
+    "crate-wood",
+    "crate-slat",
+    "docket"
+   ],
+   "charm": "The docket says the project's name in the Yard's handwriting, spelt slightly wrong.",
+   "anchors": {
+    "grip": [
+     0,
+     0.45,
+     0
+    ],
+    "docket": [
+     0,
+     0.605,
+     0
+    ]
+   },
+   "states": [
+    "on the roof rack",
+    "in your hands",
+    "put down"
+   ],
+   "takes": {
+    "plain": "Pale pine slats, a printed docket.",
+    "old": "A reused crate with someone else's stencil.",
+    "bodge": "A tea chest with the parts wrapped in newspaper."
+   },
+   "replaces": "Cargo.cs Parts box",
+   "usedBy": [
+    "projects"
+   ],
+   "status": "box"
   }
  ]
 }

@@ -31,26 +31,27 @@ public sealed class Cargo
     private readonly Van _van;
     private readonly FirstPersonController _player;
     private readonly Node3D _world;
-    private readonly Func<int> _modemsSpare, _cardsSpare;
+    private readonly Func<int> _modemsSpare, _cardsSpare, _cratesSpare;
     public List<Carryable> Items { get; } = new();
     public Carryable? Held { get; private set; }
     public event Action<Carryable>? PickedUp;
 
     public static string Name(Tools t) => t switch
     {
-        Tools.CableDrum => "cable drum", Tools.Ladder => "ladder", Tools.Toolbox => "toolbox", Tools.ModemBox => "boxed modem", Tools.Pole => "pole", Tools.LineCard => "line card", _ => "kit",
+        Tools.CableDrum => "cable drum", Tools.Ladder => "ladder", Tools.Toolbox => "toolbox", Tools.ModemBox => "boxed modem", Tools.Pole => "pole", Tools.LineCard => "line card",
+        Tools.Parts => "parts crate", _ => "kit",
     };
 
     /// <summary>"the cable drum and the ladder" for a set of missing kit.</summary>
     public static string Names(Tools set)
     {
-        var names = new[] { Tools.Pole, Tools.CableDrum, Tools.Ladder, Tools.Toolbox, Tools.ModemBox, Tools.LineCard }.Where(t => (set & t) != 0).Select(t => "the " + Name(t)).ToList();
+        var names = new[] { Tools.Pole, Tools.CableDrum, Tools.Ladder, Tools.Toolbox, Tools.ModemBox, Tools.LineCard, Tools.Parts }.Where(t => (set & t) != 0).Select(t => "the " + Name(t)).ToList();
         return names.Count <= 1 ? string.Concat(names) : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
     }
 
-    public Cargo(Van van, FirstPersonController player, Node3D world, Func<int> modemsSpare, Func<int> cardsSpare)
+    public Cargo(Van van, FirstPersonController player, Node3D world, Func<int> modemsSpare, Func<int> cardsSpare, Func<int> cratesSpare)
     {
-        _van = van; _player = player; _world = world; _modemsSpare = modemsSpare; _cardsSpare = cardsSpare;
+        _van = van; _player = player; _world = world; _modemsSpare = modemsSpare; _cardsSpare = cardsSpare; _cratesSpare = cratesSpare;
         var wood = new Color(0.72f, 0.58f, 0.36f); var dark = new Color(0.1f, 0.1f, 0.11f);
 
         // ladder: modelled standing up, foot at the origin
@@ -87,23 +88,32 @@ public sealed class Cargo
             .Box(new Vector3(0.13f, 0.045f, 0), new Vector3(0.03f, 0.02f, 0.16f), new Color(0.8f, 0.7f, 0.3f));
         Add(Tools.LineCard, false, card, new Vector3(0.38f, 0.2f, 0.28f), new Vector3(0, 0.06f, 0),
             van: new Transform3D(Basis.Identity, new Vector3(0.28f, 0.55f, 2.66f)), held: new Transform3D(Basis.Identity, new Vector3(0.34f, 0.95f, -0.5f)));
+
+        // a crate of a project's parts from the Yard (EA2b): roped on the roof rack until you carry it to the site; heavy, two hands
+        var crate = new LowPoly().Box(new Vector3(0, 0.3f, 0), new Vector3(0.8f, 0.6f, 0.6f), wood)
+            .Box(new Vector3(0, 0.3f, 0.302f), new Vector3(0.82f, 0.08f, 0.01f), wood * 0.8f).Box(new Vector3(0, 0.3f, -0.302f), new Vector3(0.82f, 0.08f, 0.01f), wood * 0.8f)
+            .Box(new Vector3(0, 0.605f, 0), new Vector3(0.5f, 0.01f, 0.3f), new Color(0.93f, 0.9f, 0.8f));   // the Yard's docket on the lid
+        Add(Tools.Parts, true, crate, new Vector3(0.86f, 0.66f, 0.66f), new Vector3(0, 0.3f, 0),
+            van: new Transform3D(Basis.Identity, new Vector3(-0.38f, 2.08f, -0.6f)), held: new Transform3D(Basis.Identity, new Vector3(0f, 0.45f, -0.75f)),
+            fallback: "site.parts-crate");
         Refresh();
     }
 
     private static string PropId(Tools tool) => tool switch
     {
         Tools.Ladder => "kit.ladder", Tools.Pole => "kit.pole", Tools.CableDrum => "kit.cable-drum", Tools.Toolbox => "kit.toolbox",
-        Tools.ModemBox => "kit.modem-box", Tools.LineCard => "kit.line-card", _ => "site.parts-crate",
+        Tools.ModemBox => "kit.modem-box", Tools.LineCard => "kit.line-card", Tools.Parts => "kit.parts-crate", _ => "site.parts-crate",
     };
 
-    private void Add(Tools tool, bool twoHanded, LowPoly mesh, Vector3 grab, Vector3 grabAt, Transform3D van, Transform3D held, Transform3D? ground = null)
+    private void Add(Tools tool, bool twoHanded, LowPoly mesh, Vector3 grab, Vector3 grabAt, Transform3D van, Transform3D held, Transform3D? ground = null, string? fallback = null)
     {
         var item = new Carryable
         {
             Name = tool.ToString(), Tool = tool, Label = Name(tool), TwoHanded = twoHanded, VanSlot = van, HeldPose = held,
             GroundPose = ground ?? Transform3D.Identity, CollisionLayer = 2, CollisionMask = 0,
         };
-        item.AddChild(Props.Make(PropId(tool), () => mesh.Instance()));
+        // no model of its own yet: borrow a related one (the crate looks like the ones piled at sites), else the code-built box
+        item.AddChild(Props.Make(PropId(tool), () => fallback is not null && Props.HasModel(fallback) ? Props.Make(fallback) : mesh.Instance()));
         item.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = grab }, Position = grabAt });
         item.Prompt = () => Held is null ? $"Pick up the {item.Label}{(item.TwoHanded ? " (two hands: you walk slower)" : "")}" : $"Your hands are full ([G] puts down the {Held.Label})";
         item.CanUse = () => Held is null;
@@ -161,12 +171,15 @@ public sealed class Cargo
         return t;
     }
 
-    /// <summary>The boxed modem on the van is only there while there is a modem in stock that isn't already in someone's house.</summary>
+    /// <summary>
+    /// The boxed modem on the van is only there while there is a modem in stock that isn't already in someone's house;
+    /// the same for line cards and the Yard's parts crates.
+    /// </summary>
     public void Refresh()
     {
-        foreach (var i in Items.Where(i => i.Tool is Tools.ModemBox or Tools.LineCard && i.Where == Carryable.Place.Van))
+        foreach (var i in Items.Where(i => i.Tool is Tools.ModemBox or Tools.LineCard or Tools.Parts && i.Where == Carryable.Place.Van))
         {
-            bool have = (i.Tool == Tools.ModemBox ? _modemsSpare() : _cardsSpare()) > 0;
+            bool have = (i.Tool switch { Tools.ModemBox => _modemsSpare(), Tools.LineCard => _cardsSpare(), _ => _cratesSpare() }) > 0;
             i.Visible = have;
             i.CollisionLayer = have ? 2u : 0u;
         }

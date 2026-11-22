@@ -190,7 +190,10 @@ public sealed record ProductDef
     public string BodgeDefect { get; init; } = "something fitted in a hurry";
 }
 
-public enum LotKind { House, Shop, Farm, Depot }
+public enum LotKind { House, Shop, Farm, Depot, Yard }
+
+/// <summary>How a project's parts reach its site (EA2b, D43): a crate on your van, the Yard's lorry, or no parts at all (a form, a handshake).</summary>
+public enum PartsBy { Van, Lorry, None }
 
 /// <summary>A building someone lives or works in. Offsets are metres east/south of its site centre on the planet.</summary>
 public sealed record LotDef
@@ -262,7 +265,10 @@ public sealed record ProjectDef
     public string? Model { get; init; }
     public double East { get; init; }
     public double South { get; init; }
+    /// <summary>What its parts cost at the Yard (or, for a project with no parts, what it costs to start).</summary>
     public long Cost { get; init; }
+    /// <summary>How the parts get there (EA2b): on your van (the default), on the Yard's lorry, or none to buy.</summary>
+    public PartsBy Parts { get; init; } = PartsBy.Van;
     public List<string> RequiresProjects { get; init; } = new();
     public string? RequiresEntry { get; init; }
     public bool RequiresDepot { get; init; }

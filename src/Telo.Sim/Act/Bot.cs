@@ -171,7 +171,7 @@ public static class Bot
         if (lotId is not null)
             return (lotId, text.Contains("modem") && text.Contains("Buy") ? new[] { "buy:modem" }
                 : text.Contains("line card") ? new[] { "buy:card" }
-                : new[] { "repair:", "install:", "socket:", "order:", "oddjob:", "knock:", "lease", "project:" });
+                : new[] { "repair:", "install:", "socket:", "order:", "oddjob:", "knock:", "lease", "project:", "yard:" });
         if (text.Contains("Pole line"))
         {
             var p = c.Premises.Values.First(p => p.PoleLine is not null && LedgerRules.StatusOf(s, p.Id) != PromiseStatus.Served && p.Act <= s.ActIndex + 1);

@@ -244,7 +244,7 @@ public static class TownDressing
             {
                 int es = EastSign(v.Lot);
                 blocked.Add((float)v.Lot.East);
-                float dx = v.Lot.Kind switch { LotKind.Shop => -3f, LotKind.Depot => -1.9f, _ => TownBuilder.DriveSide(v.Lot, es == 1, st) * TownBuilder.DriveOffset };
+                float dx = v.Lot.Kind switch { LotKind.Shop => -3f, LotKind.Depot => -1.9f, LotKind.Yard => TownBuilder.YardDriveX, _ => TownBuilder.DriveSide(v.Lot, es == 1, st) * TownBuilder.DriveOffset };
                 blocked.Add((float)v.Lot.East + es * dx);
             }
             for (float x = Mathf.Ceil(st.From / 30f) * 30f - 15f; x <= st.To; x += 30)

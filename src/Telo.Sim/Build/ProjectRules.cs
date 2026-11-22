@@ -10,6 +10,7 @@ namespace Telo.Sim.Build;
 /// Projects (game/content/projects.json): things built in the world, step by step with kit from the van, that open the next part
 /// of the game: a lane, a village cabinet, the modem bank, a leased line, a whole town. Every project is gated (its act, earlier
 /// projects, an Almanac page, the depot, how big you are) so the game flows from one to the next, in list order.
+/// Its parts are bought at the Yard and brought to the site before it can start (EA2b, see YardRules).
 /// NOTE: rebuilt in the cloud session on 2026-11-16 from its call sites and ProjectTests, because the original file was never
 /// committed. If the original turns up, prefer it.
 /// </summary>
@@ -77,23 +78,29 @@ public static class ProjectRules
     {
         if (Locked(s, c, p) is { } locked) return locked;
         if (Step(s, p) is not { } st) return "already built";
-        if (!Started(s, p.Id) && s.Cash < p.Cost) return $"${p.Cost} to start; you have ${s.Cash}";
+        // EA2b: nothing starts until its parts are on site (bought at the Yard, then carried or trucked)
+        if (!Started(s, p.Id)) return YardRules.NotOnSite(s, c, p, onSite);
         var prog = ProgressOf(s, p.Id);
         if (prog.WaitUntil > s.Day) return $"{(st.WaitText.Length > 0 ? st.WaitText : "waiting")} until {new GameDate(prog.WaitUntil)}";
         var missing = Needs(st) & ~onSite;
         return missing == Tools.None ? null : $"bring the {Act.Actions.Names(missing)} from the van";
     }
 
-    /// <summary>One action on the project: pays to start it, does one click of the current step, moves on, and finishes it.</summary>
+    /// <summary>
+    /// One action on the project. The first unloads its parts at the site (or, for paperwork, pays to start) and starts it;
+    /// after that each one does one click of the current step, moves on, and finishes it.
+    /// </summary>
     public static bool Do(GameState s, ContentDb c, ProjectDef p, Tools onSite)
     {
         if (Blocked(s, c, p, onSite) is not null) return false;
         if (!Started(s, p.Id))
         {
-            s.Cash -= p.Cost;
+            if (!YardRules.NeedsParts(p)) s.Cash -= p.Cost;   // the parts were paid for at the Yard
+            YardRules.Unload(s, p);
             var fresh = new ProjectProgress();
             s.Projects[p.Id] = fresh;
-            if (p.Steps[0].WaitDays > 0) { fresh.WaitUntil = s.Day + p.Steps[0].WaitDays; return true; }   // the form is in; now the wait
+            if (p.Steps[0].WaitDays > 0) fresh.WaitUntil = s.Day + p.Steps[0].WaitDays;   // the form is in; now the wait
+            return true;
         }
         var prog = s.Projects[p.Id];
         var st = p.Steps[prog.Step];
@@ -109,6 +116,7 @@ public static class ProjectRules
     {
         if (!s.ProjectsDone.Add(p.Id)) return;
         s.Projects.Remove(p.Id);
+        s.Parts.Remove(p.Id);
         if (p.Reward.LinesIn > 0) BoardRules.Home(s).LinesIn += p.Reward.LinesIn;
         s.Switch.ExtraPanels += p.Reward.Panels;
         if (p.Reward.Region > 0) s.RegionSigned.TryAdd(p.Id, 0);
@@ -152,6 +160,26 @@ public static class ProjectRules
     {
         var cancelled = c.Projects.Where(p => Done(s, p.Id) && p.Reward.Cancels is not null).Select(p => p.Reward.Cancels!).ToHashSet();
         return c.Projects.Where(p => Done(s, p.Id) && !cancelled.Contains(p.Id)).Sum(p => p.Reward.MonthlyCost);
+    }
+
+    /// <summary>What the first action at the site is called: unload the crate, check the lorry's delivery, or pay and start.</summary>
+    public static string StartVerb(ProjectDef p) => p.Parts switch
+    {
+        PartsBy.Van => "Unload the parts crate and start",
+        PartsBy.Lorry => "Check the lorry's delivery against the order and start",
+        _ => $"Pay ${p.Cost} and start",
+    };
+
+    /// <summary>The next action's words: starting it, or the current step.</summary>
+    public static string? NextVerb(GameState s, ProjectDef p) =>
+        Step(s, p) is not { } st ? null : Started(s, p.Id) ? $"{st.Verb} ({ProgressOf(s, p.Id).Click + 1} of {st.Clicks})" : StartVerb(p);
+
+    /// <summary>Built by decree (god keys, skipped autoplay jobs, act starts): pays for the parts if nobody has yet.</summary>
+    public static void GodBuild(GameState s, ContentDb c, ProjectDef p)
+    {
+        if (Done(s, p.Id)) return;
+        if (!Started(s, p.Id) && !YardRules.Bought(s, p.Id)) s.Cash -= p.Cost;
+        Finish(s, c, p);
     }
 
     /// <summary>Enough cash to start this project and still pay next month's bills.</summary>

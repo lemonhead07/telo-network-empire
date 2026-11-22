@@ -38,7 +38,7 @@ public static class HomeRules
         HasCar(lot) && Onboarding.Reached(s, c, OnboardingStep.Free) && Clock.IsWorkingDay(s.Day) && Clock.Hour(s) is >= 9 and < 17;
 
     public static bool Asleep(GameState s, ContentDb c, LotDef lot) =>
-        lot.Kind != LotKind.Shop && Onboarding.Reached(s, c, OnboardingStep.Free) && Clock.Hour(s) is >= 22 or < 7;
+        lot.Kind is not (LotKind.Shop or LotKind.Yard) && Onboarding.Reached(s, c, OnboardingStep.Free) && Clock.Hour(s) is >= 22 or < 7;
 
     public static bool ShopShut(GameState s, ContentDb c, LotDef lot) =>
         lot.Kind == LotKind.Shop && Onboarding.Reached(s, c, OnboardingStep.Free)
@@ -51,6 +51,7 @@ public static class HomeRules
     public static string? WhyNot(GameState s, ContentDb c, LotDef lot)
     {
         if (ShopShut(s, c, lot)) return Clock.Weekday(s.Day) == DayOfWeek.Sunday ? "shut on Sundays" : "shut. Open nine till half past five";
+        if (Build.YardRules.Shut(s, c, lot)) return Build.YardRules.WhyShut(s);
         if (Asleep(s, c, lot)) return "the lights are off. Come back in the morning";
         // a booked window: they stayed in for you, whatever their usual hours
         if (OutAtWork(s, c, lot) && Plan.AppointmentRules.Booked(s, lot.Id) is null) return "the car's gone. Back after five";

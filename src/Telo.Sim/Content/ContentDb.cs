@@ -118,6 +118,10 @@ public sealed class ContentDb
             if (l.Premise is { } pr && !Premises.ContainsKey(pr)) e.Add($"lot {l.Id}: unknown premise '{pr}'");
             if (l.NeedsProject is { } np && Project(np) is null) e.Add($"lot {l.Id}: unknown project '{np}'");
         }
+        // EA2b: project parts are bought at the Yard, so there has to be one (and only one)
+        int yards = Lots.Values.Count(l => l.Kind == LotKind.Yard);
+        if (yards > 1) e.Add($"lots: {yards} yards; parts are bought at one");
+        if (yards == 0 && Lots.Count > 0 && Projects.Any(p => p.Parts != PartsBy.None)) e.Add("lots: no yard, but projects have parts to buy");
         // projects: unique, every requirement exists and comes earlier in the file, kit names are real, something to do
         for (int i = 0; i < Projects.Count; i++)
         {

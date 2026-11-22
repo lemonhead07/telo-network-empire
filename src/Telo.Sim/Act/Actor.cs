@@ -36,5 +36,5 @@ public sealed class ActorState
     public Tools OnSite() => OnSiteOverride?.Invoke()
         ?? Kit.Where(k => k.Value == Place).Aggregate(Holding, (t, k) => t | k.Key);
 
-    public static readonly Tools[] AllKit = { Tools.CableDrum, Tools.Ladder, Tools.Toolbox, Tools.ModemBox, Tools.Pole, Tools.LineCard };
+    public static readonly Tools[] AllKit = { Tools.CableDrum, Tools.Ladder, Tools.Toolbox, Tools.ModemBox, Tools.Pole, Tools.LineCard, Tools.Parts };
 }

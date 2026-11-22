@@ -64,14 +64,15 @@ public partial class ProjectSiteView : Node3D
 
     /// <param name="open">Open to you (or under way, or built).</param>
     /// <param name="fraction">How much of it is done, 0..1.</param>
-    public void Sync(bool open, float fraction, bool built, string line)
+    /// <param name="partsHere">The parts are at the site (unloaded, or left by the lorry): crates stand there.</param>
+    public void Sync(bool open, float fraction, bool built, string line, bool partsHere = true)
     {
         Visible = open;
         fraction = Mathf.Clamp(fraction, 0, 1);
         if (_built is not null)
         {
             _built.Visible = built;
-            int crates = built ? 0 : 1 + (int)(fraction * (_crates.Count - 1) + 0.5f);
+            int crates = built || !partsHere ? 0 : 1 + (int)(fraction * (_crates.Count - 1) + 0.5f);
             for (int i = 0; i < _crates.Count; i++) _crates[i].Visible = i < crates;
         }
         else

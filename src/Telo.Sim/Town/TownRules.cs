@@ -55,7 +55,7 @@ public static class TownRules
     {
         if (!c.Lots.TryGetValue(lotId, out var lot)) return KnockResult.NoSuchLot;
         if (lot.Premise is not null) return KnockResult.LastMile;
-        if (!Onboarding.CanKnock(s, c) || lot.Kind == LotKind.Depot) return KnockResult.TooSoon;
+        if (!Onboarding.CanKnock(s, c) || lot.Kind is LotKind.Depot or LotKind.Yard) return KnockResult.TooSoon;
         var h = HouseholdOf(s, lotId);
         if (h.Status == HouseholdStatus.Signed || s.NezLots.Contains(lotId)) return KnockResult.AlreadySigned;   // yours, or Nez's
         if (s.Day < h.RetryDay) return KnockResult.TooSoon;
@@ -131,7 +131,7 @@ public static class TownRules
     // ---- odd jobs --------------------------------------------------------------------------------
     public static OddJob? OfferJob(GameState s, ContentDb c, DetRng rng)
     {
-        var free = c.Lots.Values.Where(l => l.Kind != LotKind.Depot && JobAt(s, l.Id) is null && (l.Kind != LotKind.Farm || Onboarding.RoadOpen(s, c))).OrderBy(l => l.Id).ToList();
+        var free = c.Lots.Values.Where(l => l.Kind is not (LotKind.Depot or LotKind.Yard) && JobAt(s, l.Id) is null && (l.Kind != LotKind.Farm || Onboarding.RoadOpen(s, c))).OrderBy(l => l.Id).ToList();
         if (free.Count == 0) return null;
         var lot = free[rng.Next(free.Count)];
         var kinds = JobKinds.Where(k => k.Only is null || k.Only == lot.Kind).ToList();

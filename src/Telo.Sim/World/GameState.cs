@@ -72,6 +72,15 @@ public sealed class ProjectProgress
     public int WaitUntil { get; set; }
 }
 
+/// <summary>A project's parts, bought at the Yard (v20, see Build/YardRules) and not yet unloaded at the site.</summary>
+public sealed class PartsOrder
+{
+    /// <summary>On the Yard's lorry rather than in a crate on your van.</summary>
+    public bool Lorry { get; set; }
+    /// <summary>The day the lorry leaves them at the site (a van crate is with you from the day you buy it).</summary>
+    public int ArrivesDay { get; set; }
+}
+
 public sealed class Fault
 {
     public required string Id { get; set; }
@@ -199,7 +208,7 @@ public sealed class PromiseRecord
 /// </summary>
 public sealed class GameState
 {
-    public const int CurrentVersion = 19;
+    public const int CurrentVersion = 20;
 
     public int Version { get; set; } = CurrentVersion;
     public ulong Seed { get; set; }
@@ -224,6 +233,8 @@ public sealed class GameState
     /// <summary>Projects under way (v17, see Build/ProjectRules): which step, how many of its actions done, and when a wait ends.</summary>
     public Dictionary<string, ProjectProgress> Projects { get; set; } = new();
     public HashSet<string> ProjectsDone { get; set; } = new();
+    /// <summary>Parts bought at the Yard for projects not yet started, by project id (v20, EA2b).</summary>
+    public Dictionary<string, PartsOrder> Parts { get; set; } = new();
     /// <summary>Subscribers signed so far in each region a project opened (by project id): towns counted as a block (v17).</summary>
     public Dictionary<string, int> RegionSigned { get; set; } = new();
     /// <summary>Line-days up and line-days counted over a rolling month, in thousandths (v15, see Town/ServiceRules).</summary>

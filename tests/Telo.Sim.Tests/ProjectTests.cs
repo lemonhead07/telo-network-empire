@@ -1,5 +1,6 @@
 using Telo.Sim.Almanac;
 using Telo.Sim.Build;
+using Telo.Sim.Content;
 using Telo.Sim.Town;
 using Telo.Sim.World;
 using Xunit;
@@ -11,9 +12,12 @@ public class ProjectTests
     private static void Build(Simulation sim, string id)
     {
         var s = sim.State; var p = sim.Content.Project(id)!;
+        // EA2b: the parts first, at the Yard (a crate on the van, or a lorry load the next morning)
+        if (!ProjectRules.Started(s, id) && YardRules.NeedsParts(p) && !YardRules.Bought(s, id))
+            Assert.True(YardRules.Buy(s, sim.Content, p), YardRules.CantBuy(s, sim.Content, p));
         for (int guard = 0; guard < 200 && !ProjectRules.Done(s, id); guard++)
         {
-            if (ProjectRules.ProgressOf(s, id).WaitUntil > s.Day) { sim.Sleep(); continue; }
+            if (ProjectRules.ProgressOf(s, id).WaitUntil > s.Day || s.Parts.TryGetValue(id, out var o) && o.ArrivesDay > s.Day) { sim.Sleep(); continue; }
             Assert.True(ProjectRules.Do(s, sim.Content, p, Tools.All), ProjectRules.Blocked(s, sim.Content, p, Tools.All));
         }
         Assert.True(ProjectRules.Done(s, id));
@@ -36,10 +40,16 @@ public class ProjectTests
         Assert.Null(ProjectRules.Locked(s, c, church));
         Assert.Equal(church.Id, ProjectRules.Next(s, c)?.Id);
 
+        // EA2b: it starts once its parts are bought at the Yard and the crate is at the site
+        long cash = s.Cash;
+        Assert.Contains("Yard", ProjectRules.Blocked(s, c, church, Tools.All)!);
+        Assert.True(YardRules.Buy(s, c, church));
+        Assert.Equal(cash - church.Cost, s.Cash);
+        Assert.Contains("parts crate", ProjectRules.Blocked(s, c, church, Tools.Pole)!);
+        Assert.True(ProjectRules.Do(s, c, church, Tools.Parts));
         // kit matters: a pole for the first step, nothing happens without it
         Assert.False(ProjectRules.Do(s, c, church, Tools.Toolbox));
         Assert.Contains("pole", ProjectRules.Blocked(s, c, church, Tools.None)!);
-        long cash = s.Cash;
         Build(sim, church.Id);
         Assert.Equal(cash - church.Cost, s.Cash);
         Assert.Contains(TownRules.Prospects(s, c), l => l.Id.StartsWith("lot-cl-"));
@@ -102,5 +112,65 @@ public class ProjectTests
         Assert.Equal(6, Save.SaveCodec.FromJson(node.ToJsonString(), c).ActIndex);
         node["actIndex"] = 4;
         Assert.Equal(4, Save.SaveCodec.FromJson(node.ToJsonString(), c).ActIndex);
+    }
+
+    [Fact]
+    public void A_project_cant_start_until_its_parts_are_bought_at_the_yard_and_on_site()
+    {
+        var sim = Simulation.NewGame(TestContent.Db, 11);
+        var s = sim.State; var c = sim.Content;
+        var gen = new Planet.PlanetGen(1983);
+        while (!Onboarding.Reached(s, c, OnboardingStep.Free)) sim.GodNextStage(null);
+        for (int i = 0; i < 6; i++) sim.AddCustomer($"Sub {i}", "family", 20);
+        Ledger.LedgerRules.Serve(s, c, "prem-adeyemi-farm", alreadyBuilt: true);
+        s.Cash = 5_000;
+        var church = c.Project("proj-church-poles")!;
+        var yard = YardRules.Lot(c)!;
+        var me = new Act.ActorState { Place = yard.Id, VanAt = yard.Id, IgnoreHours = true };
+        var site = Act.Places.Project(church.Id);
+
+        // the site won't start without the parts (the script player follows the "what next" line there and back)
+        Assert.Contains("Yard", Act.Actions.WhyNot(sim, new Act.ActorState { Place = site, VanAt = site, Holding = Tools.Pole }, gen, "project:do")!);
+
+        // buy them at the counter: paid there, and a crate rides on the van
+        long cash = s.Cash;
+        Assert.True(Act.Actions.Perform(sim, me, gen, $"yard:buy:{church.Id}"));
+        Assert.Equal(cash - church.Cost, s.Cash);
+        Assert.DoesNotContain(Act.Actions.For(sim, me, gen), a => a.Id == $"yard:buy:{church.Id}");   // bought once
+
+        // drive to the site with empty hands: still nothing until the crate is off the van and at the site
+        Assert.True(Act.Actions.Perform(sim, me, gen, $"go:{site}"));
+        Assert.Contains("parts crate", Act.Actions.WhyNot(sim, me, gen, "project:do")!);
+        Assert.True(Act.Actions.Perform(sim, me, gen, "take:Parts"));
+        Assert.True(Act.Actions.Perform(sim, me, gen, "project:do"));
+        Assert.True(ProjectRules.Started(s, church.Id));
+        Assert.Equal(Tools.None, me.Holding);                                        // the crate stays at the site
+        Assert.DoesNotContain(Act.Actions.For(sim, me, gen), a => a.Id == "take:Parts");   // and none left on the van
+        Assert.Empty(s.Parts);
+
+        // big parts come on the Yard's lorry the next working morning (never a Sunday); a parts order survives a save
+        var millbrook = c.Project("proj-millbrook")!;
+        Assert.Equal(PartsBy.Lorry, millbrook.Parts);
+        s.ActIndex = 2;
+        foreach (var r in millbrook.RequiresProjects) ProjectRules.GodBuild(s, c, c.Project(r)!);
+        for (int i = 0; i < 30; i++) sim.AddCustomer($"More {i}", "family", 20);
+        Assert.Null(ProjectRules.Locked(s, c, millbrook));
+        Assert.True(YardRules.Buy(s, c, millbrook));
+        var loaded = Save.SaveCodec.FromJson(Save.SaveCodec.ToJson(s), c);
+        Assert.True(loaded.Parts[millbrook.Id].Lorry);
+        Assert.Contains("lorry", ProjectRules.Blocked(s, c, millbrook, Tools.All)!);
+        Assert.NotEqual(DayOfWeek.Sunday, Clock.Weekday(s.Parts[millbrook.Id].ArrivesDay));
+        while (s.Day < s.Parts[millbrook.Id].ArrivesDay) sim.Sleep();
+        Assert.Null(ProjectRules.Blocked(s, c, millbrook, Tools.None));             // no crate to carry: it's at the site
+        Assert.True(ProjectRules.Do(s, c, millbrook, Tools.None));
+
+        // paperwork has nothing to buy: the leased line is paid for when you start it
+        var leased = c.Project("proj-leased-line")!;
+        Assert.Equal(PartsBy.None, leased.Parts);
+        Assert.NotNull(YardRules.CantBuy(s, c, leased));
+
+        // the Yard keeps trade hours: shut on Sundays
+        while (Clock.Weekday(s.Day) != DayOfWeek.Sunday) sim.Sleep();
+        Assert.NotNull(HomeRules.WhyNot(s, c, yard));
     }
 }

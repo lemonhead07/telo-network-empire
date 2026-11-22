@@ -168,8 +168,7 @@ public partial class GameRoot
             // a project is played in full one time in X like any job; otherwise it's built by decree (paid for, waits skipped)
             if (_played.Contains(place)) return false;
             if (++_jobsSeen % _sample == 1) { _played.Add(place); _liveKeys.Add(place); _autoLog.Add($"   (playing this one in full: {projDef.Name})"); return false; }
-            if (!Telo.Sim.Build.ProjectRules.Started(Sim.State, projId)) Sim.State.Cash -= projDef.Cost;
-            Telo.Sim.Build.ProjectRules.Finish(Sim.State, _content, projDef);
+            Telo.Sim.Build.ProjectRules.GodBuild(Sim.State, _content, projDef);   // pays for the parts unless they were bought at the Yard
             _autoLog.Add($"   (skipped by sample: {projDef.Name})");
             SyncProjects(); RefreshViews();
             return true;
@@ -245,7 +244,7 @@ public partial class GameRoot
             case "install" when parts[1] == "bodge" && lot?.Install?.SpotFor(Enum.Parse<InstallStep>(parts[2])) is { } bspot: await Use(bspot, alt: true); break;
             case "install" when parts[1] == "test" && lot?.Install is { } site: await Use(site.Phone); break;
             case "install" when parts[1] == "sign" && lot?.Install is { } signSite: await Use(signSite.Sheet); break;
-            case "install" or "oddjob" or "knock" or "repair" or "order" or "socket" or "lease" when lot is not null: await Use(lot.Door); break;
+            case "install" or "oddjob" or "knock" or "repair" or "order" or "socket" or "lease" or "yard" when lot is not null: await Use(lot.Door); break;
             case "buy" when lot?.Counter is { } counter: await Use(counter, alt: parts[1] == "card"); break;
             case "bench" when lot is not null && _oddJobs.TryGetValue(lot.Lot.Id, out var bench): await Use(bench.Bench, alt: parts[1] == "thump"); break;
             case "switch": await SwitchWork(parts); break;

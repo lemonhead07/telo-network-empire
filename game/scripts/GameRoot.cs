@@ -132,7 +132,8 @@ public partial class GameRoot : Node3D
         _van = new Van { SeaRadius = radius, IsPaved = p => _planet.IsPaved(PlanetBuilder.ToSim(p)) };
         AddChild(_van);
         _van.GlobalTransform = _town.VanSpawn;
-        _cargo = new Cargo(_van, _player, this, () => Sim.State.Modems - _installs.Values.Count(j => j.IsDone(InstallStep.Modem)), () => Sim.State.LineCards);
+        _cargo = new Cargo(_van, _player, this, () => Sim.State.Modems - _installs.Values.Count(j => j.IsDone(InstallStep.Modem)), () => Sim.State.LineCards,
+            () => Telo.Sim.Build.YardRules.OnVan(Sim.State));
         _van.Door.Prompt = () => _cargo.Held is { } h ? $"Put the {h.Label} back on the van" : "Drive the van";
         _van.Door.OnUse = () => { if (_cargo.Held is not null) _cargo.StowHeld(); else EnterVan(); };
 
@@ -463,6 +464,7 @@ public partial class GameRoot : Node3D
             _pip.Once("hours");
             return ($"{lot.Resident}: {away}", null);
         }
+        if (lot.Kind == LotKind.Yard) return YardAction(lot);
         // a day holds three jobs (D37): starting a fourth waits till tomorrow; work already under way carries on
         bool capped = !BookingRules.CanStartJob(s, _content) && !_installs.ContainsKey(lot.Id) && !_oddJobs.ContainsKey(lot.Id);
         Action Job(Action start) => () => { start(); BookingRules.CountJob(s); };
@@ -823,10 +825,36 @@ public partial class GameRoot : Node3D
         }
     }
 
+    /// <summary>
+    /// The Yard's trade counter (EA2b): the parts for the next project open to you. A crate goes on the van's roof rack; big
+    /// parts go out on the Yard's lorry the next working morning. (Hours are checked by the caller, like every door.)
+    /// </summary>
+    private (string Prompt, Action? Use) YardAction(LotDef lot)
+    {
+        var s = Sim.State;
+        if (Telo.Sim.Build.YardRules.ForSale(s, _content).FirstOrDefault() is not { } p)
+        {
+            var lorry = s.Parts.FirstOrDefault(o => o.Value.Lorry && o.Value.ArrivesDay > s.Day);
+            return lorry.Key is { } due && _content.Project(due) is { } dp
+                ? ($"{lot.Resident}: your order for {dp.Name} goes out on the lorry on {new Telo.Sim.Core.GameDate(lorry.Value.ArrivesDay)}", null)
+                : ($"{lot.Resident}: poles, cable, cabinets, racks. \"Nothing on order for you, love. Come back when you're building something.\"", null);
+        }
+        bool byLorry = p.Parts == PartsBy.Lorry;
+        return Telo.Sim.Build.YardRules.CantBuy(s, _content, p) is { } why
+            ? ($"Parts for {p.Name}: {why}", null)
+            : ($"Buy the parts for {p.Name}: ${p.Cost} ({(byLorry ? "their lorry takes it to the site the next working morning" : "a crate on your van's roof rack")})", () =>
+            {
+                if (!Telo.Sim.Build.YardRules.Buy(s, _content, p)) return;
+                _cargo.Refresh(); SyncProjects();
+                _pip.Once(byLorry ? "lorry" : "yard");
+            });
+    }
+
     /// <summary>How long the thing this door currently offers takes to do by hand (zero for a knock or a chat).</summary>
     private float LotHold(LotDef lot)
     {
         var s = Sim.State;
+        if (lot.Kind == LotKind.Yard) return Hold(Telo.Sim.Build.YardRules.BuyMinutes);
         if (TownRules.FaultAt(s, lot.Id) is not null) return Hold(TownRules.RepairMinutes);
         if (TownRules.JobAt(s, lot.Id) is { } job && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: null }) return Hold(job.Hours * 60);
         return 0;
@@ -939,6 +967,7 @@ public partial class GameRoot : Node3D
                 if (lot.Lights is not null) lot.Lights.Visible = Clock.Dark(Sim.State) && HomeRules.IsHome(Sim.State, _content, lot.Lot);
                 if (lot.Car is not null) lot.Car.Visible = !HomeRules.OutAtWork(Sim.State, _content, lot.Lot);
                 if (lot.Resident is not null) lot.Resident.Visible = HomeRules.IsHome(Sim.State, _content, lot.Lot);
+                if (lot.Bay is not null) lot.Bay.Visible = _showBay || Telo.Sim.Build.YardRules.HasBay(Sim.State, _content);
             }
             _cargo.Refresh();
             foreach (var refresh in _lineRefresh) refresh();
@@ -1231,6 +1260,9 @@ public partial class GameRoot : Node3D
         GetTree().Quit(ok ? 0 : 1);
     }
 
+    /// <summary>Screenshots show the Yard's loading bay whatever the act.</summary>
+    private bool _showBay;
+
     private async Task TakeScreenshot(string path)
     {
         Input.MouseMode = Input.MouseModeEnum.Visible; // stray mouse motion must not move the camera
@@ -1272,6 +1304,21 @@ public partial class GameRoot : Node3D
                 await Shot($"-{id}", TownBuilder.Place(_planet, v, -10, 62, 0, 14).Origin, TownBuilder.Place(_planet, v, 0, 4, 0, 2).Origin);
         foreach (var (prop, mark) in VillageLandmarks.Placed)
             await Shot($"-{prop}", mark.ToGlobal(new Vector3(7f, 6f, 20f)), mark.ToGlobal(new Vector3(0, 2f, 0)));
+        // EA2b: the Yard, with its loading bay as it is from Act 2, and a crate on the van's roof rack
+        if (_town.Lots.FirstOrDefault(l => l.Lot.Kind == LotKind.Yard) is { } yardView)
+        {
+            _showBay = true;
+            if (yardView.Bay is not null) yardView.Bay.Visible = true;
+            await Shot("-yard", yardView.Body.ToGlobal(new Vector3(-6f, 5.5f, 24f)), yardView.Body.ToGlobal(new Vector3(-1.5f, 2.2f, 0f)));
+            await Shot("-yard-counter", yardView.Body.ToGlobal(new Vector3(1.2f, 1.75f, 9.5f)), yardView.Body.ToGlobal(new Vector3(0f, 1.5f, 5f)));
+            _showBay = false;
+            // a crate of parts roped on the van's roof rack (an order made up for the picture, then taken back)
+            Sim.State.Parts["shot"] = new PartsOrder();
+            _cargo.Refresh();
+            await Shot("-crate", _van.ToGlobal(new Vector3(3.6f, 3.4f, 2.2f)), _van.ToGlobal(new Vector3(0, 1.6f, -0.2f)));
+            Sim.State.Parts.Remove("shot");
+            _cargo.Refresh();
+        }
         // DC1: Halden Flats, where the data centre goes (the building itself is DC2)
         if (_planet.SiteById("halden") is { } flats)
             await Shot("-halden", TownBuilder.Place(_planet, flats, -16, -1, 0, 3.2f).Origin, TownBuilder.Place(_planet, flats, -30, -22, 0, 1.2f).Origin);
