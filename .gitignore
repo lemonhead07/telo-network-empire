@@ -8,7 +8,8 @@ game/.godot/
 game/.import/
 *.translation
 # Builds
-build/
+# the export folder at the top only: a bare "build/" also hid src/Telo.Sim/Build/ on Windows
+/build/
 *.x86_64
 *.exe
 *.pck

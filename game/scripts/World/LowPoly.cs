@@ -104,6 +104,7 @@ public sealed class LowPoly
         arrays[(int)Mesh.ArrayType.Normal] = _n.ToArray();
         arrays[(int)Mesh.ArrayType.Color] = _c.ToArray();
         var mesh = new ArrayMesh();
+        if (_v.Count == 0) return mesh; // nothing drawn (e.g. a hand holding a tool model): an empty mesh, not an engine error
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         mesh.SurfaceSetMaterial(0, Material);
         return mesh;
