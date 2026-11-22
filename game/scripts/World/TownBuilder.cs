@@ -303,8 +303,10 @@ public static class TownBuilder
             body.AddChild(it);
             return it;
         }
-        var door = Hotspot(new Vector3(0, 1.05f, front + 0.15f), new Vector3(1.3f, 2.1f, 0.4f));
-        if (house) { door.CollisionLayer = 2; door.CollisionMask = 0; } // you can look at it and knock, and walk through when the door is open
+        // the Yard's "door" is the front edge of its trade counter (the counter itself is solid, waist high)
+        var door = yard ? Hotspot(new Vector3(0, 1.1f, front + 1.25f), new Vector3(2.8f, 0.8f, 0.3f))
+            : Hotspot(new Vector3(0, 1.05f, front + 0.15f), new Vector3(1.3f, 2.1f, 0.4f));
+        if (house || yard) { door.CollisionLayer = 2; door.CollisionMask = 0; } // you can look at it and use it; it doesn't stop you walking
         var counter = shop ? Hotspot(new Vector3(3f, 1.4f, front + 0.15f), new Vector3(2.6f, 1.6f, 0.4f)) : null;
 
         // the Yard's loading bay and its lorry, round the east side: shown once there are big parts to deliver (D43: the Yard grows)
@@ -486,6 +488,7 @@ public static class TownBuilder
               .Cylinder(new Vector3(x, h + 0.62f, z), 0.85f, 0.85f, 0.1f, 10, wood);
         foreach (var x in new[] { 9.9f, 11.4f, 12.9f })   // street cabinets, still in their wrapping
             lp.Box(new Vector3(x, 0.08f, 5.4f), new Vector3(1.2f, 0.16f, 0.95f), wood).Box(new Vector3(x, 0.83f, 5.4f), new Vector3(0.95f, 1.35f, 0.5f), cab);
+        solids.Add((new Vector3(0, 0.55f, 5.95f), new Vector3(2.8f, 1.1f, 0.5f)));      // the counter: you stand in front of it, Gorse behind
         solids.Add((new Vector3(11.5f, 0.9f, -3.5f), new Vector3(3.6f, 1.8f, 7.4f)));   // you walk round the stock, not through it
         solids.Add((new Vector3(11.4f, 0.75f, 2.5f), new Vector3(4.0f, 1.5f, 2.0f)));
         return lp.Build();
