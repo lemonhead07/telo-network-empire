@@ -39,7 +39,9 @@ public static class ProjectRules
             return $"needs the Almanac page \"{(c.Almanac.TryGetValue(e, out var a) ? a.Title : e)}\"";
         if (p.RequiresDepot && !s.HasDepot) return "needs the depot at 1 Main Street";
         foreach (var cond in p.Requires)
-            if (!ActRules.Met(s, cond)) return $"needs {Words(cond.Kind)} {cond.Value} (you have {ActRules.Measure(s, cond.Kind)})";
+            if (!ActRules.Met(s, cond))
+                return cond.Kind == ConditionKind.Built ? $"needs {c.Project(cond.Id ?? "")?.Name ?? cond.Id} first"
+                    : $"needs {Words(cond.Kind)} {cond.Value} (you have {ActRules.Measure(s, cond.Kind)})";
         return null;
     }
 

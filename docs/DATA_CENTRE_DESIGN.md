@@ -173,6 +173,8 @@ Each is a `projects.json` entry with steps, parts from the Yard (D43), waits, an
 | 12 | `proj-peering` **Shake hands with NezTel** (optional) | Meet-Me Room | One cross-connect to NezTel's cage. Patch a lead between your rack and theirs, and shake hands with Nez's engineer, who is nicer than Nez | Cheaper traffic; Nez now knows exactly what's in your building |
 | 13 | `proj-dc-lit` **Light the board** (finale) | Planning Room | Every pin on two lit strings, every rack brought up with no crossed patches, the generator test passed with nothing going dark. Then flip the big switch on the board | **Early access ends** (§7) |
 
+**Built as data in DC1 (2026-11-21):** all thirteen, with placeholder steps on today's click-and-hold mechanic; first-pass costs $1,000–3,000 each ($23,500 in all, so the waits set the act's pace, not saving up); `proj-peering` is listed after the finale (optional; nothing requires it). Halden Flats landed on the coastal flats between the town, Eastgate and the shore, 4 m above the sea. The homing projects stand at the far end of each link until the rack (DC3) adds the Halden end.
+
 The old mast projects (`proj-first-mast`, `proj-cell-sites`, `proj-backhaul`) keep their ids and move to Act 6. Their `requiresProjects` points at `proj-dc-lit`. Backhaul to masts becomes "more strings on the board", which the board already knows how to draw.
 
 ---

@@ -76,4 +76,31 @@ public class ProjectTests
         Assert.Equal(0L, ProjectRules.MonthlyCost(s, c));
         Assert.NotNull(ProjectRules.Locked(s, c, c.Project("proj-cold-store")!));   // the datacentre is the boom's (Act 3)
     }
+    [Fact]
+    public void The_core_ends_when_the_board_is_lit_masts_wait_for_it_and_old_mobile_saves_move_up_an_act()
+    {
+        var sim = Simulation.NewGame(TestContent.Db, 11);
+        var s = sim.State; var c = sim.Content;
+        Assert.Equal("act5-core", c.Acts[5].Id);
+        Assert.Equal("act5-mobile", c.Acts[6].Id);   // ids are labels: mobile keeps its id at index 6 (D46)
+        var mast = c.Project("proj-first-mast")!;
+        Assert.Equal(6, mast.Act);
+        Assert.Contains("proj-dc-lit", mast.RequiresProjects);
+
+        // every project but the finale built: still in The Core (it ends on the lit board, not a count)
+        s.ActIndex = 5;
+        s.FiredAnnouncements.Add("ann-smartphone");
+        foreach (var p in c.Projects.Where(p => p.Act <= 5 && p.Id != "proj-dc-lit")) ProjectRules.Finish(s, c, p);
+        Assert.False(ActRules.TryAdvance(s, c));
+        ProjectRules.Finish(s, c, c.Project("proj-dc-lit")!);
+        Assert.True(ActRules.TryAdvance(s, c));
+        Assert.Equal(6, s.ActIndex);
+
+        // a v18 save made in mobile (then index 5) is in mobile still; one made in Act 4 stays there
+        var node = System.Text.Json.Nodes.JsonNode.Parse(Save.SaveCodec.ToJson(s))!;
+        node["version"] = 18; node["actIndex"] = 5;
+        Assert.Equal(6, Save.SaveCodec.FromJson(node.ToJsonString(), c).ActIndex);
+        node["actIndex"] = 4;
+        Assert.Equal(4, Save.SaveCodec.FromJson(node.ToJsonString(), c).ActIndex);
+    }
 }

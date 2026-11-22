@@ -6,7 +6,7 @@ public class ContentTests
 {
     [Fact] public void ShippingContentIsValid() => Assert.Empty(TestContent.Db.Validate());
 
-    [Fact] public void EightActs() => Assert.Equal(8, TestContent.Db.Acts.Count);
+    [Fact] public void NineActs() => Assert.Equal(9, TestContent.Db.Acts.Count);   // D46: The Core is Act 5, mobile moved to 6
 
     [Fact] public void EveryImprovementNamesTheProblemItCreates()
     {

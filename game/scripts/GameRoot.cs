@@ -159,7 +159,7 @@ public partial class GameRoot : Node3D
                 StartInstall(midView, mid);
 
         RefreshIdleScreens();
-        // developer skip-ahead (DevStart.cs): --from=free|hire|poles|act1..act7, for playtesting without the opening
+        // developer skip-ahead (DevStart.cs): --from=free|hire|poles|act1..act8, for playtesting without the opening
         if (args.FirstOrDefault(a => a.StartsWith("--from=") || a.StartsWith("--autoplay-from=")) is { } from) StartFrom(from.Split('=')[1]);
         if (args.Contains("--smoke")) _ = RunSmoke();
         if (args.FirstOrDefault(a => a == "--autoplay" || a.StartsWith("--autoplay=")) is { } auto)
@@ -1272,6 +1272,9 @@ public partial class GameRoot : Node3D
                 await Shot($"-{id}", TownBuilder.Place(_planet, v, -10, 62, 0, 14).Origin, TownBuilder.Place(_planet, v, 0, 4, 0, 2).Origin);
         foreach (var (prop, mark) in VillageLandmarks.Placed)
             await Shot($"-{prop}", mark.ToGlobal(new Vector3(7f, 6f, 20f)), mark.ToGlobal(new Vector3(0, 2f, 0)));
+        // DC1: Halden Flats, where the data centre goes (the building itself is DC2)
+        if (_planet.SiteById("halden") is { } flats)
+            await Shot("-halden", TownBuilder.Place(_planet, flats, -16, -1, 0, 3.2f).Origin, TownBuilder.Place(_planet, flats, -30, -22, 0, 1.2f).Origin);
         // a house part-way through an install: outside wall, then indoors
         Customer? shown = null;
         for (int i = 0; i < 10 && (shown is null || _town.Lots.First(l => l.Lot.Id == shown.LotId).Install is null); i++) { Sim.State.MessagesWaiting = 1; shown = Sim.TakeEnquiry(); }

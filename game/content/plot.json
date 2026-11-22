@@ -41,19 +41,23 @@
 
   { "id": "ch-open", "title": "The valley is yours", "step": "free", "teaches": "project:",
     "text": "Two villages, one switchboard, and service NezTel can't match. PIP's Almanac has a page about modems answering in turn, and a word underlined three times: web.",
-    "doneWhen": [ { "kind": "projectsDone", "value": 3 } ] },
+    "doneWhen": [ { "kind": "projectsDone", "value": 7 } ] },
 
   { "id": "ch-dialup", "title": "The road out is NezTel's", "step": "free", "teaches": "project:",
     "text": "The web is out there and the only road to it is NezTel's trunk. Lease it, because you have to. Then build your own way out over the ridge, because you can.",
-    "doneWhen": [ { "kind": "projectsDone", "value": 5 } ] },
+    "doneWhen": [ { "kind": "projectsDone", "value": 12 } ] },
 
   { "id": "ch-boom", "title": "The boom", "step": "free", "teaches": "project:",
     "text": "Everybody wants a web page and somewhere to keep it. Millbrook over the hills, a cold store in Eastgate, and across the water, Farland. NezTel owns the only ocean cable. For now.",
-    "doneWhen": [ { "kind": "projectsDone", "value": 9 } ] },
+    "doneWhen": [ { "kind": "projectsDone", "value": 16 } ] },
 
   { "id": "ch-broadband", "title": "Always on", "step": "free", "teaches": "project:",
     "text": "Nobody wants to hear a modem shriek any more. Broadband over the copper, a ring of fibre round the bay, and Farland's capital, where NezTel charges twice what you do.",
-    "doneWhen": [ { "kind": "projectsDone", "value": 12 } ] },
+    "doneWhen": [ { "kind": "projectsDone", "value": 19 } ] },
+
+  { "id": "ch-core", "title": "The Core", "step": "free", "teaches": "project:",
+    "text": "Your network is a modem bank behind a shop, a cabinet that floods, servers in a fish store and two long cables, and you built every bit of it in a hurry. Everything should go through one building. Halden Flats is empty, flat and boring, and every cable you own already passes it.",
+    "doneWhen": [ { "kind": "built", "id": "proj-dc-lit" } ] },
 
   { "id": "ch-mobile", "title": "In everyone's pocket", "step": "free", "teaches": "project:",
     "text": "The phone doesn't need a wall any more. Masts on the ridge, masts along the coast, and fibre behind every one. PIP has started finishing your sentences, which is new.",

@@ -52,6 +52,65 @@ public sealed class PlanetGen
                 _sites.Add(more);
                 _roads.Add(BuildRoad($"road-town-{id}", Town, more));
             }
+        // DC1: Halden Flats, the plain between the valley, Eastgate and the shore, where the data centre goes (added last)
+        if (FindFlatsSite() is { } flats)
+        {
+            _sites.Add(flats);
+            _roads.Add(BuildRoad("road-town-halden", Town, flats));
+        }
+    }
+
+    /// <summary>
+    /// Halden Flats (DATA_CENTRE_DESIGN.md §2): wide, flat and boring on purpose, a short drive from town on the Eastgate side,
+    /// off every existing road and clear of every village, with an overland route home. Deterministic for a seed.
+    /// </summary>
+    private Site? FindFlatsSite()
+    {
+        if (SiteById("eastgate") is not { } eastgate) return null;
+        var rng = new DetRng(DetRng.Derive(Seed, "halden-site"));
+        var town = Town.Dir;
+        var east = new V3(0, 1, 0).Cross(town).Normalized();
+        var north = town.Cross(east);
+        // aim halfway down the Eastgate road; the nearest clear, flat ground off it wins
+        var aim = (town + eastgate.Dir).Normalized();
+        V3? best = null; double bestScore = double.MinValue;
+        for (int i = 0; i < 2000; i++)
+        {
+            double dx = rng.Next(2001) / 1000.0 - 1, dz = rng.Next(2001) / 1000.0 - 1;
+            double len = Math.Sqrt(dx * dx + dz * dz);
+            if (len > 1) continue;
+            var c = (aim + (east * dx + north * dz) * (600 / RadiusM)).Normalized();
+            double dist = (c - town).Length * RadiusM;
+            if (dist is < 300 or > 900) continue;
+            double h = RawHeight(c);
+            if (h is < 4 or > 40) continue;
+            bool clash = false;
+            // its flat ground stays off every road and every settlement's flat ground (the slopes between may share)
+            foreach (var o in _sites) if ((c - o.Dir).Length * RadiusM < o.RadiusM + 80 + 70) clash = true;
+            foreach (var road in _roads)
+            {
+                // off the road, and where its slope reaches a road, about the road's height so the road doesn't dip
+                var (rd, rh) = NearestOnRoad(road, c);
+                if (rd < 115 || (rd < 160 && Math.Abs(rh - h) > 2.5)) clash = true;
+            }
+            if (clash) continue;
+            double worst = 0, low = double.MaxValue, prev = Town.HeightM, rough = 0;
+            int steps = (int)(dist / 25);
+            for (int k = 1; k <= steps; k++)
+            {
+                double hk = RawHeight((town + (c - town) * ((double)k / steps)).Normalized());
+                low = Math.Min(low, hk);
+                worst = Math.Max(worst, Math.Abs(hk - prev));
+                prev = hk;
+            }
+            if (low < 3 || worst > 12) continue;
+            foreach (var (rx, rz) in Ring)
+                foreach (double m in new[] { 50.0, 100.0 })
+                    rough = Math.Max(rough, Math.Abs(RawHeight((c + east * (rx * m / RadiusM) + north * (rz * m / RadiusM)).Normalized()) - h));
+            double score = -rough * 3 - worst - (c - aim).Length * RadiusM / 25 - Math.Abs(h - 15) / 4;
+            if (score > bestScore) { bestScore = score; best = c; }
+        }
+        return best is { } b ? new Site("halden", b, 80, RawHeight(b)) : null;
     }
 
     /// <summary>

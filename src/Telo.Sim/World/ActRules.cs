@@ -19,12 +19,14 @@ public static class ActRules
         ConditionKind.SocketsFitted => s.Customers.Count(c => c.Live && c.SocketFitted),
         ConditionKind.JobsDone => s.JobsDone,
         ConditionKind.ProjectsDone => s.ProjectsDone.Count,
+        ConditionKind.Built => 0,   // needs the project's id: see Met
         ConditionKind.ServiceNines => Town.ServiceRules.Nines(Town.ServiceRules.Ppm(s)),
         ConditionKind.Knocked =>s.Customers.Count >= 2 || s.Households.Values.Any(h => h.RetryDay > 0) ? 1 : 0,
         _ => 0,
     };
 
-    public static bool Met(GameState s, Condition cond) => Measure(s, cond.Kind) >= cond.Value;
+    public static bool Met(GameState s, Condition cond) =>
+        cond.Kind == ConditionKind.Built ? cond.Id is { } id && s.ProjectsDone.Contains(id) : Measure(s, cond.Kind) >= cond.Value;
 
     /// <summary>
     /// An act's gate opens when the world announces its technology, or sooner if the player has recalled that technology

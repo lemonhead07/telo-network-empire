@@ -17,7 +17,9 @@ public partial class NotebookView : ModalView
         var act = c.ActAt(s.ActIndex);
         Title.Text = "COMPANY NOTEBOOK";
         Text(Body, $"Act {act.Index}: {act.Name} ({act.Years}). Business: {act.BusinessModel}. Holding you back: {act.BindingConstraint}.", 16);
-        var exit = string.Join(", ", act.ExitMilestone.Select(m => $"{m.Kind} {ActRules.Measure(s, m.Kind)}/{m.Value}"));
+        var exit = string.Join(", ", act.ExitMilestone.Select(m => m.Kind == Telo.Sim.Content.ConditionKind.Built
+            ? $"{c.Project(m.Id ?? "")?.Name ?? m.Id} ({(ActRules.Met(s, m) ? "built" : "not yet")})"
+            : $"{m.Kind} {ActRules.Measure(s, m.Kind)}/{m.Value}"));
         if (exit.Length > 0) Text(Body, $"To move on: {exit}", 15);
 
         Text(Body, "\nHOW THE WORK GETS DONE", 20);

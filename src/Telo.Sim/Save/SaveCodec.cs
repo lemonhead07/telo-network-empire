@@ -61,6 +61,7 @@ public static class SaveCodec
         }
         if (s.Version < 18 && s.Switch is { } sw && content is not null)
             sw.ExtraPanels = s.ProjectsDone.Sum(id => content.Project(id)?.Reward.Panels ?? 0);
+        if (s.Version < 19 && s.ActIndex >= 5) s.ActIndex++;   // v19 (D46): Act 5 is now The Core; mobile and later acts move up one
         s.Version = GameState.CurrentVersion;
         return s;
     }

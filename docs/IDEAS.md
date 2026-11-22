@@ -4,6 +4,10 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 ## Inbox
 *(one line each: date, idea, where it came from)*
+- 2026-11-21 · [gameplay] **The Core is cheap next to what it earns.** DC1's thirteen projects cost $23.5k so the waits, not saving up, set Act 5's 5 h; a year into Act 6 the bot still has $261k. The money sink should come from DC8 (power and heat bills, a second generator) and colo, not from raising project prices. From DC1.
+- 2026-11-21 · [gameplay] **Peering is optional but the bot builds it in Act 5 anyway** (it's listed after the finale; the bot takes any open project on a quiet day). Fine for now; if it should be the Act 6 hook, gate it on `proj-dc-lit`. From DC1.
+- 2026-11-21 · [gameplay] **`--from=actN` leaves one household unsigned** (57 subscribers at Act 5: one prospect never signs, so the god step stops there). Harmless for testing. From DC1.
+- 2026-11-21 · [geometry] **Halden Flats sits on the coastal flats, 4 m above the sea.** The design's joke was "no flooding": a sea wall, a tide gauge, or the council's leaflet saying "flooding: rare" would land it. From DC1.
 - 2026-11-21 · [gameplay] **Act 2 now runs 6.4 h** (target 4–5): Highmoor plus the archive wait for the modem bank. If it drags in play, shorten Highmoor's gale wait or let the modem bank page be read sooner. From EA2f.
 - 2026-11-21 · [gameplay] **A 56-row switchboard is cramped** (rows ~1.7 cm at full size). Grow the board taller per panel, or give each village its own small board on the wall beside it. From EA2f.
 - 2026-11-21 · [gameplay] **Odd jobs are offered in villages you haven't wired yet** (Wrenfold on 4 Jan). Fine as a way to meet them first, or gate on `needsProject`. From EA2f.
