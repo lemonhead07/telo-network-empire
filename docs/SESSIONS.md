@@ -29,7 +29,7 @@ Every session is **one** of these two. A dev session also names its **lane**, ge
 
 **Use when:** writing code, content JSON, models, sounds, fixing bugs.
 
-1. Read `docs/NEXT_SESSION.md` first. Then `CLAUDE.md` if not already loaded. Open other docs **only for the section you need** (grep for the node id, e.g. `lines.frame`), not whole files.
+1. Read `docs/NEXT_SESSION.md` first. Then `CLAUDE.md` if not already loaded. Run `tools/branches.sh start <lane>` and read its list of stranded work (`docs/BRANCHES.md` rule 6). Open other docs **only for the section you need** (grep for the node id, e.g. `lines.frame`), not whole files.
 2. Pick **one** item: the top **[Dev]** item of **Up next** in `BUILD_PLAN.md` unless the owner names another. State it back in one line: *"This session: X. Done when: Y."*
 3. **Scope fence.** Work only on that item. If you or the owner think of something else:
    - a bug that blocks the item → fix it;
@@ -39,7 +39,7 @@ Every session is **one** of these two. A dev session also names its **lane**, ge
    - `--shot` screenshot for anything visual and look at it;
    - `dotnet test` + `--smoke` only before a commit that changes sim rules.
 5. If the item turns out bigger than one session, stop at a playable point, split the rest into new **Up next** items, and say so.
-6. End: tick the item in `BUILD_PLAN.md`, rewrite `docs/NEXT_SESSION.md` (where things stand, the next item, rough edges), commit with a plain message, push.
+6. End: tick the item in `BUILD_PLAN.md`, rewrite `docs/NEXT_SESSION.md` (where things stand, the next item, rough edges), commit with a plain message, then `tools/branches.sh finish <lane>` (pushes the session branch into its lane, never master).
 
 ### Definition of Ready (an item a dev session can take)
 
