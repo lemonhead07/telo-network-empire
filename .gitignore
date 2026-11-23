@@ -19,3 +19,4 @@ game/.import/
 .idea/
 # Python
 __pycache__/
+.claude/worktrees/
