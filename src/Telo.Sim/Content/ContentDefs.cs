@@ -213,6 +213,11 @@ public sealed record LotDef
     public int OpensAt { get; init; }
     /// <summary>A project that has to be built before this household can be connected (the poles up their lane, the village cabinet).</summary>
     public string? NeedsProject { get; init; }
+    /// <summary>
+    /// A business or public building rather than a home (the pub, the post office, the school): somebody is always minding it,
+    /// so nobody pops out from it, and neighbours pop in while it's open (Town/PeopleRules).
+    /// </summary>
+    public bool Business { get; init; }
 }
 
 /// <summary>One step of a project: an action held for a while, a few times over, with the kit it needs here.</summary>
