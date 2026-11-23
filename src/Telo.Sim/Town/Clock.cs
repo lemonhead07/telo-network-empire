@@ -19,7 +19,9 @@ public static class Clock
     public static bool WorkingHours(GameState s) => IsWorkingDay(s.Day) && Hour(s) >= WorkStartsHour && Hour(s) < WorkEndsHour;
     /// <summary>Lights-on time. The waking day is mostly daylight: dusk comes late, and the night itself is slept through.</summary>
     public static bool Dark(GameState s) => Hour(s) is >= 21 or < 6.5;
-    public static string Text(GameState s) { double h = Hour(s); return $"{(int)h:00}:{(int)(h * 60) % 60:00}"; }
+    public static string Text(GameState s) => TextAt(s.Minute);
+    /// <summary>A minute of the sim's day (minutes since six this morning) as a clock time.</summary>
+    public static string TextAt(int minute) { double h = (DayStartsAtHour + minute / 60.0) % 24; return $"{(int)h:00}:{(int)(h * 60) % 60:00}"; }
 }
 
 /// <summary>
