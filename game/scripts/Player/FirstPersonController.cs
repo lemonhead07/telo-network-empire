@@ -10,7 +10,13 @@ public partial class FirstPersonController : SphereBody
     public const float FlySpeed = 45f, FlyFastSpeed = 260f;
 
     public Camera3D Camera { get; private set; } = null!;
-    private RayCast3D _ray = null!;
+    private RayCast3D _ray = null!, _look = null!;
+    /// <summary>
+    /// Things you can read from further off than arm's length (people in the street) sit on this physics layer alone. The long
+    /// look ray finds them; it stops at walls and the ground, and anything within reach (a door) still comes first.
+    /// </summary>
+    public const uint LookLayer = 4;
+    public const float LookReach = 14f;
     private CollisionShape3D _shape = null!;
 
     public Func<bool> IsFrozen { get; set; } = () => false;
@@ -34,6 +40,8 @@ public partial class FirstPersonController : SphereBody
         AddChild(Camera);
         _ray = new RayCast3D { TargetPosition = new Vector3(0, 0, -2.6f), CollisionMask = 3 };
         Camera.AddChild(_ray);
+        _look = new RayCast3D { TargetPosition = new Vector3(0, 0, -LookReach), CollisionMask = 1 | LookLayer };
+        Camera.AddChild(_look);
         FloorMaxAngle = Mathf.DegToRad(46);
         FloorSnapLength = 0.4f;
         Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -102,6 +110,7 @@ public partial class FirstPersonController : SphereBody
             MoveOnPlanet(dir * speed * Pace, delta);
         }
         Focus = _ray.IsColliding() ? _ray.GetCollider() as Interactable : null;
+        if (Focus is null && _look.IsColliding() && _look.GetCollider() is Interactable far && (far.CollisionLayer & LookLayer) != 0) Focus = far;
 
         // hold E to work: the job is done when the hold completes; keep holding to carry straight on
         if (Focus is { } f && Input.IsActionPressed("interact") && f.CanUse() && f.HoldSeconds() is var need and > 0)

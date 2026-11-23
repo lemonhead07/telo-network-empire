@@ -60,6 +60,7 @@ public sealed class PipTips
         ["solicitor"] = "A solicitor's letter about the file area. The Board has never been more popular. Those two facts are related.",
         ["ticket"] = "Ticket on your clipboard. Hand it to Jory in person. No ticket, no work, and no pay either: they're paid by the job.",
         ["given"] = "That's theirs now. It'll be done by the end of their working day. You'll find them standing outside the house they're on.",
+        ["people"] = "Folk pop out: to Sol's, or round to a neighbour's. Look at someone to see who they are. The disc over their head is amber if they're on your line, blue if they're on NezTel's, and the face is how they feel about it.",
         ["hours"] = "People keep hours now you know the round. A car on the drive or a lit window means someone's in. Most families are out from nine to five.",
         ["payday"] = "Friday. Pay day. It's on the calendar by your bed, along with rent day and who is off.",
         ["tolet"] = "1 Main Street is to let, at the east end of the far row. With a depot your staff collect their own tickets each morning and go on a weekly wage.",

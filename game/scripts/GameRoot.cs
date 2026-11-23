@@ -39,6 +39,9 @@ public partial class GameRoot : Node3D
     private Interactable _terminalUse = null!;
     private WorldScreen _pipScreen = null!, _notebookScreen = null!;
     private float _minuteFrac;
+    /// <summary>Screenshots stop the clock so people in the street hold still for the picture.</summary>
+    private bool _holdClock;
+    private Walkers _walkers = null!;
     /// <summary>Seconds into the day (which starts at six), as the sky and lamps want it. The sim owns the clock; this is a view of it.</summary>
     private float _dayClock
     {
@@ -136,6 +139,15 @@ public partial class GameRoot : Node3D
             () => Telo.Sim.Build.YardRules.OnVan(Sim.State));
         _van.Door.Prompt = () => _cargo.Held is { } h ? $"Put the {h.Label} back on the van" : "Drive the van";
         _van.Door.OnUse = () => { if (_cargo.Held is not null) _cargo.StowHeld(); else EnterVan(); };
+
+        // people who walk (EA2c): out to Sol's or round to a neighbour, as their routine in the sim says
+        _walkers = new Walkers(Sim, _content, _planet, _town)
+        {
+            Minute = () => Sim.State.Minute + _minuteFrac,
+            RealSecondsPerMinute = () => DayLengthSeconds / SleepRules.Bedtime,
+            WorkUnderWay = WorkUnderWay,
+        };
+        AddChild(_walkers);
 
         // The only overlay left: a small status strip. (Target: wall calendar, cash tin, pager.)
         var ui = new CanvasLayer();
@@ -563,6 +575,9 @@ public partial class GameRoot : Node3D
             KitOnSite, Cargo.Names);
     }
 
+    /// <summary>A job under way at this house: an install, or an odd job or order on their rug. They stay in for it.</summary>
+    private bool WorkUnderWay(string lotId) => _installs.ContainsKey(lotId) || _oddJobs.ContainsKey(lotId);
+
     /// <summary>Kit in the player's hands or put down within a few metres of them.</summary>
     private Tools KitOnSite() => _kitEverywhere ? Tools.All : _cargo.OnSite(_player.GlobalPosition);
 
@@ -919,7 +934,7 @@ public partial class GameRoot : Node3D
     // ---- loop --------------------------------------------------------------------------------
     public override void _Process(double delta)
     {
-        if (!AnyScreenOpen || _switch.IsOpen)
+        if ((!AnyScreenOpen || _switch.IsOpen) && !_holdClock)
         {
             // time passes only as it is lived: real seconds become game minutes, and nothing else moves the clock
             // the waking day (six till ten) lasts DayLengthSeconds; the night is slept, never lived
@@ -959,6 +974,7 @@ public partial class GameRoot : Node3D
             if (!AnyScreenOpen) RefreshIdleScreens();
             _phoneView.Rebuild();
             SyncNez();
+            if (_player.Focus is { } lookedAt && (lookedAt.CollisionLayer & FirstPersonController.LookLayer) != 0) _pip.Once("people");   // someone in the street
             SyncHouses(_player.GlobalPosition);
             SyncPaper();
             // who is in: warm windows after dark, and the car on the drive
@@ -966,7 +982,8 @@ public partial class GameRoot : Node3D
             {
                 if (lot.Lights is not null) lot.Lights.Visible = Clock.Dark(Sim.State) && HomeRules.IsHome(Sim.State, _content, lot.Lot);
                 if (lot.Car is not null) lot.Car.Visible = !HomeRules.OutAtWork(Sim.State, _content, lot.Lot);
-                if (lot.Resident is not null) lot.Resident.Visible = HomeRules.IsHome(Sim.State, _content, lot.Lot);
+                // in, or letting you work in their front room (the street doesn't show them then: Walkers.WorkUnderWay)
+                if (lot.Resident is not null) lot.Resident.Visible = WorkUnderWay(lot.Lot.Id) || HomeRules.IsHome(Sim.State, _content, lot.Lot);
                 if (lot.Bay is not null) lot.Bay.Visible = _showBay || Telo.Sim.Build.YardRules.HasBay(Sim.State, _content);
             }
             _cargo.Refresh();
@@ -1260,6 +1277,89 @@ public partial class GameRoot : Node3D
         GetTree().Quit(ok ? 0 : 1);
     }
 
+    /// <summary>
+    /// People who walk (EA2c): Main Street at its busiest moment in the next eight weeks, then one of them close up, as you'd see
+    /// them in the street with the crosshair on them (their name, mood and line under it). The clock is held still for both and
+    /// put back afterwards; the days moved on stay moved on.
+    /// </summary>
+    private async Task PeopleShots(string path, Camera3D cam, Func<string, Vector3, Vector3, Vector3?, Task> shot)
+    {
+        var s = Sim.State;
+        for (int i = 0; Onboarding.Current(s, _content) != OnboardingStep.Free && i < 60; i++) Sim.GodNextStage(_planet);   // routines start once the first hour is learned
+        var main = _town.Lots.Where(l => l.Lot.Kind == LotKind.House && TownBuilder.StreetOf(l.Lot)?.Name == "Main Street").ToList();
+        // the busiest 32 m of Main Street at any minute from nine till seven, over the next eight weeks: people out on the
+        // pavement count most, someone on a doorstep a little
+        (double N, int Day, int Minute, float East) best = (-1, s.Day, 4 * 60, 0);
+        for (int d = s.Day + 1; d <= s.Day + 56; d++)
+        {
+            var trips = main.SelectMany(l => PeopleRules.Day(s, _content, l.Lot, d).Select(o => (l.Lot, o, Yours: PeopleRules.ProviderOf(s, _content, l.Lot) == Provider.Yours))).ToList();
+            if (trips.Count < 2) continue;
+            for (int m = 3 * 60; m <= 13 * 60; m++)
+            {
+                var spots = trips.Select(t => (At: _walkers.SpotOn(t.Lot, t.o, m + 0.5), t.Yours)).Where(t => t.At is not null).Select(t => (P: t.At!.Value, t.Yours)).ToList();
+                if (spots.Count < 2) continue;
+                for (float x0 = -80; x0 <= 60; x0 += 4)
+                {
+                    var inside = spots.Where(p => p.P.X >= x0 && p.P.X <= x0 + 32).ToList();
+                    double n = inside.Sum(p => Mathf.Abs(p.P.Y - TownBuilder.StreetSouth) < 6 ? 1 : 0.6)
+                        + (inside.Any(p => p.Yours) && inside.Any(p => !p.Yours) ? 0.5 : 0);   // amber and blue both in the picture
+                    if (n > best.N) best = (n, d, m, x0);
+                }
+            }
+        }
+        while (s.Day < best.Day) Sim.AdvanceDay();
+        int minuteWas = s.Minute; float fracWas = _minuteFrac; bool hoursWas = _ignoreHours;
+        _holdClock = true; _ignoreHours = false;
+        s.Minute = best.Minute; _minuteFrac = 0.5f; _slowTick = 0;
+        var cur = cam.Current; cam.Current = true;
+        float x = best.East;
+        // down the street from upstairs-window height, the first of them a few metres off, the rest along the pavements
+        cam.GlobalTransform = TownBuilder.Place(_planet, x + 20, TownBuilder.StreetSouth, 0, 30);
+        await Frames(4);
+        var site = _planet.Town; var c0 = PlanetBuilder.ToGodot(site.Dir).Normalized(); var ex = Vector3.Up.Cross(c0).Normalized(); var nx = c0.Cross(ex);
+        float r = (float)(_planet.RadiusM + site.HeightM);
+        Vector2 SiteOf(Vector3 g) { var d = g.Normalized(); return new Vector2(d.Dot(ex) * r, -d.Dot(nx) * r); }
+        var inFrame = _walkers.Shown.Select(w => SiteOf(w.Body.GlobalPosition)).Where(p => p.X >= x - 2 && p.X <= x + 34 && p.Y > -6 && p.Y < 40).ToList();
+        float first = inFrame.Count > 0 ? inFrame.Min(p => p.X) : x;
+        var mid = inFrame.Count > 0 ? inFrame.Aggregate(Vector2.Zero, (acc, p) => acc + p) / inFrame.Count : new Vector2(x + 20, TownBuilder.StreetSouth);
+        await shot("-people", TownBuilder.Place(_planet, first - 12, TownBuilder.StreetSouth + 1.2f, 0, 4.0f).Origin,
+            TownBuilder.Place(_planet, mid.X + 6, TownBuilder.StreetSouth * 0.6f + mid.Y * 0.4f, 0, 0.3f).Origin, null);
+        var seen = _walkers.Shown.ToList();
+        GD.Print($"PEOPLE {seen.Count} out at {Clock.TextAt(s.Minute)} on {s.Date} (stretch {x}..{x + 32} m, score {best.N}, {inFrame.Count} in it): " + string.Join("; ", seen.Select(w => $"{w.Kind} {PeopleRules.Describe(s, _content, w.Lot)} at {SiteOf(w.Body.GlobalPosition).Round()}")));
+
+        // close up: stand in front of someone coming down their garden path (the house behind them), or walking along the
+        // pavement, a step to the road side of them (the poles and lamps stand on the far side), and look at them. Not someone
+        // heading for a door: in front of them is the house.
+        Vector3 Roadward(Node3D b)
+        {
+            var up = b.GlobalPosition.Normalized();
+            var toStreet = TownBuilder.Place(_planet, SiteOf(b.GlobalPosition).X, TownBuilder.StreetSouth).Origin - b.GlobalPosition;
+            return (toStreet - up * toStreet.Dot(up)).Normalized();
+        }
+        float Towards(Node3D b) => b.GlobalBasis.Z.Normalized().Dot(Roadward(b));   // 1: walking to the street, -1: to a door
+        if (seen.Where(w => w.Kind == WhereKind.Walking && Towards(w.Body) > -0.5f)
+                .OrderBy(w => Towards(w.Body) > 0.5f ? 0 : 1).ThenBy(w => w.Body.GlobalPosition.DistanceTo(cam.GlobalPosition)).FirstOrDefault() is { Body: not null } who)
+        {
+            var body = who.Body; var bup = body.GlobalPosition.Normalized(); var face = body.GlobalBasis.Z.Normalized();
+            var aside = face.Cross(bup).Normalized();
+            if (aside.Dot(Roadward(body)) < 0) aside = -aside;
+            _player.PlaceAt(body.GlobalPosition + face * 3.1f + aside * 1.2f + bup * 0.3f, -face);
+            cam.Current = false; _player.Camera.Current = true;
+            _player.Camera.Rotation = new Vector3(-0.1f, 0, 0);
+            for (int i = 0; i < 20; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            _player.FaceTowards(body.GlobalPosition - _player.GlobalPosition);
+            for (int i = 0; i < 6; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            await Frames(10);
+            GD.Print($"PEOPLE-LOOK focus={(_player.Focus == who.Hot ? "on them" : _player.Focus is null ? "nothing" : "something else")}: {_player.Focus?.Prompt()}");
+            GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", "-people-look.png"));
+            _player.Camera.Current = false;
+            _player.GlobalTransform = _town.PlayerSpawn;
+            _player.Camera.Rotation = new Vector3(-0.15f, 0, 0);
+        }
+        cam.Current = cur;
+        s.Minute = minuteWas; _minuteFrac = fracWas; _ignoreHours = hoursWas; _holdClock = false;
+    }
+
     /// <summary>Screenshots show the Yard's loading bay whatever the act.</summary>
     private bool _showBay;
 
@@ -1278,6 +1378,8 @@ public partial class GameRoot : Node3D
             GetViewport().GetTexture().GetImage().SavePng(path.Replace(".png", suffix + ".png"));
         }
         await Frames(30);
+        // --shots=people: only the people in the street (quick to look at while working on them)
+        if (OS.GetCmdlineUserArgs().Contains("--shots=people")) { QuickCustomers(5); await PeopleShots(path, cam, Shot); GetTree().Quit(); return; }
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);
@@ -1436,6 +1538,7 @@ public partial class GameRoot : Node3D
         _dayClock = DayLengthSeconds * (11f - 6f) * 60f / SleepRules.Bedtime; _slowTick = 0;
         await Frames(4);
         await Shot("-midday", TownBuilder.Place(_planet, -62, 22, 0, 5).Origin, TownBuilder.Place(_planet, -20, 14, 0, 2).Origin);
+        await PeopleShots(path, cam, Shot);
         _ignoreHours = true;
         _dayClock = DayLengthSeconds * (19.6f - 6f) * 60f / SleepRules.Bedtime;
         // the sysop's terminal, with a caller waiting and uploads to look through
