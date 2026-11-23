@@ -81,7 +81,7 @@ public static class Bot
         bool booked = text.StartsWith("Booked");   // a booked window comes first: they're staying in for you
         if (!booked && Committed(sim, a) is { } focus) (text, lotId) = ($"{focus.Title}: see it through", focus.LotId);
         else if (!booked && daytime && !a.IgnoreHours && BookingRules.CanStartJob(s, c) && lotId is not null && c.Lots.TryGetValue(lotId, out var shut)
-                 && HomeRules.WhyNot(s, c, shut) is not null)
+                 && HomeRules.WhyNot(s, c, shut) is not null && !BackSoon(s, c, shut))
         {
             if (MostAdvanced(sim, a, lotId) is { } alt)
             {
@@ -104,8 +104,8 @@ public static class Bot
 
         // 4. Follow the line everyone reads.
         var (place, want) = Target(sim, gen, text, lotId);
-        // nobody in over there and it's night: sleep instead of walking over to a dark door
-        if (place != a.Place && !a.IgnoreHours && c.Lots.TryGetValue(place, out var dest) && HomeRules.WhyNot(s, c, dest) is not null
+        // nobody in over there and it's night: sleep instead of walking over to a dark door (someone who just popped out is worth the walk)
+        if (place != a.Place && !a.IgnoreHours && c.Lots.TryGetValue(place, out var dest) && HomeRules.WhyNot(s, c, dest) is not null && !BackSoon(s, c, dest)
             && (Clock.Hour(s) >= 17.5 || Clock.Hour(s) < 6) && sim.Installs.Count + sim.Benches.Count == 0)
             return (a.Place == Places.Room ? "sleep" : Go(Places.Room), $"{text} (closed till morning)");
         if (place != a.Place)
@@ -143,8 +143,8 @@ public static class Bot
         {
             // three jobs done today: the rest keeps till tomorrow
             if (hit.Blocked == BookingRules.CapReason) return (a.Place == Places.Room ? "sleep" : Go(Places.Room), $"{text} (done for today)");
-            // nobody in and it's evening: go home to bed rather than wait on the step all night
-            if (Clock.Hour(s) >= 17.5 || Clock.Hour(s) < 6) return (a.Place == Places.Room ? "sleep" : Go(Places.Room), $"{text} ({hit.Blocked}): home to bed");
+            // nobody in and it's evening: go home to bed rather than wait on the step all night (unless they're back any minute)
+            if ((Clock.Hour(s) >= 17.5 || Clock.Hour(s) < 6) && !(c.Lots.TryGetValue(a.Place, out var step) && BackSoon(s, c, step))) return (a.Place == Places.Room ? "sleep" : Go(Places.Room), $"{text} ({hit.Blocked}): home to bed");
             return ("wait", $"{text} ({hit.Blocked})");
         }
         return (a.Place == Places.Room ? "sleep" : Go(Places.Room), text);
@@ -203,11 +203,18 @@ public static class Bot
         if (a.Focus is null) return null;
         var t = Work.StaffRules.Tickets(sim.State, sim.Content).FirstOrDefault(x => x.Key == a.Focus);
         if (t is { AssignedTo: null, LotId: { } lot } && Plan.AppointmentRules.HouseWorkLeft(sim.State, t.Key)
-            && (a.IgnoreHours || !sim.Content.Lots.TryGetValue(lot, out var def) || HomeRules.WhyNot(sim.State, sim.Content, def) is null))
+            && (a.IgnoreHours || !sim.Content.Lots.TryGetValue(lot, out var def) || HomeRules.WhyNot(sim.State, sim.Content, def) is null || BackSoon(sim.State, sim.Content, def)))
             return t;
         a.Focus = null;
         return null;
     }
+
+    /// <summary>Only popped out (to the shop, round a neighbour's) and back within the hour, well before bed: wait for them.</summary>
+    private static bool BackSoon(GameState s, ContentDb c, LotDef lot) =>
+        PeopleRules.Out(s, c, lot) is { } o && o.Back - s.Minute <= WaitForErrandMinutes && o.Back <= (20 - Clock.DayStartsAtHour) * 60;
+
+    /// <summary>How long the bot will hang about for someone who popped out (the door tells you when they'll be back).</summary>
+    private const int WaitForErrandMinutes = 60;
 
     /// <summary>
     /// The most advanced job someone is in for right now: a fault first (a customer without a working line), then a

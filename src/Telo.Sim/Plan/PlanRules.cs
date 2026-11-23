@@ -98,8 +98,10 @@ public static class PlanRules
             slot.Title = t.Title;
             slot.Grey = c.Lots.TryGetValue(place, out var lot) ? AwayAt(s, c, lot, plan.Day, slot.Start) : null;
             slot.Booking = AppointmentRules.For(s, slot.TicketKey) is { } booked && booked.Day == plan.Day ? AppointmentRules.Label(booked) : null;
-            // planning ahead: someone out at work can be asked to be in (the appointment below), so it isn't grey
-            if (slot.Grey is not null && lot is not null && plan.Day > s.Day && AppointmentRules.CouldBeIn(s, c, lot, plan.Day, slot.Start)) slot.Grey = null;
+            // planning ahead: someone out at work, or who'd only have popped out, can be asked to be in (the appointment below),
+            // so it isn't grey
+            if (slot.Grey is not null && lot is not null && plan.Day > s.Day
+                && (AppointmentRules.CouldBeIn(s, c, lot, plan.Day, slot.Start) || PeopleRules.OutAt(s, c, lot, plan.Day, slot.Start) is not null)) slot.Grey = null;
             clock = slot.Start + slot.Minutes; at = place;
         }
         AppointmentRules.Sync(s, c, plan, tickets);

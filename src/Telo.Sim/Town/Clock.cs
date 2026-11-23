@@ -26,6 +26,7 @@ public static class Clock
 
 /// <summary>
 /// Who is where. People keep hours: the time of day decides who is home, and that decides what you can do.
+/// Between times they pop out on errands (<see cref="PeopleRules"/>).
 /// A new player's first hour is spared this: everyone is in until the basic round is learned.
 /// </summary>
 public static class HomeRules
@@ -57,6 +58,7 @@ public static class HomeRules
         if (Asleep(s, c, lot)) return "the lights are off. Come back in the morning";
         // a booked window: they stayed in for you, whatever their usual hours
         if (OutAtWork(s, c, lot) && Plan.AppointmentRules.Booked(s, lot.Id) is null) return "the car's gone. Back after five";
-        return null;
+        // popped out to the shop or round a neighbour's (D44): back soon. A day they've booked you in, they stay in.
+        return PeopleRules.WhyOut(s, c, lot);
     }
 }
