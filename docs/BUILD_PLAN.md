@@ -136,3 +136,4 @@ Acts 3–4 → 1.0. Office designer, crime/evidence, Acts 5–7, Steam Workshop 
 - Save slots and autosave on quit.
 - ~~CI~~ done: `.github/workflows/check.yml`, manual trigger only (free).
 - Localisation: move strings out of the sim into keyed tables before Early Access.
+- Possessives on the "what next" line add "'s" to any name: "Sol's Electronics's", "The Adebayos's", "Vet's surgery (Mr. Dunmore)'s". `PeopleRules.Possessive` (private, EA2c) gets these right: make it public and use it in `Guidance` and `Actions.Name`. Found 2026-11-23.
