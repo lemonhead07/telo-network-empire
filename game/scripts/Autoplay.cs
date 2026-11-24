@@ -44,6 +44,23 @@ public partial class GameRoot
         _sample = args.FirstOrDefault(a => a.StartsWith("--autoplay-sample=")) is { } smp && int.TryParse(smp.Split('=')[1], out int x) ? Math.Max(1, x) : 1;
         await Frames(40);
         await Snap("start", force: true);
+        // --autoplay-goto=<place> (development): make the one trip, the way the body makes every trip, and say where it ended up
+        // (e.g. --from=act4 --autoplay-goto=lot-fl-n1: down to the jetty, over on the ferry, up to the pub's door)
+        if (args.FirstOrDefault(a => a.StartsWith("--autoplay-goto=")) is { } trip)
+        {
+            string dest = trip["--autoplay-goto=".Length..];
+            int startMin = Sim.State.Day * 1440 + Sim.State.Minute;
+            await Physics(30);   // the roads and jetties are built once physics is up
+            await GoTo(dest);
+            await Snap("arrived", force: true);
+            float off = (BodyPos() - WorldOf(dest)).Length(), van = (_van.GlobalPosition - BodyPos()).Length();
+            bool ok = off < 6 && _planet.LandOf(PlanetBuilder.ToSim(BodyPos())) == Places.LandOf(_planet, Sim.Content, dest);
+            GD.Print($"AUTOPLAY GOTO {(ok ? "OK" : "FAIL")}: {dest} {off:0.0} m from the door, van {van:0} m away, {Sim.State.Day * 1440 + Sim.State.Minute - startMin} game minutes, assists={_assists}");
+            if (_autoDir is not null) Godot.FileAccess.Open($"{_autoDir}/autoplay.txt", Godot.FileAccess.ModeFlags.Write)?.StoreString(string.Join("\n", _autoLog));
+            Engine.TimeScale = 1;
+            GetTree().Quit(ok ? 0 : 1);
+            return;
+        }
 
         ulong started = Time.GetTicksMsec();
         string last = ""; int same = 0;
