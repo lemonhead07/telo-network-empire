@@ -40,10 +40,13 @@ public static class Actions
         foreach (var place in Destinations(sim, gen).Concat(a.Kit.Values).Append(a.VanAt).Distinct())
         {
             if (place == here) continue;
-            double m = Places.DistanceM(gen, c, here, place);
-            bool drive = a.Holding == Tools.None && a.VanAt == here && m > Places.DriveOverM;
-            int min = drive ? Places.DriveMinutes(m, a.Vehicle) : Places.WalkMinutes(m);
-            list.Add(new($"go:{place}", $"{(drive ? "Drive" : "Walk")} to {Name(c, place)}", min, null, () =>
+            var route = Places.RouteOf(gen, c, here, place);
+            bool drive = a.Holding == Tools.None && a.VanAt == here && Places.Metres(gen, route) > Places.DriveOverM;
+            int min = Places.Minutes(route, drive, a.Vehicle);
+            // across the water: by the ferry, van and all (EA3b), when it's running
+            var by = route.By;
+            list.Add(new($"go:{place}", $"{(drive ? "Drive" : "Walk")} to {Name(c, place)}{(by is null ? "" : ", by the ferry")}", min,
+                by is null ? null : Ferries.WhyNot(s, gen, by), () =>
             {
                 if (drive) a.VanAt = place;
                 a.Place = place;
@@ -246,7 +249,7 @@ public static class Actions
             string? why = away ?? capped ?? (s.Modems <= 0 ? "you have no modems (Sol's Electronics sells them)" : null);
             if (house) list.Add(new($"install:{cust.Id}", $"Start {cust.Name}'s install", 1, why,
                 () => { if (sim.NewInstallJob(cust.Id) is { } j) { sim.Installs[lot.Id] = j; BookingRules.CountJob(s); } }));
-            else list.Add(new($"socket:{cust.Id}", $"Fit the wall socket for {cust.Name}", 30, why, () => { if (TownRules.FitSocket(s, cust.Id)) BookingRules.CountJob(s); }));
+            else list.Add(new($"socket:{cust.Id}", $"Fit the wall socket for {cust.Name}", 30, why, () => { if (TownRules.FitSocket(s, cust.Id, c)) BookingRules.CountJob(s); }));
         }
         if (cust is null && lot.Premise is null && lot.Kind != LotKind.Shop)
         {

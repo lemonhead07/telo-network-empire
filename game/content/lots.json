@@ -81,5 +81,12 @@
   {"id": "lot-mb-s1", "kind": "house", "site": "millbrook", "east": -40, "south": 24, "yaw": 180, "resident": "The Wheatsheaf (pub)", "archetype": "small-business", "fee": 30, "opensAt": 30, "needsProject": "proj-millbrook", "business": true},
   {"id": "lot-mb-s2", "kind": "house", "site": "millbrook", "east": -20, "south": 24, "yaw": 180, "resident": "Saoirse Linden", "archetype": "student", "fee": 12, "opensAt": 30, "needsProject": "proj-millbrook"},
   {"id": "lot-mb-s3", "kind": "house", "site": "millbrook", "east": 0, "south": 24, "yaw": 180, "resident": "Mr. & Mrs. Tolley", "archetype": "price-sensitive", "fee": 10, "opensAt": 30, "needsProject": "proj-millbrook"},
-  {"id": "lot-mb-s4", "kind": "house", "site": "millbrook", "east": 20, "south": 24, "yaw": 180, "resident": "Dr. Imogen Varga", "archetype": "reliability-sensitive", "fee": 28, "opensAt": 30, "needsProject": "proj-millbrook"}
+  {"id": "lot-mb-s4", "kind": "house", "site": "millbrook", "east": 20, "south": 24, "yaw": 180, "resident": "Dr. Imogen Varga", "archetype": "reliability-sensitive", "fee": 28, "opensAt": 30, "needsProject": "proj-millbrook"},
+
+  {"id": "lot-fl-n1", "kind": "house", "site": "farland", "east": -40, "south": -8, "yaw": 0, "resident": "The Anchor & Gull (pub)", "archetype": "small-business", "fee": 34, "opensAt": 12, "needsProject": "proj-ocean-cable", "business": true},
+  {"id": "lot-fl-n2", "kind": "house", "site": "farland", "east": -20, "south": -8, "yaw": 0, "resident": "Pettigrew's Chandlery", "archetype": "small-business", "fee": 30, "opensAt": 12, "needsProject": "proj-ocean-cable", "business": true},
+  {"id": "lot-fl-n3", "kind": "house", "site": "farland", "east": 20, "south": -8, "yaw": 0, "resident": "Brine & Sons (fish merchant)", "archetype": "small-business", "fee": 32, "opensAt": 12, "needsProject": "proj-ocean-cable", "business": true},
+  {"id": "lot-fl-n4", "kind": "house", "site": "farland", "east": 40, "south": -8, "yaw": 0, "resident": "The Harbourmaster's Office", "archetype": "reliability-sensitive", "fee": 30, "opensAt": 12, "needsProject": "proj-ocean-cable", "business": true},
+  {"id": "lot-fl-s1", "kind": "house", "site": "farland", "east": -10, "south": 24, "yaw": 180, "resident": "The Kerrisons", "archetype": "family", "fee": 22, "opensAt": 12, "needsProject": "proj-ocean-cable"},
+  {"id": "lot-fl-s2", "kind": "house", "site": "farland", "east": 10, "south": 24, "yaw": 180, "resident": "Mags Tullow", "archetype": "tech-inexperienced", "fee": 16, "opensAt": 12, "needsProject": "proj-ocean-cable"}
 ]

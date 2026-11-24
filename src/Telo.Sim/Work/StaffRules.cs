@@ -95,7 +95,7 @@ public static class StaffRules
             s.Modems--; cust.SocketFitted = true;
             s.Installs.Remove(cust.Id);
         }
-        if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s))
+        if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s) && !SwitchRules.OffBoard(c, cust))   // across the water: wired at the cable end (EA3b)
         {
             if (s.Day % 7 == 0 && m.JobsToday == 0) s.Emit(EventKind.Defect, $"{m.Name} cannot connect {cust.Name}: the switchboard is full. It needs another panel.");
             return false;

@@ -176,6 +176,8 @@ public static class TownBuilder
         new("highmoor", false, 8f, -60f, 60f, "Highmoor Street"),            // EA2f: the Act 2 village, a long drive up the hill
         new("millbrook", false, 8f, -56f, 56f, "Market Street"),            // EA3a: Millbrook, the market town on past the farm
         new("millbrook", true, -41f, -36f, 8f, "Mill Lane"),                  // up from Market Street to where the farm road comes in
+        new("farland", false, 8f, -52f, 52f, "Quay Street"),                 // EA3b: Farland's harbour town, across the water
+        new("farland", true, -5f, -56f, 8f, "Harbour Lane"),                  // up from Quay Street, through the gap in the north row, to the ferry road
     };
 
     /// <summary>The east-west street a building fronts on: the nearest one on its site that runs past it. Null for the farm.</summary>

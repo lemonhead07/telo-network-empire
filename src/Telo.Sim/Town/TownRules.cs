@@ -102,12 +102,17 @@ public static class TownRules
         return true;
     }
 
-    public static bool FitSocket(GameState s, string customerId)
+    /// <summary>
+    /// The socket and modem are in. Their pair arrives at your switchboard to be wired, or, across the water (EA3b, pass the
+    /// content), at the ocean cable's beach end, where it goes live as the job is signed off.
+    /// </summary>
+    public static bool FitSocket(GameState s, string customerId, ContentDb? c = null)
     {
         var cust = s.Customers.FirstOrDefault(x => x.Id == customerId);
         if (cust is null || cust.SocketFitted || s.Modems <= 0) return false;
         s.Modems--; cust.SocketFitted = true;
         s.Installs.Remove(cust.Id);
+        if (c is not null && Net.SwitchRules.OffBoard(c, cust)) { Net.SwitchRules.AutoWire(s, c, cust, sloppy: false); return true; }
         Net.SwitchRules.Seat(s, cust);   // their pair arrives at a terminal on your switchboard (if there is room)
         s.Emit(EventKind.Work, $"Socket and modem fitted at {cust.Name}'s. Now wire their pair at the switchboard.", cust.Id);
         return true;
@@ -133,7 +138,7 @@ public static class TownRules
     /// Towns a long drive away (EA3a). They have their own handymen and their own high street: you are their phone company, so no
     /// odd jobs and no catalogue orders from there (<see cref="OrderRules.Offer"/>), only lines, installs and faults.
     /// </summary>
-    public static readonly IReadOnlySet<string> FarTowns = new HashSet<string> { "millbrook" };
+    public static readonly IReadOnlySet<string> FarTowns = new HashSet<string> { "millbrook", "farland" };
 
     public static OddJob? OfferJob(GameState s, ContentDb c, DetRng rng)
     {

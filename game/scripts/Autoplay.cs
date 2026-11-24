@@ -44,6 +44,23 @@ public partial class GameRoot
         _sample = args.FirstOrDefault(a => a.StartsWith("--autoplay-sample=")) is { } smp && int.TryParse(smp.Split('=')[1], out int x) ? Math.Max(1, x) : 1;
         await Frames(40);
         await Snap("start", force: true);
+        // --autoplay-goto=<place> (development): make the one trip, the way the body makes every trip, and say where it ended up
+        // (e.g. --from=act4 --autoplay-goto=lot-fl-n1: down to the jetty, over on the ferry, up to the pub's door)
+        if (args.FirstOrDefault(a => a.StartsWith("--autoplay-goto=")) is { } trip)
+        {
+            string dest = trip["--autoplay-goto=".Length..];
+            int startMin = Sim.State.Day * 1440 + Sim.State.Minute;
+            await Physics(30);   // the roads and jetties are built once physics is up
+            await GoTo(dest);
+            await Snap("arrived", force: true);
+            float off = (BodyPos() - WorldOf(dest)).Length(), van = (_van.GlobalPosition - BodyPos()).Length();
+            bool ok = off < 6 && _planet.LandOf(PlanetBuilder.ToSim(BodyPos())) == Places.LandOf(_planet, Sim.Content, dest);
+            GD.Print($"AUTOPLAY GOTO {(ok ? "OK" : "FAIL")}: {dest} {off:0.0} m from the door, van {van:0} m away, {Sim.State.Day * 1440 + Sim.State.Minute - startMin} game minutes, assists={_assists}");
+            if (_autoDir is not null) Godot.FileAccess.Open($"{_autoDir}/autoplay.txt", Godot.FileAccess.ModeFlags.Write)?.StoreString(string.Join("\n", _autoLog));
+            Engine.TimeScale = 1;
+            GetTree().Quit(ok ? 0 : 1);
+            return;
+        }
 
         ulong started = Time.GetTicksMsec();
         string last = ""; int same = 0;
@@ -346,6 +363,17 @@ public partial class GameRoot
     // ---- moving the body --------------------------------------------------------------------------
     private async Task GoTo(string place)
     {
+        // across the water (EA3b): down to the jetty (by van if it's with us), the ticket window, the crossing, then on from there
+        string here = _planet.LandOf(PlanetBuilder.ToSim(BodyPos())), there = Places.LandOf(_planet, Sim.Content, place);
+        if (here != there && _planet.CrossingBetween(here, there) is { } crossing
+            && _quayViews.FirstOrDefault(v => v.Crossing == crossing && v.Quay.Land == here) is { } quay)
+        {
+            bool byVan = _cargo.Held is null && (_van.Driven || (_van.GlobalPosition - BodyPos()).Length() < 40);
+            if (byVan) await Drive(quay.Park); else await WalkTo(quay.Arrive, 1.2f);
+            await Use(quay.Hut);
+            while (_sailing) await Physics(5);
+            await Snap("ferry", force: true);
+        }
         var target = WorldOf(place);
         // drive or walk by the same measure the brain used (place to place), so it never asks for the van to come over
         // and then walks there leaving it behind

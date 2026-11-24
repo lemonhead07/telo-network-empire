@@ -197,6 +197,7 @@ public partial class GameRoot : Node3D
     {
         for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
         TownBuilder.BuildRoads(_town.Root, _planet, GetWorld3D().DirectSpaceState);
+        BuildQuays(GetWorld3D().DirectSpaceState);   // EA3b: the Farland ferry's slipways (Ferry.cs)
         TownDressing.Fields(_town.Root, _planet, GetWorld3D().DirectSpaceState);
         foreach (var p in _content.Premises.Values) BuildPoleLine(p);
         BuildNadir();
@@ -959,6 +960,7 @@ public partial class GameRoot : Node3D
         {
             _slowTick = 0.5f;
             SyncProjects();
+            SyncQuays();
             if (SleepRules.PastBedtime(Sim.State)) _pip.Once("bedtime");
             if (Sim.State.Appointments.Count > 0) _pip.Once("booked");
             if (Telo.Sim.Plan.AppointmentRules.OnTheClock(Sim.State) is not null) _pip.Once("jobclock");
@@ -1390,6 +1392,8 @@ public partial class GameRoot : Node3D
         if (OS.GetCmdlineUserArgs().Contains("--shots=people")) { QuickCustomers(5); await PeopleShots(path, cam, Shot); GetTree().Quit(); return; }
         // --shots=millbrook: only Millbrook and the farm road out to it
         if (OS.GetCmdlineUserArgs().Contains("--shots=millbrook")) { await MillbrookShots(Shot); GetTree().Quit(); return; }
+        // --shots=farland: only Farland and the ferry (EA3b)
+        if (OS.GetCmdlineUserArgs().Contains("--shots=farland")) { await FarlandShots(Shot); GetTree().Quit(); return; }
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);
@@ -1417,6 +1421,7 @@ public partial class GameRoot : Node3D
         await MillbrookShots(Shot);
         foreach (var (prop, mark) in VillageLandmarks.Placed)
             await Shot($"-{prop}", mark.ToGlobal(new Vector3(7f, 6f, 20f)), mark.ToGlobal(new Vector3(0, 2f, 0)));
+        await FarlandShots(Shot);
         // EA2b: the Yard, with its loading bay as it is from Act 2, and a crate on the van's roof rack
         if (_town.Lots.FirstOrDefault(l => l.Lot.Kind == LotKind.Yard) is { } yardView)
         {

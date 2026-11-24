@@ -221,8 +221,8 @@ public sealed class Simulation
         Customer? SignNext() => TownRules.Prospects(s, c).FirstOrDefault() is { } lot ? TownRules.SignUp(s, lot) : null;
         void Connect(Customer cust)
         {
-            if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); }
-            if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s)) { s.Cash = Math.Max(s.Cash, SwitchRules.PanelPrice); SwitchRules.AddPanel(s); }
+            if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id, c); }
+            if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s) && !SwitchRules.OffBoard(c, cust)) { s.Cash = Math.Max(s.Cash, SwitchRules.PanelPrice); SwitchRules.AddPanel(s); }
             SwitchRules.AutoWire(s, c, cust, sloppy: false);
             cust.HasAccount = true;
         }
@@ -233,7 +233,7 @@ public sealed class Simulation
                 s.MessagesWaiting = Math.Max(1, s.MessagesWaiting);
                 done = TakeEnquiry() is { } first ? $"{first.Name} signed up." : "Nobody left to sign."; break;
             case OnboardingStep.Install:
-                foreach (var cust in s.Customers.Where(x => x.Live && !x.SocketFitted).ToList()) { s.Modems++; TownRules.FitSocket(s, cust.Id); }
+                foreach (var cust in s.Customers.Where(x => x.Live && !x.SocketFitted).ToList()) { s.Modems++; TownRules.FitSocket(s, cust.Id, c); }
                 done = "House installs done."; break;
             case OnboardingStep.Frame:
                 foreach (var cust in s.Customers.Where(x => x.Live && !x.Installed).ToList()) Connect(cust);
@@ -291,8 +291,8 @@ public sealed class Simulation
         switch (t.Kind)
         {
             case Work.TicketKind.Install when s.Customers.FirstOrDefault(x => x.Id == id) is { } cust:
-                if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id); s.Installs.Remove(cust.Id); if (cust.VipDay is not null) ServiceRules.VipWon(s, c, cust); }
-                if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s)) { s.Cash = Math.Max(s.Cash, SwitchRules.PanelPrice); SwitchRules.AddPanel(s); }
+                if (!cust.SocketFitted) { s.Modems++; TownRules.FitSocket(s, cust.Id, c); s.Installs.Remove(cust.Id); if (cust.VipDay is not null) ServiceRules.VipWon(s, c, cust); }
+                if (SwitchRules.Pos(s, cust.Id) is null && SwitchRules.Full(s) && !SwitchRules.OffBoard(c, cust)) { s.Cash = Math.Max(s.Cash, SwitchRules.PanelPrice); SwitchRules.AddPanel(s); }
                 SwitchRules.AutoWire(s, c, cust, sloppy: false);
                 cust.HasAccount = true;
                 break;
@@ -410,7 +410,7 @@ public sealed class Simulation
     public bool ApplyInstallOutcome(InstallOutcome o)
     {
         var s = State;
-        if (!o.Complete || !TownRules.FitSocket(s, o.CustomerId)) return false;
+        if (!o.Complete || !TownRules.FitSocket(s, o.CustomerId, Content)) return false;
         // mistakes compound: every extra bodge on the same line brings all of them to the surface sooner
         foreach (var text in o.Defects)
             s.Defects.Add(new LatentDefect { Id = s.NewId("defect"), SurfaceDay = s.Day + Math.Max(3, _rng.Range(10, 45) / o.Defects.Count), Source = "install", CustomerId = o.CustomerId, Text = text });

@@ -167,9 +167,21 @@ public static class SwitchRules
         return results;
     }
 
+    // ---- lines that never reach this board (EA3b) ------------------------------------------------------
+    /// <summary>
+    /// Sites across the sea whose lines come home on the ocean cable. Their pairs are jumpered in the cable's hut on the beach
+    /// as the install is signed off, so they go live there and take no port on your switchboard (which is full by then anyway).
+    /// </summary>
+    public static readonly IReadOnlySet<string> OverTheWater = new HashSet<string> { "farland" };
+
+    /// <summary>Is this subscriber's line wired at the cable's beach end instead of on your switchboard?</summary>
+    public static bool OffBoard(ContentDb c, Customer cust) =>
+        cust.LotId is { } id && c.Lots.TryGetValue(id, out var lot) && OverTheWater.Contains(lot.Site);
+
     /// <summary>Somebody else wires a subscriber in (staff, or a decree): terminal, right port, switched on. A sloppy job leaves a loose jumper you can see.</summary>
     public static bool AutoWire(GameState s, ContentDb c, Customer cust, bool sloppy)
     {
+        if (OffBoard(c, cust)) { if (!cust.Installed) Simulation.GoLive(s, c, cust); return true; }   // live at the cable's end
         if (!Seat(s, cust)) return false;
         var b = s.Switch; var p = Pos(s, cust.Id)!;
         int port = p.AssignedPort;
