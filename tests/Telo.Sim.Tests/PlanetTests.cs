@@ -28,7 +28,8 @@ public class PlanetTests
     {
         var g = new PlanetGen(1983);
         var farm = g.SiteById("farm-hollow")!; var mb = g.SiteById("millbrook")!;
-        Assert.Same(mb, g.Sites[^1]);                                                                       // added last: nothing before it moved
+        var order = g.Sites.Select(s => s.Id).ToList();                                                     // added after Halden (nothing before it moved), Farland after it
+        Assert.Equal(new[] { "halden", "millbrook", "farland" }, order.Skip(order.IndexOf("halden")).ToArray());
         Assert.True(g.SurfaceDistance(mb.Dir, g.Town.Dir) > g.SurfaceDistance(farm.Dir, g.Town.Dir));     // further out than the farm
         Assert.True(mb.HeightM > 3);
         var road = g.Roads.Single(r => r.Id == "road-farm-millbrook");
