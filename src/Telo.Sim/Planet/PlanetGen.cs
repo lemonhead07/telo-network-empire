@@ -58,6 +58,81 @@ public sealed class PlanetGen
             _sites.Add(flats);
             _roads.Add(BuildRoad("road-town-halden", Town, flats));
         }
+        // EA3a: Millbrook, the market town over the hill past the farm (Act 2), reached by driving on from the farm. Added
+        // last, so every place and road before it is unchanged.
+        if (SiteById("farm-hollow") is { } hollow && FindMillbrookSite(hollow) is { } millbrook)
+        {
+            _sites.Add(millbrook);
+            _roads.Add(BuildRoad("road-farm-millbrook", hollow, millbrook));
+        }
+    }
+
+    /// <summary>
+    /// Millbrook: on past the farm, on the side away from town, over a hill but not across the sea. Gentle ground for a
+    /// street, well clear of every village and the flats, and the road from the farm keeps off their ground and their roads.
+    /// Deterministic for a seed.
+    /// </summary>
+    private Site? FindMillbrookSite(Site farm)
+    {
+        const double radius = 70;
+        var rng = new DetRng(DetRng.Derive(Seed, "millbrook-site"));
+        var f = farm.Dir;
+        var east = new V3(0, 1, 0).Cross(f).Normalized();
+        var north = f.Cross(east);
+        var onward = (f - Town.Dir).Normalized();
+        V3? best = null; double bestScore = double.MinValue;
+        for (int i = 0; i < 1500; i++)
+        {
+            double dx = rng.Next(2001) / 1000.0 - 1, dz = rng.Next(2001) / 1000.0 - 1;
+            double len = Math.Sqrt(dx * dx + dz * dz);
+            if (len is < 0.2 or > 1) continue;
+            double dist = 450 + rng.Next(350);
+            var c = (f + (east * (dx / len) + north * (dz / len)) * (dist / RadiusM)).Normalized();
+            if (onward.Dot((c - f).Normalized()) < 0.2) continue;                           // on past the farm, not back
+            if ((c - Town.Dir).Length * RadiusM < 1100) continue;
+            double h = RawHeight(c);
+            if (h is < 4 or > 50) continue;
+            if (!ClearOfOthers(c, f, farm, radius)) continue;
+            double worst = 0, low = double.MaxValue, high = double.MinValue, prev = farm.HeightM, rough = 0;
+            int steps = (int)(dist / 25);
+            for (int k = 1; k <= steps; k++)
+            {
+                double hk = RawHeight((f + (c - f) * ((double)k / steps)).Normalized());
+                low = Math.Min(low, hk); high = Math.Max(high, hk);
+                worst = Math.Max(worst, Math.Abs(hk - prev));
+                prev = hk;
+            }
+            foreach (var (rx, rz) in Ring) rough = Math.Max(rough, Math.Abs(RawHeight((c + east * (rx * 60 / RadiusM) + north * (rz * 60 / RadiusM)).Normalized()) - h));
+            if (low < 3 || worst > 10) continue;
+            // a hill between (that is the point of the relay), a flat town at the end
+            double hill = Math.Min(20, high - Math.Max(farm.HeightM, h));
+            double score = -worst * 3 - rough * 2 + hill / 4 - Math.Abs(h - 15) / 10;
+            if (score > bestScore) { bestScore = score; best = c; }
+        }
+        return best is { } b ? new Site("millbrook", b, radius, RawHeight(b)) : null;
+    }
+
+    /// <summary>
+    /// A far town at <paramref name="c"/>, with its road from <paramref name="from"/>: its flattened ground and the road's
+    /// shoulders touch no other settlement's ground and no other road (bar the one into <paramref name="home"/>, near it).
+    /// </summary>
+    private bool ClearOfOthers(V3 c, V3 from, Site home, double radius)
+    {
+        foreach (var o in _sites)
+            if (o != home && (c - o.Dir).Length * RadiusM < Math.Max(600, o.RadiusM * 2 + radius * 2 + 100)) return false;
+        foreach (var road in _roads)
+            if (NearestOnRoad(road, c).Dist < radius * 2 + 9 + RoadShoulderM + 30) return false;
+        int n = Math.Max(2, (int)((c - from).Length * RadiusM / RoadSpacingM));
+        for (int k = 1; k < n; k++)
+        {
+            var p = (from + (c - from) * ((double)k / n)).Normalized();
+            if ((p - home.Dir).Length * RadiusM < home.RadiusM * 2 + 60) continue;      // leaving home, where the roads meet
+            foreach (var o in _sites)
+                if (o != home && (p - o.Dir).Length * RadiusM < o.RadiusM * 2 + 9 + RoadShoulderM) return false;
+            foreach (var road in _roads)
+                if (NearestOnRoad(road, p).Dist < 2 * (9 + RoadShoulderM)) return false;
+        }
+        return true;
     }
 
     /// <summary>

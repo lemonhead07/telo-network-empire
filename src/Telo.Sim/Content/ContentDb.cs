@@ -118,6 +118,9 @@ public sealed class ContentDb
             if (l.Premise is { } pr && !Premises.ContainsKey(pr)) e.Add($"lot {l.Id}: unknown premise '{pr}'");
             if (l.NeedsProject is { } np && Project(np) is null) e.Add($"lot {l.Id}: unknown project '{np}'");
         }
+        // the biggest switchboard (four panels in town, one more per village project) must stop short of the spare ports' fixed numbers
+        int biggest = 8 * (Net.SwitchRules.BaseStage + 1 + Projects.Sum(p => p.Reward.Panels));
+        if (biggest > Net.SwitchRules.SpareBase) e.Add($"projects: their panels make a board of {biggest}, past the spare ports at {Net.SwitchRules.SpareBase}");
         // EA2b: project parts are bought at the Yard, so there has to be one (and only one)
         int yards = Lots.Values.Count(l => l.Kind == LotKind.Yard);
         if (yards > 1) e.Add($"lots: {yards} yards; parts are bought at one");
