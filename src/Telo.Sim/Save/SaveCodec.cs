@@ -59,7 +59,9 @@ public static class SaveCodec
             grown.TestedPorts = grown.TestedPorts.Select(Move).ToList();
             grown.FaultyPorts = grown.FaultyPorts.Select(Move).ToList();
         }
-        if (s.Version < 18 && s.Switch is { } sw && content is not null)
+        // panels follow from what is built, so they are worked out on every load: v17 saves get their villages' panels, and a
+        // save that built the Millbrook exchange before it brought a panel (EA3a) gets that one too
+        if (s.Switch is { } sw && content is not null)
             sw.ExtraPanels = s.ProjectsDone.Sum(id => content.Project(id)?.Reward.Panels ?? 0);
         if (s.Version < 19 && s.ActIndex >= 5) s.ActIndex++;   // v19 (D46): Act 5 is now The Core; mobile and later acts move up one
         if (s.Version < 20) s.Parts ??= new();   // v20 (EA2b): parts bought at the Yard; a project already under way keeps going

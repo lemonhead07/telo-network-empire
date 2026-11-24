@@ -23,6 +23,21 @@ public class PlanetTests
         foreach (var p in Samples(200)) Assert.Equal(a.Height(p), b.Height(p));
     }
 
+    [Fact]
+    public void Millbrook_is_on_past_the_farm_with_a_dry_road_from_it_and_clear_of_the_villages()
+    {
+        var g = new PlanetGen(1983);
+        var farm = g.SiteById("farm-hollow")!; var mb = g.SiteById("millbrook")!;
+        Assert.Same(mb, g.Sites[^1]);                                                                       // added last: nothing before it moved
+        Assert.True(g.SurfaceDistance(mb.Dir, g.Town.Dir) > g.SurfaceDistance(farm.Dir, g.Town.Dir));     // further out than the farm
+        Assert.True(mb.HeightM > 3);
+        var road = g.Roads.Single(r => r.Id == "road-farm-millbrook");
+        Assert.True(g.SurfaceDistance(road.Points[0], farm.Dir) < 1 && g.SurfaceDistance(road.Points[^1], mb.Dir) < 1);
+        Assert.All(road.Points, p => Assert.True(g.Height(p) > 1));                                         // dry all the way
+        foreach (var o in g.Sites.Where(o => o != mb && o != farm))
+            Assert.True(g.SurfaceDistance(mb.Dir, o.Dir) > 600, $"Millbrook is {g.SurfaceDistance(mb.Dir, o.Dir):0} m from {o.Id}");
+    }
+
     [Theory] [InlineData(1UL)] [InlineData(42UL)] [InlineData(2026UL)]
     public void HasBothOceansAndLand_AndATownOnDryFlatGround(ulong seed)
     {

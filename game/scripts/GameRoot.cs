@@ -1360,6 +1360,14 @@ public partial class GameRoot : Node3D
         s.Minute = minuteWas; _minuteFrac = fracWas; _ignoreHours = hoursWas; _holdClock = false;
     }
 
+    /// <summary>EA3a: Millbrook's Market Street from its east end towards Mill Lane and the hill, then from above with the road back to the farm.</summary>
+    private async Task MillbrookShots(Func<string, Vector3, Vector3, Vector3?, Task> shot)
+    {
+        if (_planet.SiteById("millbrook") is not { } mb) return;
+        await shot("-millbrook", TownBuilder.Place(_planet, mb, 56, 46, 0, 11).Origin, TownBuilder.Place(_planet, mb, -26, -10, 0, 3).Origin, null);
+        await shot("-millbrook-air", TownBuilder.Place(_planet, mb, 120, 150, 0, 160).Origin, TownBuilder.Place(_planet, mb, -40, -40).Origin, null);
+    }
+
     /// <summary>Screenshots show the Yard's loading bay whatever the act.</summary>
     private bool _showBay;
 
@@ -1380,6 +1388,8 @@ public partial class GameRoot : Node3D
         await Frames(30);
         // --shots=people: only the people in the street (quick to look at while working on them)
         if (OS.GetCmdlineUserArgs().Contains("--shots=people")) { QuickCustomers(5); await PeopleShots(path, cam, Shot); GetTree().Quit(); return; }
+        // --shots=millbrook: only Millbrook and the farm road out to it
+        if (OS.GetCmdlineUserArgs().Contains("--shots=millbrook")) { await MillbrookShots(Shot); GetTree().Quit(); return; }
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);
@@ -1404,6 +1414,7 @@ public partial class GameRoot : Node3D
         foreach (var id in new[] { "wrenfold", "kettle-cross", "highmoor" })
             if (_planet.SiteById(id) is { } v)
                 await Shot($"-{id}", TownBuilder.Place(_planet, v, -10, 62, 0, 14).Origin, TownBuilder.Place(_planet, v, 0, 4, 0, 2).Origin);
+        await MillbrookShots(Shot);
         foreach (var (prop, mark) in VillageLandmarks.Placed)
             await Shot($"-{prop}", mark.ToGlobal(new Vector3(7f, 6f, 20f)), mark.ToGlobal(new Vector3(0, 2f, 0)));
         // EA2b: the Yard, with its loading bay as it is from Act 2, and a crate on the van's roof rack

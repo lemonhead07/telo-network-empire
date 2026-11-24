@@ -24,10 +24,14 @@ public static class OrderRules
     public static Order? OrderAt(GameState s, string lotId) =>
         TownRules.CustomerAt(s, lotId) is { } cust ? s.Orders.FirstOrDefault(o => o.CustomerId == cust.Id) : null;
 
-    /// <summary>A subscriber rings to order something. Only people whose line is live, who live somewhere you can go indoors, and who aren't already waiting.</summary>
+    /// <summary>
+    /// A subscriber rings to order something. Only people whose line is live, who live somewhere you can go indoors, and who aren't
+    /// already waiting. Not from the far towns (EA3a): nobody drives an hour and a half for a $30 extension, so they buy their extras
+    /// in their own high street, as they get their odd jobs done by their own handymen.
+    /// </summary>
     public static Order? Offer(GameState s, ContentDb c, DetRng rng)
     {
-        var buyers = s.Customers.Where(x => x.Live && x.Installed && x.LotId is not null && c.Lots.TryGetValue(x.LotId, out var lot) && lot.Kind == LotKind.House
+        var buyers = s.Customers.Where(x => x.Live && x.Installed && x.LotId is not null && c.Lots.TryGetValue(x.LotId, out var lot) && lot.Kind == LotKind.House && !TownRules.FarTowns.Contains(lot.Site)
                                             && s.Orders.All(o => o.CustomerId != x.Id) && Sellable(s, c, x).Any()).OrderBy(x => x.Id, StringComparer.Ordinal).ToList();
         if (buyers.Count == 0) return null;
         var cust = buyers[rng.Next(buyers.Count)];

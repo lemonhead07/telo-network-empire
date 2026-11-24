@@ -19,14 +19,17 @@ public enum ThrowResult { Live, Dead, Crossed }
 public static class SwitchRules
 {
     public const int Spares = 2, BaseStage = 3;
-    /// <summary>Four panels (32) in town; each village wired in by a project brings one more (EA2f).</summary>
+    /// <summary>Four panels (32) in town; each village wired in by a project brings one more (EA2f), and so does Millbrook (EA3a).</summary>
     public static int MaxStage(BoardState b) => BaseStage + b.ExtraPanels;
     public const long PanelPrice = 120;
 
     /// <summary>Eight subscribers a panel; up to four panels (32) before the next act's equipment takes over.</summary>
     public static int Size(BoardState b) => 8 * (b.Stage + 1);
     /// <summary>The two spare ports keep the same numbers however big the board grows, so a wire on one never has to move.</summary>
-    public const int SpareBase = 64;   // past the biggest board, so a wire on a spare never has to move (saves before v16 used 16, before v18 40)
+    // past the biggest board, so a wire on a spare never has to move (saves before v16 used 16, before v18 40). With Millbrook
+    // (EA3a) the biggest board is exactly 64 (ports 0-63): one more panel anywhere means moving the spares again, with a save
+    // migration like v18's. ContentDb.Validate refuses content whose panels would run into them.
+    public const int SpareBase = 64;
     public static IEnumerable<int> SparePorts => Enumerable.Range(SpareBase, Spares);
     /// <summary>Every port on the board: one per subscriber terminal, then the spares.</summary>
     public static List<int> PortList(BoardState b) => Enumerable.Range(0, Size(b)).Concat(SparePorts).ToList();

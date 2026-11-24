@@ -129,9 +129,15 @@ public static class TownRules
     }
 
     // ---- odd jobs --------------------------------------------------------------------------------
+    /// <summary>
+    /// Towns a long drive away (EA3a). They have their own handymen and their own high street: you are their phone company, so no
+    /// odd jobs and no catalogue orders from there (<see cref="OrderRules.Offer"/>), only lines, installs and faults.
+    /// </summary>
+    public static readonly IReadOnlySet<string> FarTowns = new HashSet<string> { "millbrook" };
+
     public static OddJob? OfferJob(GameState s, ContentDb c, DetRng rng)
     {
-        var free = c.Lots.Values.Where(l => l.Kind is not (LotKind.Depot or LotKind.Yard) && JobAt(s, l.Id) is null && (l.Kind != LotKind.Farm || Onboarding.RoadOpen(s, c))).OrderBy(l => l.Id).ToList();
+        var free = c.Lots.Values.Where(l => l.Kind is not (LotKind.Depot or LotKind.Yard) && !FarTowns.Contains(l.Site) && JobAt(s, l.Id) is null && (l.Kind != LotKind.Farm || Onboarding.RoadOpen(s, c))).OrderBy(l => l.Id).ToList();
         if (free.Count == 0) return null;
         var lot = free[rng.Next(free.Count)];
         var kinds = JobKinds.Where(k => k.Only is null || k.Only == lot.Kind).ToList();
