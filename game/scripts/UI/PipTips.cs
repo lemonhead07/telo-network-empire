@@ -73,6 +73,7 @@ public sealed class PipTips
         ["thrown"] = "Lamps on. Those lines are live, and they've paid to be connected.",
         ["thrownbad"] = "Not all of them lit. Dark means the wrong port or a bad one. Two blinking red means crossed: someone can hear a stranger.",
         ["closed"] = "Road closed. The council is resurfacing it. Nobody has seen the council.",
+        ["ferry"] = "Farland. Forty minutes on the ferry each way, so make a trip count. The van comes too if you leave it on the slipway; leave it at home and you're on foot over here.",
     };
 
     /// <summary>Say this line if it hasn't been said yet.</summary>

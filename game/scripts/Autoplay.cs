@@ -346,6 +346,17 @@ public partial class GameRoot
     // ---- moving the body --------------------------------------------------------------------------
     private async Task GoTo(string place)
     {
+        // across the water (EA3b): down to the jetty (by van if it's with us), the ticket window, the crossing, then on from there
+        string here = _planet.LandOf(PlanetBuilder.ToSim(BodyPos())), there = Places.LandOf(_planet, Sim.Content, place);
+        if (here != there && _planet.CrossingBetween(here, there) is { } crossing
+            && _quayViews.FirstOrDefault(v => v.Crossing == crossing && v.Quay.Land == here) is { } quay)
+        {
+            bool byVan = _cargo.Held is null && (_van.Driven || (_van.GlobalPosition - BodyPos()).Length() < 40);
+            if (byVan) await Drive(quay.Park); else await WalkTo(quay.Arrive, 1.2f);
+            await Use(quay.Hut);
+            while (_sailing) await Physics(5);
+            await Snap("ferry", force: true);
+        }
         var target = WorldOf(place);
         // drive or walk by the same measure the brain used (place to place), so it never asks for the van to come over
         // and then walks there leaving it behind

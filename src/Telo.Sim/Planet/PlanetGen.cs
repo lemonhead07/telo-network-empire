@@ -11,6 +11,22 @@ public sealed record Site(string Id, V3 Dir, double RadiusM, double HeightM);
 public sealed record Road(string Id, IReadOnlyList<V3> Points, IReadOnlyList<double> Heights, double HalfWidthM);
 
 /// <summary>
+/// Land of its own, raised from the sea after everything else is placed (EA3b): deep water all round it, so the only way
+/// there is by boat. Its id is the land's name in <see cref="PlanetGen.LandOf"/>; everywhere else is <see cref="PlanetGen.Mainland"/>.
+/// </summary>
+public sealed record Island(string Id, string Name, V3 Dir, double RadiusM);
+
+/// <summary>A slipway on the shore where a ferry lands. A road runs down to it; <see cref="HeightM"/> is the top of the slip.</summary>
+public sealed record Quay(string Id, string Name, string Land, V3 Dir, double HeightM);
+
+/// <summary>A sea crossing between two quays on different land, sailed by a vehicle in <c>Act/Vehicles</c> (a ferry).</summary>
+public sealed record Crossing(string Id, string Vehicle, Quay From, Quay To)
+{
+    /// <summary>The quay on this land, and the one across the water. Null when this crossing doesn't touch that land.</summary>
+    public (Quay Here, Quay There)? Ends(string land) => From.Land == land ? (From, To) : To.Land == land ? (To, From) : null;
+}
+
+/// <summary>
 /// The planet as a pure function: direction on the unit sphere → terrain height and biome.
 /// The presentation layer meshes this; the sim uses it for coverage, routes and line-of-sight.
 /// Small on purpose: 2.5 km radius (~16 km lap): about 5 minutes to fly around, 12–20 to drive, and ~78 km² to build on.
@@ -28,6 +44,16 @@ public sealed class PlanetGen
     public IReadOnlyList<Road> Roads => _roads;
     private readonly List<Road> _roads = new();
     public const double RoadSpacingM = 20, RoadShoulderM = 38;
+
+    /// <summary>Land raised from the sea (EA3b). Empty while the settlements are found, so adding one moves nothing else.</summary>
+    public IReadOnlyList<Island> Islands => _islands;
+    private readonly List<Island> _islands = new();
+    public IReadOnlyList<Quay> Quays => _quays;
+    private readonly List<Quay> _quays = new();
+    public IReadOnlyList<Crossing> Crossings => _crossings;
+    private readonly List<Crossing> _crossings = new();
+    /// <summary>The land everything stands on unless it is on an island.</summary>
+    public const string Mainland = "mainland";
 
     public PlanetGen(ulong seed, double radiusM = DefaultRadiusM)
     {
@@ -58,6 +84,228 @@ public sealed class PlanetGen
             _sites.Add(flats);
             _roads.Add(BuildRoad("road-town-halden", Town, flats));
         }
+        // EA3b: Farland, across the water from Kestrel Point, and the car ferry over (added last, so nothing above moves)
+        AddFarland();
+    }
+
+    // ---- Farland (EA3b) --------------------------------------------------------------------------------
+    /// <summary>Farland's land: this far across (m, to its shoreline) and this much open water kept all round it.</summary>
+    public const double FarlandRadiusM = 420, FarlandMoatM = 220;
+
+    /// <summary>
+    /// Farland, "the far continent's near coast" (AGES.md Act 3): land of its own across the sea from Kestrel Point, the
+    /// headland below Eastgate. The planet's noise makes one big continent round inland seas, so Farland is raised out of the
+    /// open water, with deep sea all round it (no dry way there), and a harbour town on its near shore. A slipway on each
+    /// side and a car ferry between them; a short road down to each slipway. Deterministic for a seed; nothing if the sea
+    /// off Eastgate has no room for it.
+    /// </summary>
+    private void AddFarland()
+    {
+        if (SiteById("eastgate") is not { } eastgate || FindHomeQuay(eastgate) is not { } home) return;
+        if (FindFarlandIsland(eastgate, home) is not { } island) return;
+        _islands.Add(island);   // from here on RawHeight includes it
+        if (FindFarlandSite(island, home) is not { } site) { _islands.Clear(); return; }
+        _sites.Add(site);
+        if (Shoreline(site.Dir, home.Dir, site.RadiusM) is not { } far) { _sites.Remove(site); _islands.Clear(); return; }
+        var farQuay = new Quay("quay-farland", "Farland harbour", island.Id, far.Dir, far.HeightM);
+        var homeQuay = home with { HeightM = Math.Max(QuayHeightM, Height(home.Dir)) };
+        _quays.Add(homeQuay); _quays.Add(farQuay);
+        _crossings.Add(new Crossing("ferry-farland", "ferry", homeQuay, farQuay));
+        _roads.Add(BuildRoad("road-eastgate-quay", eastgate, QuaySite(homeQuay), even: true));
+        _roads.Add(BuildRoad("road-farland-quay", site, QuaySite(farQuay), even: true));
+    }
+
+    /// <summary>The top of a slipway stands this far above the sea.</summary>
+    public const double QuayHeightM = 1.4;
+
+    private static Site QuaySite(Quay q) => new(q.Id, q.Dir, 6, q.HeightM);
+
+    /// <summary>
+    /// Kestrel Point, the headland below Eastgate facing the open sea, where projects.json stands the cable landing station
+    /// (62 m south of Eastgate's centre) and the home end of the Farland cable beside it. The slipway road keeps clear of both.
+    /// </summary>
+    private static readonly (double East, double South)[] KestrelPoint = { (0, 62), (-20, 60) };
+    /// <summary>The back fences of the High Street's south side, metres south of Eastgate's centre (houses at 24, gardens 14 deep).</summary>
+    private const double EastgateBackFences = 38;
+
+    /// <summary>
+    /// The nearest stretch of open shore below Eastgate: the waterline, with real water (not a creek) beyond it, clear of every
+    /// other settlement and road. The road down to it leaves Eastgate southwards, behind the High Street's back gardens and
+    /// clear of Kestrel Point's buildings.
+    /// </summary>
+    private Quay? FindHomeQuay(Site eastgate)
+    {
+        var rng = new DetRng(DetRng.Derive(Seed, "quay-site"));
+        var (c, east, north) = Frame(eastgate.Dir);
+        V3 At(double e, double s) => (c + (east * e - north * s) * (1 / RadiusM)).Normalized();
+        var keepClear = KestrelPoint.Select(k => At(k.East, k.South)).ToArray();
+        V3? best = null; double bestScore = double.MinValue;
+        for (int i = 0; i < 400; i++)
+        {
+            double dx = rng.Next(2001) / 1000.0 - 1, dz = rng.Next(2001) / 1000.0 - 1;
+            double len = Math.Sqrt(dx * dx + dz * dz);
+            if (len is < 0.2 or > 1) continue;
+            double he = dx / len, hs = -dz / len;   // heading east and south
+            if (hs < 0.5) continue;                 // the sea is south of the High Street
+            // walk out past the levelled ground to the waterline
+            double dist = -1;
+            for (double m = eastgate.RadiusM * 2; m < 600; m += 4)
+                if (Height(At(he * m, hs * m)) < 0.6) { dist = m - 4; break; }
+            if (dist < 0) continue;
+            var q = At(he * dist, hs * dist);
+            if (Height(q) is < 0.2 or > 2.5) continue;
+            if (Height(At(he * (dist + 40), hs * (dist + 40))) > -0.8) continue;     // water beyond it...
+            if (Height(At(he * (dist + 140), hs * (dist + 140))) > -2.5) continue;   // ...and open sea, not a creek
+            if (Clashes(q, 0, eastgate)) continue;
+            // the road down: drawn from where the street ends (0.75 of the site's radius), behind the gardens, clear of the headland,
+            // and once off Eastgate's own ground, clear of every other road
+            bool clash = false;
+            for (double m = eastgate.RadiusM * 0.75; m <= dist && !clash; m += 6)
+            {
+                var p = At(he * m, hs * m);
+                if (m < eastgate.RadiusM * 1.2 && hs * m - 9 * Math.Abs(he) < EastgateBackFences + 2) clash = true;
+                foreach (var k in keepClear) if ((p - k).Length * RadiusM < 9 + 20) clash = true;
+                if (m > eastgate.RadiusM * 2 && Clashes(p, 0, eastgate, roadsOnly: true)) clash = true;
+            }
+            if (clash) continue;
+            double score = -dist;   // as close as the shore comes
+            if (score > bestScore) { bestScore = score; best = q; }
+        }
+        return best is { } b ? new Quay("quay-kestrel", "Kestrel Point", Mainland, b, Height(b)) : null;
+    }
+
+    /// <summary>Within reach of another settlement's flattened ground or a road (beyond <paramref name="marginM"/>)?</summary>
+    private bool Clashes(V3 p, double marginM, Site except, bool roadsOnly = false)
+    {
+        if (!roadsOnly)
+            foreach (var s in _sites)
+                if (s != except && (p - s.Dir).Length * RadiusM < s.RadiusM * 2 + marginM) return true;
+        foreach (var road in _roads)
+            if (NearestOnRoad(road, p).Dist < road.HalfWidthM + RoadShoulderM + 10 + marginM) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Open sea off the home slipway, a ferry ride out: Farland's middle, with water (before it rises) everywhere within its
+    /// radius and a moat round it. Preferring a crossing of six or seven hundred metres, straight out.
+    /// </summary>
+    private Island? FindFarlandIsland(Site eastgate, Quay home)
+    {
+        var rng = new DetRng(DetRng.Derive(Seed, "farland-site"));
+        var (_, east, north) = Frame(home.Dir);
+        var (ec, _, _) = Frame(eastgate.Dir);
+        var out0 = home.Dir - ec; out0 = (out0 - home.Dir * out0.Dot(home.Dir)).Normalized();   // seaward, from Eastgate
+        V3? best = null; double bestScore = double.MinValue;
+        for (int i = 0; i < 1500; i++)
+        {
+            double dx = rng.Next(2001) / 1000.0 - 1, dz = rng.Next(2001) / 1000.0 - 1;
+            double len = Math.Sqrt(dx * dx + dz * dz);
+            if (len is < 0.2 or > 1) continue;
+            var heading = (east * dx + north * dz) * (1 / len);
+            double ahead = heading.Dot(out0);
+            if (ahead < 0.55) continue;                                   // out to sea, not along the coast
+            double crossing = 450 + rng.Next(700);                        // quay to Farland's shore
+            double d = crossing + FarlandRadiusM;
+            var c = (home.Dir + heading * (d / RadiusM)).Normalized();
+            if (RawHeight(c) > -12) continue;
+            bool dry = false;
+            var (cc, ce, cn) = Frame(c);
+            for (double r = 60; r <= FarlandRadiusM + FarlandMoatM && !dry; r += 55)
+                foreach (var (rx, rz) in Ring16)
+                    if (RawHeight((cc + (ce * rx + cn * rz) * (r / RadiusM)).Normalized()) > -1.5) { dry = true; break; }
+            if (dry) continue;
+            double score = -Math.Abs(crossing - 650) / 50 + ahead * 4;
+            if (score > bestScore) { bestScore = score; best = c; }
+        }
+        return best is { } b ? new Island("farland", "Farland", b, FarlandRadiusM) : null;
+    }
+
+    /// <summary>
+    /// The harbour town: low, gentle ground on Farland's near shore, facing the home slipway, set back far enough that its
+    /// levelled ground ends before the beach (so the harbour slipway sits at the water, not on a bank).
+    /// </summary>
+    private Site? FindFarlandSite(Island island, Quay home)
+    {
+        var (c, _, _) = Frame(island.Dir);
+        var toHome = home.Dir - c; toHome = (toHome - c * toHome.Dot(c)).Normalized();
+        var side = c.Cross(toHome);
+        V3? best = null; double bestScore = double.MinValue;
+        for (int turn = -6; turn <= 6; turn++)
+            for (int step = 0; step <= 24; step++)
+            {
+                double f = 0.3 + step * 0.025;
+                var heading = (toHome + side * (turn * 0.06)).Normalized();
+                var p = (c + heading * (f * island.RadiusM / RadiusM)).Normalized();
+                double h = RawHeight(p);
+                if (h is < 3.5 or > 14) continue;
+                // the beach towards home: past where the town's levelling fades (twice its radius), not much further
+                var dir = (home.Dir - p); dir = (dir - p * dir.Dot(p)).Normalized();
+                double shore = -1;
+                for (double m = 60; m < 320; m += 5)
+                    if (RawHeight((p + dir * (m / RadiusM)).Normalized()) < 0.5) { shore = m; break; }
+                if (shore is < 150 or > 215) continue;
+                var (pc, pe, pn) = Frame(p);
+                double low = double.MaxValue, rough = 0;
+                foreach (var (rx, rz) in Ring)
+                    foreach (double m in new[] { 35.0, 70.0 })
+                    {
+                        double hk = RawHeight((pc + (pe * rx + pn * rz) * (m / RadiusM)).Normalized());
+                        low = Math.Min(low, hk); rough = Math.Max(rough, Math.Abs(hk - h));
+                    }
+                if (low < 2.5) continue;   // the whole street on dry land before it's levelled
+                double score = -rough * 2 - Math.Abs(h - 7) / 2 - Math.Abs(turn) * 0.3 - shore / 40;   // gentle, low, facing home, near the water
+                if (score > bestScore) { bestScore = score; best = p; }
+            }
+        return best is { } b ? new Site(island.Id, b, 70, RawHeight(b)) : null;
+    }
+
+    /// <summary>Where the ground meets the sea going from <paramref name="from"/> towards <paramref name="towards"/>, past the levelled ground.</summary>
+    private (V3 Dir, double HeightM)? Shoreline(V3 from, V3 towards, double startM)
+    {
+        var dir = towards - from; dir = (dir - from * dir.Dot(from)).Normalized();
+        for (double m = startM; m < startM + 400; m += 4)
+            if (Height((from + dir * (m / RadiusM)).Normalized()) < 0.6)
+            {
+                var q = (from + dir * ((m - 6) / RadiusM)).Normalized();   // a few metres back up the beach
+                return (q, Math.Max(QuayHeightM, Height(q)));
+            }
+        return null;
+    }
+
+    /// <summary>The land a point stands on: an island's id, or <see cref="Mainland"/>.</summary>
+    public string LandOf(V3 dir)
+    {
+        var p = dir.Normalized();
+        foreach (var i in _islands) if ((p - i.Dir).Length * RadiusM < i.RadiusM * 1.45) return i.Id;
+        return Mainland;
+    }
+
+    /// <summary>A land's name for people: "Farland", or "the mainland".</summary>
+    public string LandName(string land) => _islands.FirstOrDefault(i => i.Id == land)?.Name ?? "the mainland";
+
+    /// <summary>The crossing between two lands, if a ferry runs between them.</summary>
+    public Crossing? CrossingBetween(string a, string b) =>
+        _crossings.FirstOrDefault(x => (x.From.Land == a && x.To.Land == b) || (x.From.Land == b && x.To.Land == a));
+
+    /// <summary>How high an island stands at a point (very low far from it).</summary>
+    private double IslandHeight(Island isl, V3 p)
+    {
+        double d = (p - isl.Dir).Length * RadiusM;
+        if (d > isl.RadiusM * 1.8) return double.MinValue;
+        double wobble = 1 + 0.16 * Noise.Fbm(p * 9.0, _s + 707, 3);              // a ragged coast, coves and points
+        double x = d / (isl.RadiusM * wobble);                                     // 0 in the middle, 1 at the waterline
+        if (x >= 1) return -1 - (x - 1) * 70;                                      // the shelf drops away into the deep
+        // a low coastal plain (a few metres up, for the harbour town), then hills inland
+        double u = 1 - x;
+        double hills = Noise.Fbm(p * 13.0, _s + 717, 4) * 16 * Noise.Smooth(0.45, 0.75, u);
+        return -1 + 9 * Noise.Smooth(0, 0.45, u) + 26 * Noise.Smooth(0.45, 0.95, u) + hills;
+    }
+
+    private static (V3 C, V3 East, V3 North) Frame(V3 dir)
+    {
+        var c = dir.Normalized();
+        var east = new V3(0, 1, 0).Cross(c).Normalized();
+        return (c, east, c.Cross(east));
     }
 
     /// <summary>
@@ -168,8 +416,19 @@ public sealed class PlanetGen
     public Site Town => _sites[0];
     public Site? SiteById(string id) => _sites.FirstOrDefault(s => s.Id == id);
 
-    /// <summary>Metres above (or below) sea level, before any site flattening.</summary>
+    /// <summary>Metres above (or below) sea level, before any site flattening. Islands (EA3b) rise out of the sea.</summary>
     public double RawHeight(V3 dir)
+    {
+        double h = NoiseHeight(dir);
+        if (_islands.Count > 0)
+        {
+            var p = dir.Normalized();
+            foreach (var isl in _islands) h = Math.Max(h, IslandHeight(isl, p));
+        }
+        return h;
+    }
+
+    private double NoiseHeight(V3 dir)
     {
         var p = dir.Normalized();
         double continent = Noise.Fbm(p * 1.25, _s, 5) * 1.9 + 0.08;
@@ -260,8 +519,21 @@ public sealed class PlanetGen
         return h;
     }
 
-    private Road BuildRoad(string id, Site from, Site to)
+    private Road BuildRoad(string id, Site from, Site to, bool even = false)
     {
+        if (even)
+        {
+            // a short road down to the water: one steady grade from end to end, cut and filled into the slope
+            int m = Math.Max(2, (int)((from.Dir - to.Dir).Length * RadiusM / RoadSpacingM));
+            var p = new List<V3>(); var hs = new List<double>();
+            for (int i = 0; i <= m; i++)
+            {
+                double t = (double)i / m;
+                p.Add((from.Dir + (to.Dir - from.Dir) * t).Normalized());
+                hs.Add(from.HeightM + (to.HeightM - from.HeightM) * t);
+            }
+            return new Road(id, p, hs, 9);
+        }
         int n = Math.Max(2, (int)((from.Dir - to.Dir).Length * RadiusM / RoadSpacingM));
         var pts = new List<V3>(); var raw = new List<double>();
         for (int i = 0; i <= n; i++)
@@ -363,4 +635,14 @@ public sealed class PlanetGen
 
     private static readonly (double, double)[] Ring =
         { (1, 0), (-1, 0), (0, 1), (0, -1), (0.7, 0.7), (-0.7, 0.7), (0.7, -0.7), (-0.7, -0.7) };
+
+    /// <summary>Sixteen points of the compass (unit vectors, without trig).</summary>
+    private static readonly (double, double)[] Ring16 = Compass16();
+
+    private static (double, double)[] Compass16()
+    {
+        const double a = 0.92387953251128674, b = 0.38268343236508978, h = 0.70710678118654752;   // cos and sin of 22.5 and 45 degrees
+        var q = new[] { (1.0, 0.0), (a, b), (h, h), (b, a) };
+        return q.Concat(q.Select(v => (-v.Item2, v.Item1))).Concat(q.Select(v => (-v.Item1, -v.Item2))).Concat(q.Select(v => (v.Item2, -v.Item1))).ToArray();
+    }
 }

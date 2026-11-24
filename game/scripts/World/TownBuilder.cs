@@ -96,7 +96,8 @@ public static class TownBuilder
         var palette = new[] { new Color(0.80f, 0.72f, 0.58f), new Color(0.70f, 0.76f, 0.78f), new Color(0.82f, 0.62f, 0.52f), new Color(0.74f, 0.78f, 0.64f), new Color(0.86f, 0.82f, 0.72f) };
         var roofs = new[] { new Color(0.50f, 0.22f, 0.18f), new Color(0.28f, 0.30f, 0.34f), new Color(0.38f, 0.28f, 0.20f) };
         int i = 0;
-        foreach (var lot in content.Lots.Values.OrderBy(l => l.Id))
+        // far towns after the rest, so adding one never changes the look (model, colours) of the houses already built (EA3a)
+        foreach (var lot in content.Lots.Values.OrderBy(l => Telo.Sim.Town.TownRules.FarTowns.Contains(l.Site)).ThenBy(l => l.Id))
         {
             if (gen.SiteById(lot.Site) is not { } site) continue;
             var xf = Place(gen, site, (float)lot.East, (float)lot.South, (float)lot.Yaw);
@@ -173,6 +174,8 @@ public static class TownBuilder
         new("wrenfold", false, 8f, -48f, 48f, "Wrenfold Green"),            // EA2f: the first Act 1 village, opened by your own poles
         new("kettle-cross", false, 8f, -48f, 48f, "Kettle Cross Row"),       // EA2f: the second Act 1 village, by the shore
         new("highmoor", false, 8f, -60f, 60f, "Highmoor Street"),            // EA2f: the Act 2 village, a long drive up the hill
+        new("farland", false, 8f, -52f, 52f, "Quay Street"),                 // EA3b: Farland's harbour town, across the water
+        new("farland", true, -5f, -56f, 8f, "Harbour Lane"),                  // up from Quay Street, through the gap in the north row, to the ferry road
     };
 
     /// <summary>The east-west street a building fronts on: the nearest one on its site that runs past it. Null for the farm.</summary>

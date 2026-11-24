@@ -92,7 +92,7 @@ public static class PlanRules
             var t = tickets[slot.TicketKey];
             var place = t.LotId ?? Places.Room;
             double m = Places.DistanceM(gen, c, at, place);
-            slot.TravelMinutes = m > Places.DriveOverM ? Places.DriveMinutes(m) : Places.WalkMinutes(m);
+            slot.TravelMinutes = Places.TravelMinutes(gen, c, at, place, drive: m > Places.DriveOverM);   // the ferry's sailing too, to Farland
             slot.Start = clock + slot.TravelMinutes;
             slot.Minutes = Duration(s, c, t);
             slot.Title = t.Title;
