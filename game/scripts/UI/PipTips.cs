@@ -14,6 +14,8 @@ public sealed class PipTips
     {
         ["hello"] = "…I'm PIP. I'm the handset on your desk. I'll speak up when something's new. Start with the answering machine.",
         ["customer"] = "A customer. Their house has the ▼ over it. Everything you need is on the van outside.",
+        ["dclit"] = "Every light on the board is on. There's a card for you on the night-shift desk in the Planning Room. And the roof has a view tonight: the ladder's round the east side.",
+        ["roof"] = "The roof. Every lit window out there is somebody on a line you built. E on the ladder top to go back down.",
         ["project"] = "A project: something you build that opens the next part of the game. Each step needs kit from the van. The signboard says what's next.",
         ["yard"] = "Parts bought. The crate's roped on the van's roof rack: drive it to the site, carry it over (two hands) and unload it there. Nothing starts without its parts.",
         ["lorry"] = "Too big for the van: the Yard's lorry takes it to the site first thing on their next working day. Do something else till then.",

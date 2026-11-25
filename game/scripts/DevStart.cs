@@ -66,13 +66,12 @@ public partial class GameRoot
         s.Cash = Math.Max(s.Cash, 2000);
         s.Modems = Math.Max(s.Modems, 3);
         s.Minute = 60; s.SleepDebt = 0;
-        // The Core begins where the data centre will stand: on Halden Flats, the van parked by the empty plot
-        if (from == "act5" && _planet.SiteById("halden") is { } flats)
+        // The Core begins where the data centre will stand: on Halden Flats, the van in its car park by the empty plot
+        if (from == "act5" && _dc is not null)
         {
-            var park = TownBuilder.Place(_planet, flats, -40, -40, 0, 0.6f);
-            _van.PlaceAt(park.Origin, -park.Basis.Z);
-            var stand = TownBuilder.Place(_planet, flats, -36, -32, 0, 1.0f);
-            _player.PlaceAt(stand.Origin, TownBuilder.Place(_planet, flats, -24, -18).Origin - stand.Origin);
+            _van.PlaceAt(_dc.ToGlobal(DataCentre.ParkLocal + new Vector3(0, 0.3f, 0)), _dc.GlobalBasis * Vector3.Right);
+            var stand = _dc.ToGlobal(DataCentre.ParkLocal + new Vector3(3f, 0.7f, -1f));
+            _player.PlaceAt(stand, _dc.ToGlobal(new Vector3(-4f, 0, 14f)) - stand);
         }
         RefreshViews();
         GD.Print($"FROM {from}: {s.Date}, act {s.ActIndex}, {s.LiveSubscribers} subscribers. Next: {Line()}");

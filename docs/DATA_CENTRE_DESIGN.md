@@ -175,6 +175,8 @@ Each is a `projects.json` entry with steps, parts from the Yard (D43), waits, an
 
 **Built as data in DC1 (2026-11-21):** all thirteen, with placeholder steps on today's click-and-hold mechanic; first-pass costs $1,000–3,000 each ($23,500 in all, so the waits set the act's pace, not saving up); `proj-peering` is listed after the finale (optional; nothing requires it). Halden Flats landed on the coastal flats between the town, Eastgate and the shore, 4 m above the sea. The homing projects stand at the far end of each link until the rack (DC3) adds the Halden end.
 
+**Built 2026-11-25 (DC2, a minimal DC9):** the building grows on Halden with these projects (pegs, slab and portacabin, steel frame, the hall facing the road from town), the five rooms of §2 are walk-in with each Halden project's work spot in its room, the roof is reached by the ladder, and when the board is lit the hall lights up, the routes home glow at night as rows of lights, and the early-access card waits on the night-shift desk. §7's generator test live, big switch and fairy lights, and migration night as a timed set piece, are DC9b (after launch). Pictures: `img/halden-stages.png`, `img/halden-rooms.png`, `img/halden-night.png`, `img/halden-roof.png`, `img/halden-card.png`.
+
 The old mast projects (`proj-first-mast`, `proj-cell-sites`, `proj-backhaul`) keep their ids and move to Act 6. Their `requiresProjects` points at `proj-dc-lit`. Backhaul to masts becomes "more strings on the board", which the board already knows how to draw.
 
 ---

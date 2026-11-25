@@ -530,7 +530,7 @@ def dc_hall_shell():
         gbox(f"side{s}", (s * (w / 2 - th / 2), h / 2, 0), (th, h, d - 2 * th), "cladding")
     zf = d / 2 - th / 2
     gbox("front-a", (-11.25, h / 2, zf), (9.5, h, th), "cladding")
-    gbox("front-b", (1.25, h / 2, zf), (12.5, h, th), "cladding")
+    gbox("front-b", (1.0, h / 2, zf), (13.0, h, th), "cladding")   # from the people door (x = -5.5) to the roller door
     gbox("front-c", (14.25, h / 2, zf), (3.5, h, th), "cladding")
     gbox("over-door", (-6.0, (h + 2.3) / 2, zf), (1.0, h - 2.3, th), "cladding")
     gbox("over-roller", (9.75, (h + 5.0) / 2, zf), (5.5, h - 5.0, th), "cladding")

@@ -415,7 +415,7 @@ public partial class GameRoot
 
     /// <summary>Where the van stops for a place: its driveway (or yard, or forecourt). Null where there is none, such as a pole by the road.</summary>
     private Vector3? ParkOf(string place) =>
-        place == Places.Room ? _town.HqPark : _town.Lots.FirstOrDefault(v => v.Lot.Id == place)?.Park;
+        place == Places.Room ? _town.HqPark : _town.Lots.FirstOrDefault(v => v.Lot.Id == place)?.Park ?? HaldenPark(place);
 
     private Vector3 BodyPos() => _van.Driven ? _van.GlobalPosition : _player.GlobalPosition;
 
@@ -436,6 +436,7 @@ public partial class GameRoot
             route.AddRange(new[] { ht.Body.ToGlobal(new Vector3(0, 0.2f, 5.0f)), ht.Body.ToGlobal(new Vector3(0, TownBuilder.HouseFloor + 0.1f, 2.4f)) });
         if (InRoom(target) && !InRoom(from))
             route.AddRange(new[] { room.ToGlobal(new Vector3(RoomBuilder.DoorX, 0.2f, RoomBuilder.D / 2 + 1.6f)), room.ToGlobal(new Vector3(RoomBuilder.DoorX, 0.2f, RoomBuilder.D / 2 - 0.8f)) });
+        if (_dc is not null) route.AddRange(_dc.Route(from, target));   // the data centre's rooms, door to door
         route.Add(target);
         foreach (var p in route)
         {

@@ -18,20 +18,27 @@ public partial class ProjectSiteView : Node3D
     private readonly StandardMaterial3D _mat;
     private readonly Node3D? _built;
     private readonly List<Node3D> _crates = new();
+    private readonly bool _shownElsewhere;
 
-    public ProjectSiteView(ProjectDef def)
+    /// <param name="frame">False where something else shows the work (the data centre): no growing frame, just crates of parts.</param>
+    public ProjectSiteView(ProjectDef def, bool frame = true)
     {
         Def = def;
         Name = def.Id;
+        _shownElsewhere = !frame;
         // the finished thing, if it has a model: its size places the sign and the work spot
         float left = -1.0f, front = 0.6f, top = 1.0f;
-        if (def.Model is { } model && Props.HasModel(model))
+        bool model = def.Model is { } m && Props.HasModel(m);
+        if (model || !frame)
         {
-            _built = Props.Make(model);
+            _built = model ? Props.Make(def.Model!) : new Node3D { Name = "Nothing" };
             _built.Visible = false;
             AddChild(_built);
-            var b = Props.Bounds(_built);
-            left = Mathf.Min(b.Position.X, -1.0f); front = Mathf.Max(b.End.Z, 0.6f); top = Mathf.Min(b.End.Y, 6f);
+            if (model)
+            {
+                var b = Props.Bounds(_built);
+                left = Mathf.Min(b.Position.X, -1.0f); front = Mathf.Max(b.End.Z, 0.6f); top = Mathf.Min(b.End.Y, 6f);
+            }
             // crates of parts, stacked as the work goes on
             foreach (var (x, z, y, yaw) in new[] { (-0.5f, front + 0.9f, 0f, 0.1f), (0.5f, front + 1.0f, 0f, -0.2f), (0f, front + 0.95f, 0.6f, 0.05f), (1.4f, front + 0.7f, 0f, 0.6f) })
             {
@@ -67,7 +74,7 @@ public partial class ProjectSiteView : Node3D
     /// <param name="partsHere">The parts are at the site (unloaded, or left by the lorry): crates stand there.</param>
     public void Sync(bool open, float fraction, bool built, string line, bool partsHere = true)
     {
-        Visible = open;
+        Visible = open && !(built && _shownElsewhere);   // where something else shows the work, the sign goes once it's built
         fraction = Mathf.Clamp(fraction, 0, 1);
         if (_built is not null)
         {
