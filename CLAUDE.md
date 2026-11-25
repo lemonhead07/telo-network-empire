@@ -50,7 +50,7 @@ The owner wants fast iteration. **Do not run the test suite or the smoke test af
 - Always: `dotnet build game/Telo.Game.csproj` (a few seconds) so the game is never left broken.
 - For anything visual: take a `--shot` screenshot and look at it. That is the main check.
 - Run `dotnet test` + `--smoke` only: before a commit that changed rules in `src/Telo.Sim`, before a release/tag, or when asked.
-- GitHub Actions (`.github/workflows/check.yml`) is **manual-trigger only** (plus `v*` tags). Never add `on: push` for branches.
+- GitHub Actions: `check.yml` is **manual-trigger only**; `release.yml` runs only on a `v*` tag or by hand (Actions → Release → Run workflow → a version like `0.2.0`) and leaves a **draft** release with Linux and Windows zips for the owner to try and publish. Never add `on: push` for branches.
 - Add new tests sparingly: one or two per new sim system, for the rules that would be painful to get wrong (determinism, saves, money).
 
 ## Non-negotiables
