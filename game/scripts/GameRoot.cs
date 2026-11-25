@@ -22,8 +22,6 @@ public partial class GameRoot : Node3D
     public const float DayLengthSeconds = 480f;
     /// <summary>One hand-tuned world for now, so the planet is the same every time and content can be placed on it.</summary>
     public const ulong DefaultSeed = 1983;
-    public const string SavePath = "user://save.json";
-    private static string? _pendingLoad;
 
     public Simulation Sim { get; private set; } = null!;
     private FirstPersonController _player = null!;
@@ -93,18 +91,25 @@ public partial class GameRoot : Node3D
     private Dictionary<string, InstallJob> _installs => Sim.Installs;   // the sim keeps the jobs; the houses show them
 
     private float Hour => (6f + _dayClock / DayLengthSeconds * SleepRules.Bedtime / 60f) % 24f;
-    private bool AnyScreenOpen => _switch.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen;
+    /// <summary>Something has the player's attention: a screen in the world, the title letter, or PIP's handset held up (FrontDoor.cs).</summary>
+    private bool AnyScreenOpen => _switch.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen || _frontDoor || _deviceUp;
 
     public override void _Ready()
     {
         InputSetup.Register();
         InstallSite.HoldFor = minutes => Hold(minutes);
         _content = LoadContent();
-        var args = OS.GetCmdlineUserArgs();
+        // developer flags count for the launch they came with; after Quit to title or a load the game starts as a player's would
+        var args = _booted ? Array.Empty<string>() : OS.GetCmdlineUserArgs();
+        _booted = true;
+        _devRun = IsDevRun(args);
         ulong seed = args.FirstOrDefault(a => a.StartsWith("--seed=")) is { } sa ? ulong.Parse(sa["--seed=".Length..]) : DefaultSeed;
-        Sim = _pendingLoad is { } json ? new Simulation(_content, SaveCodec.FromJson(json, _content)) : Simulation.NewGame(_content, seed);
-        _pendingLoad = null;
+        bool loaded = _pendingState is not null;
+        Sim = _pendingState is { } saved ? new Simulation(_content, saved) : Simulation.NewGame(_content, seed);
+        _pendingState = null;
+        _frontDoor = !_devRun && !loaded;   // the title comes up once the world behind it is built (FrontDoor.cs)
         Sim.Morning += WakeInBed;
+        Sim.Morning += _ => _autosaveDue = true;   // written once the night is over (FrontDoor.cs)
 
         // The world: a small planet, built from the sim's pure terrain function.
         _planet = new PlanetGen(Sim.State.Seed);
@@ -160,9 +165,10 @@ public partial class GameRoot : Node3D
         _phone.Position = new Vector3(0.25f, -0.15f, -0.42f); _phone.RotationDegrees = new Vector3(6, -14, 0);
         _player.Camera.AddChild(_phone);
         _phoneView.Show(InterfaceTier.Terminal);
+        SetUpDevice();   // the handset also comes up to show the pause page (FrontDoor.cs)
         _pip = new PipTips(_hud) { Phone = _phoneView };
         _lastStep = Onboarding.Current(Sim.State, _content);
-        if (_lastStep == OnboardingStep.Enquiry) _pip.Once("hello");
+        if (_lastStep == OnboardingStep.Enquiry && !_frontDoor) _pip.Once("hello");   // after the title, PIP says it once you start
         if (_lastStep == OnboardingStep.Free) _pip.Skip("customer", "van", "carry", "install", "step", "modem", "dial", "signed", "frame", "oddjob", "knock", "free");
         if (Sim.State.Staff > 0) _pip.Skip("canhire", "hired");
         _cargo.PickedUp += _ => _pip.Once("carry");
@@ -172,6 +178,9 @@ public partial class GameRoot : Node3D
                 StartInstall(midView, mid);
 
         RefreshIdleScreens();
+        if (!_devRun) SaveSlots.MigrateOldSave();
+        if (_frontDoor) EnterFrontDoor();
+        if (_afterLoad is { } check) { _afterLoad = null; check(this); }   // --shots=title loads a slot and checks it here
         // developer skip-ahead (DevStart.cs): --from=free|hire|poles|act1..act8, for playtesting without the opening
         if (args.FirstOrDefault(a => a.StartsWith("--from=") || a.StartsWith("--autoplay-from=")) is { } from) StartFrom(from.Split('=')[1]);
         if (args.Contains("--smoke")) _ = RunSmoke();
@@ -386,8 +395,7 @@ public partial class GameRoot : Node3D
                 int days = 1;
                 // the night text to PIP ends the day and saves (D34, N4); a quiet spell sleeps until something needs you
                 if (Guidance.IsQuiet(Sim.State, _content)) days = Sim.RestUntilNeeded(); else Telo.Sim.Phone.PhoneRules.SendNight(Sim);
-                if (!_ignoreHours) Save();
-                _minuteFrac = 0;
+                _minuteFrac = 0;   // waking up writes the autosave (FrontDoor.cs)
                 if (days > 1) _pip.Say($"{days} days went by. {Sim.State.Date}. Something needs you.");
                 RefreshIdleScreens();
             });
@@ -950,7 +958,8 @@ public partial class GameRoot : Node3D
         _sky.SetHour(SkyHour(Hour));
         _hud.SetCrosshair(!AnyScreenOpen && !_van.Driven);
         _hud.SetReading(true);   // the phone carries the numbers now
-        _phone.Visible = !AnyScreenOpen;
+        _phone.Visible = _deviceUp || !AnyScreenOpen;
+        if (_autosaveDue) { _autosaveDue = false; Autosave(); }
 
         var (next, targetLot) = Guidance.Next(Sim.State, _content);
         SphereBody who = _van.Driven ? _van : _player;
@@ -1019,21 +1028,7 @@ public partial class GameRoot : Node3D
         else if (e.IsActionPressed("god_act")) God(Sim.GodNextAct());
         else if (e.IsActionPressed("save")) Save();
         else if (e.IsActionPressed("load")) Load();
-        else if (e.IsActionPressed("cancel")) Input.MouseMode = Input.MouseModeEnum.Visible;
-    }
-
-    public void Save()
-    {
-        using var f = Godot.FileAccess.Open(SavePath, Godot.FileAccess.ModeFlags.Write);
-        f.StoreString(SaveCodec.ToJson(Sim.State));
-        Sim.State.Emit(Telo.Sim.Core.EventKind.Info, "Saved.");
-    }
-
-    public void Load()
-    {
-        if (!Godot.FileAccess.FileExists(SavePath)) return;
-        _pendingLoad = Godot.FileAccess.GetFileAsString(SavePath);
-        GetTree().ReloadCurrentScene(); // the planet is rebuilt from the save's seed
+        else if (e.IsActionPressed("cancel")) { OpenPause(); GetViewport().SetInputAsHandled(); }   // PIP's handset comes up (FrontDoor.cs)
     }
 
     // ---- automation hooks for checks / screenshots -------------------------------------------
@@ -1394,6 +1389,8 @@ public partial class GameRoot : Node3D
         if (OS.GetCmdlineUserArgs().Contains("--shots=millbrook")) { await MillbrookShots(Shot); GetTree().Quit(); return; }
         // --shots=farland: only Farland and the ferry (EA3b)
         if (OS.GetCmdlineUserArgs().Contains("--shots=farland")) { await FarlandShots(Shot); GetTree().Quit(); return; }
+        // --shots=title: the title letter, the load page, and the pause page on PIP's handset (EA6a, FrontDoor.cs)
+        if (OS.GetCmdlineUserArgs().Contains("--shots=title")) { if (await TitleShots(path, cam)) GetTree().Quit(); return; }
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);
