@@ -18,8 +18,11 @@ namespace Telo.Game;
 /// <summary>Composition root: loads content, owns the Simulation, builds the world, wires interactions. No game rules here.</summary>
 public partial class GameRoot : Node3D
 {
-    /// <summary>Real seconds per in-game day (a full 24 h sun cycle). The bed skips to morning.</summary>
-    public const float DayLengthSeconds = 480f;
+    /// <summary>
+    /// Real seconds in a waking day (six in the morning till ten at night); the bed skips the night. The player picks
+    /// 8, 12 or 16 minutes on the settings page (GameSettings). The game's pace is measured at 8, the default.
+    /// </summary>
+    public static float DayLengthSeconds => GameSettings.DayLengthSeconds;
     /// <summary>One hand-tuned world for now, so the planet is the same every time and content can be placed on it.</summary>
     public const ulong DefaultSeed = 1983;
     public const string SavePath = "user://save.json";
@@ -98,6 +101,7 @@ public partial class GameRoot : Node3D
     public override void _Ready()
     {
         InputSetup.Register();
+        GameSettings.Apply();   // the player's window, graphics and volume (automated runs get the defaults)
         InstallSite.HoldFor = minutes => Hold(minutes);
         _content = LoadContent();
         var args = OS.GetCmdlineUserArgs();
@@ -1394,6 +1398,8 @@ public partial class GameRoot : Node3D
         if (OS.GetCmdlineUserArgs().Contains("--shots=millbrook")) { await MillbrookShots(Shot); GetTree().Quit(); return; }
         // --shots=farland: only Farland and the ferry (EA3b)
         if (OS.GetCmdlineUserArgs().Contains("--shots=farland")) { await FarlandShots(Shot); GetTree().Quit(); return; }
+        // --shots=settings: the settings page and PIP's how-to-play, leaned into on the desk (SettingsShots.cs)
+        if (OS.GetCmdlineUserArgs().Contains("--shots=settings")) { await SettingsShots(path, Shot); GetTree().Quit(); return; }
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);

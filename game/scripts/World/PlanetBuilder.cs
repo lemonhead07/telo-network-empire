@@ -190,7 +190,9 @@ public static class PlanetBuilder
             centre /= xforms.Count;
             var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh, InstanceCount = xforms.Count };
             for (int i = 0; i < xforms.Count; i++) mm.SetInstanceTransform(i, new Transform3D(xforms[i].Basis, xforms[i].Origin - centre));
-            root.AddChild(new MultiMeshInstance3D { Multimesh = mm, Position = centre, VisibilityRangeEnd = 1800, VisibilityRangeEndMargin = 150, VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Disabled });
+            var far = new MultiMeshInstance3D { Multimesh = mm, Position = centre, VisibilityRangeEndMargin = 150, VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Disabled };
+            GameSettings.ApplyFarProps(far);   // 1800 m at Medium; nearer at Low, further at High
+            root.AddChild(far);
         }
     }
 }
