@@ -1,5 +1,6 @@
 using Godot;
 using Telo.Game.UI;
+using Telo.Sim.Content;
 
 namespace Telo.Game.World;
 
@@ -38,11 +39,53 @@ public partial class WorldScreen : Node3D
     }
 
     /// <summary>Where a camera should sit to read this screen comfortably.</summary>
-    public Transform3D LeanPose(float fovDeg, float aspect)
+    public Transform3D LeanPose(float fovDeg, float aspect) =>
+        new(GlobalBasis.Orthonormalized(), GlobalPosition + GlobalBasis.Z.Normalized() * FitDistance(fovDeg, aspect, 0.9f));
+
+    /// <summary>How far in front of a camera this screen fills that share of its view.</summary>
+    public float FitDistance(float fovDeg, float aspect, float fill)
     {
         float tan = Mathf.Tan(Mathf.DegToRad(fovDeg) / 2);
-        float dist = Mathf.Max(_h / 2 / tan, _w / 2 / (tan * aspect)) / 0.9f;
-        return new Transform3D(GlobalBasis.Orthonormalized(), GlobalPosition + GlobalBasis.Z.Normalized() * dist);
+        return Mathf.Max(_h / 2 / tan, _w / 2 / (tan * aspect)) / fill;
+    }
+
+    // ---- one screen, several pages: a view shown over another, and the way back -------------------
+    private readonly Stack<(ModalView View, InterfaceTier Tier)> _under = new();
+    /// <summary>A view shown over another has closed and the one under it is back (it may be one nobody is using).</summary>
+    public event Action? Uncovered;
+
+    /// <summary>
+    /// Show another view on this screen, over the one it has now. When that view closes (Esc, or its own way out), the one
+    /// under it comes back as it was. PIP's handset uses this for the pause page and whatever the pause page opens.
+    /// </summary>
+    public void Push(ModalView view, InterfaceTier tier)
+    {
+        if (view == View) { view.Open(tier); return; }
+        _under.Push((View, View.Tier));
+        Host(view);
+        Action? back = null;
+        back = () =>
+        {
+            view.Closed -= back;
+            if (View != view || _under.Count == 0) return;
+            var (was, wasTier) = _under.Pop();
+            Host(was);
+            was.Show(wasTier);
+            if (was.IsOpen) { was.Rebuild(); Input.MouseMode = Input.MouseModeEnum.Visible; }   // still in use: the pointer stays free
+            Uncovered?.Invoke();
+        };
+        view.Closed += back;
+        view.Open(tier);
+    }
+
+    private void Host(ModalView view)
+    {
+        if (View.GetParent() == _vp) _vp.RemoveChild(View);
+        view.GetParent()?.RemoveChild(view);
+        view.InWorld = true;
+        View = view;
+        _vp.AddChild(view);
+        _vp.MoveChild(_cursor, -1);   // the pointer stays on top
     }
 
     /// <summary>Where on the player's display a pixel of this screen currently appears (inverse of the click mapping).</summary>
@@ -95,7 +138,7 @@ public partial class WorldScreen : Node3D
     public override void _Input(InputEvent e)
     {
         if (!View.IsOpen) return;
-        if (e.IsActionPressed("cancel")) { View.Close(); GetViewport().SetInputAsHandled(); return; }
+        if (e.IsActionPressed("cancel")) { if (!View.OnCancel()) View.Close(); GetViewport().SetInputAsHandled(); return; }
         if (e is InputEventKey { Pressed: true, Echo: false } key && View.OnKey(key)) { GetViewport().SetInputAsHandled(); return; }
         if (e is not InputEventMouse m) return;
         var cam = GetViewport().GetCamera3D();

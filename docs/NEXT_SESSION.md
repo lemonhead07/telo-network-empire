@@ -1,12 +1,14 @@
 # Next Session — start here
 
-*Left off: 2026-11-25 (cloud dev session, DC2 + a minimal DC9, gameplay lane, branch `claude/dc2-dc9-gameplay-z9ihvf`, merged into `feature/gameplay`). 92 sim tests and `--smoke` pass. Saves are at v20 (no change). The owner wants **early access to cover Acts 0–5**; Act 5 is The Core, the data centre (D46), and it now ends with the lit hall and the early-access card.*
+*Left off: 2026-11-25. Two cloud dev sessions on the gameplay lane, both merged into `feature/gameplay`: **EA6** the early-access shell (branch `ccr-b491c42c-uwwv1w`) and **DC2 + a minimal DC9** the data centre and the end of early access (branch `claude/dc2-dc9-gameplay-z9ihvf`). 92 sim tests and `--smoke` pass. Saves are at v20. The game is v0.1.0. The owner is **racing to market**: read the standing rule at the top of `CLAUDE.md`.*
 
-**Start here:** run `tools/branches.sh start gameplay` (merges master and the lane in, lists stranded work). The launch path (`BUILD_PLAN.md`, "Race to market") is now: **EA6** (early-access shell, being built in session branch `ccr-b491c42c-uwwv1w`) → **EA7** sound (waits until EA6 is merged into the lane) → **owner playtest** → launch. DC2 and the minimal DC9 are done. If the owner doesn't name an item, ask in one line: "EA7 sound (is EA6 merged?), or a fix pass after your playtest?". Before committing a rules change, run `dotnet test tests/Telo.Sim.Tests` (the script player is in it, `The_bot_plays_from_the_first_message_through_act_5`) and `--smoke`. **Act 3 is 7.5 real hours against its 8-hour limit**: anything that adds Act 3 travel will trip it (IDEAS inbox has the fix). To watch the whole path: `godot --path game -- --autoplay --from=free --autoplay-fast --autoplay-teleport --autoplay-sample=15 --autoplay-speed=4 --autoplay-until=act6` (add `=/abs/dir` to `--autoplay` for photos and a log; in the cloud, `xvfb-run -a` in front). In a fresh cloud container run `godot --headless --path game --import` first.
+**Start here:** run `tools/branches.sh start gameplay`. Then the launch path at the top of `BUILD_PLAN.md` → "Early access": EA6 and DC2 + DC9 (minimal) are done; next is **EA7, the sound pass** (the game has no sound at all yet; the Master volume setting is ready), then the **owner's playtest**. Before committing a rules change: `dotnet test tests/Telo.Sim.Tests` (the Act 5 script player is in it) and `--smoke`. **Act 3 is 7.5 real hours against its 8-hour limit.** End every session with the "Git: what to do" note (`docs/BRANCHES.md`, "Pull requests into master").
 
-**Cloud setup:** the environment's setup script installs .NET 8 and 10, Godot 4.7.1, Blender and xvfb, and pre-builds the project. Blender rebuilt a model fine here (`blender -b --factory-startup --python tools/models/dc.py -- dc.hall-shell`; the EGL warnings are harmless); run `--import` afterwards or Godot keeps the old one.
+**Cloud setup:** the environment's setup script installs .NET 8 and 10, Godot 4.7.1, Blender and xvfb, and pre-builds the project, so a new session can build and test straight away. (The 2026-11-24 session's container predated it: if `dotnet` or `godot` is missing, `apt-get install -y dotnet-sdk-8.0 libegl1 xvfb`, Godot from its GitHub release zip, and use `dotnet test tests/Telo.Sim.Tests` because the .NET 8 SDK can't read `Telo.slnx`.) Blender rebuilds a model fine here (the EGL warnings are harmless); run `godot --headless --path game --import` afterwards or Godot keeps the old one.
 
-**Master:** `master` is still behind the lanes; the owner merges through the standing PRs (`BRANCHES.md`, "Pull requests into master").
+**Master and pull requests:** the owner merges into `master` through the standing PR `feature/gameplay → master` (`docs/BRANCHES.md`). `master` was fast-forwarded on 2026-11-25 with EA3; EA6 and DC2 + DC9 are in the standing PR.
+
+**Race to market (owner approved 2026-11-25):** the launch path is at the top of "Early access" in `BUILD_PLAN.md`: ✅ EA6 → EA7 sound → ✅ DC2 + DC9 (minimal) → owner playtest → launch; the rest after launch.
 
 ## Newest (2026-11-25): the data centre grows, and early access ends (DC2 + a minimal DC9)
 
@@ -19,6 +21,19 @@
 - **Pictures:** `docs/img/halden-stages.png`, `halden-rooms.png`, `halden-lit-hall.png`, `halden-night.png`, `halden-roof.png`, `halden-card.png`; `--from=act5 --shots=halden` takes all 18.
 - **Model fix:** `dc.hall-shell` had a 0.5 m slot from floor to roof beside the people door (`tools/models/dc.py`, rebuilt).
 - **Not done (DC9b, after launch; IDEAS inbox):** migration night as a timed set piece, the generator test live, the big switch and fairy lights on the pin board; driving the van into the loading bay or a trolley for carrying kit in; the routes as real cable routes; models for the rooms' insides.
+
+## Newest (2026-11-25): the early-access shell (EA6)
+
+Built by three subagents in parallel (front door, settings, release builds), then joined and checked together.
+
+- **The title** is a typed letter on a cork board above the desk in the rented room, the new world built behind it: Continue (newest save: date, act, cash), New game, Load, Settings, How to play, Quit. Mouse on the letter, or arrows/numbers and Enter. Picture `docs/img/title.png`.
+- **Saves:** three slots and an autosave in `user://saves/` (autosave on waking each morning, on quitting, on closing the window). F5 saves to the autosave, F9 loads the newest. An old `user://save.json` moves into a slot once.
+- **Pause:** Esc raises PIP's handset and stops the game: Resume, Save, Load, Settings, How to play, Quit to title, Quit game. `GameRoot.ShowOnDevice(view)` puts any page on the letter or the handset. Pictures `docs/img/pause.png`, `pause-settings.png`.
+- **Settings** (`user://settings.cfg`): mouse speed and invert, full screen (default) or window, graphics Low/Medium/High (Medium is the old look), the length of a day (8/12/16 real minutes; pace is measured at 8), volume (no sound yet). **How to play:** seven pages from PIP. Pictures `docs/img/settings.png`, `howto.png`.
+- **Releases:** GitHub → Actions → Release → Run workflow → a version like `0.2.0`. About 5–8 minutes later a draft release has Linux (66 MB) and Windows (77 MB) zips; the owner tries them and presses Publish. The workflow smoke-tests the exported Linux build first. It has not run on GitHub yet, and nobody has launched the Windows build.
+- **God keys** work only from the editor or `godot --path game`, never in a player's build. **Developer flags skip the title** and use default settings, so `--smoke`, `--shot` and the bot behave exactly as before.
+- **Checks:** `--shots=title` clicks through the title and pause, saves to slot 2 and loads it back (`TITLE OK`, `LOAD OK`); `--shots=settings` shoots the settings and how-to pages.
+- **Not done (IDEAS inbox):** key rebinding, a confirm before overwriting a slot, models for the letter and handset.
 
 ## Newest (2026-11-24): places for the far towns (EA3)
 

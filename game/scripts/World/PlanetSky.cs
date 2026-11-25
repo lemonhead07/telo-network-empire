@@ -57,6 +57,7 @@ void fragment() {
             LightColor = new Color(1f, 0.96f, 0.88f), LightEnergy = 1.15f, ShadowEnabled = true,
             DirectionalShadowMaxDistance = 320, DirectionalShadowMode = DirectionalLight3D.ShadowMode.Parallel4Splits,
         };
+        GameSettings.ApplySun(_sun);   // shadow reach follows the graphics setting
         AddChild(_sun);
 
         _air = new ShaderMaterial { Shader = new Shader { Code = AirShader } };
