@@ -218,7 +218,7 @@
       { "verb": "Commission the exchange", "clicks": 3, "minutes": 15, "needs": ["cableDrum", "toolbox"] }
     ] },
 
-  { "id": "proj-dc-slab", "name": "Pour the slab on Halden Flats", "act": 5, "site": "halden", "east": -24, "south": -18, "cost": 1500, "parts": "lorry",
+  { "id": "proj-dc-slab", "name": "Pour the slab on Halden Flats", "act": 5, "site": "halden", "east": 4, "south": -14, "cost": 1500, "parts": "lorry",
     "requiresProjects": ["proj-farland-city"],
     "story": "Your network is a mess, and you built the mess yourself: a modem bank behind 1 Main Street, a cabinet in Eastgate, hosting in a fish store, one microwave hop and one ocean cable. Everything should go through one proper building. Halden Flats is flat, boring and empty, and every cable you own already passes it. The council is delighted that anyone wants it.",
     "doneText": "A concrete slab on Halden Flats, and a portacabin on it with your name on the door. The council sent a card.",
@@ -230,7 +230,7 @@
       { "verb": "Put the portacabin on the slab", "clicks": 1, "minutes": 20, "needs": ["toolbox"], "waitDays": 5, "waitText": "the slab is curing" }
     ] },
 
-  { "id": "proj-dc-shell", "name": "Raise the hall", "act": 5, "site": "halden", "east": 0, "south": -18, "cost": 2500, "parts": "lorry",
+  { "id": "proj-dc-shell", "name": "Raise the hall", "act": 5, "site": "halden", "east": -4, "south": -14, "cost": 2500, "parts": "lorry",
     "requiresProjects": ["proj-dc-slab"],
     "story": "A slab is a promise. A steel frame, cladding and a roller door make it a building. The crane comes from the Yard with a driver who has opinions about wind.",
     "doneText": "The hall stands on Halden Flats: a big grey shed with a roller door, empty and echoing. Somebody has already parked in front of the door.",
@@ -242,7 +242,7 @@
       { "verb": "Mark out the rooms on the floor in chalk", "clicks": 2, "minutes": 15 }
     ] },
 
-  { "id": "proj-dc-power", "name": "Power: grid, batteries, generator", "act": 5, "site": "halden", "east": 24, "south": -18, "cost": 3000, "parts": "lorry",
+  { "id": "proj-dc-power", "name": "Power: grid, batteries, generator", "act": 5, "site": "halden", "east": -11.5, "south": 3, "cost": 3000, "parts": "lorry",
     "requiresProjects": ["proj-dc-shell"],
     "story": "Racks without power are furniture. A feed from the substation, a string of batteries to catch a cut, and a generator to take over before the batteries run flat. Then the test nobody likes: pull the mains on purpose.",
     "doneText": "A and B power in the hall. You pulled the mains, the batteries took it, and the generator coughed and caught. From now on it's a Sunday ritual.",
@@ -254,7 +254,7 @@
       { "verb": "Pull the mains on purpose", "clicks": 1, "minutes": 15 }
     ] },
 
-  { "id": "proj-dc-cooling", "name": "The cold aisle", "act": 5, "site": "halden", "east": -24, "south": 8, "cost": 1500, "parts": "lorry",
+  { "id": "proj-dc-cooling", "name": "The cold aisle", "act": 5, "site": "halden", "east": 3, "south": 9.6, "cost": 1500, "parts": "lorry",
     "requiresProjects": ["proj-dc-power"],
     "story": "Every box you plug in turns electricity into heat. Cooling units, a raised floor, and the racks faced the right way: cold air in at the front, hot air out at the back. Face one backwards and it cooks.",
     "doneText": "The hall is cold, loud and faintly smells of new carpet tiles. The racks face the right way. You checked twice.",
@@ -265,7 +265,7 @@
       { "verb": "Set out the rack rows, cold side in front", "clicks": 2, "minutes": 15 }
     ] },
 
-  { "id": "proj-dc-meetme", "name": "The Meet-Me Room", "act": 5, "site": "halden", "east": 0, "south": 8, "cost": 1500,
+  { "id": "proj-dc-meetme", "name": "The Meet-Me Room", "act": 5, "site": "halden", "east": 12.5, "south": 8, "cost": 1500,
     "requiresProjects": ["proj-dc-cooling"],
     "story": "Every outside cable comes in through one room: a wall of fibre trays, ducts in the floor, and a luggage tag on every cable end. It's also where two customers can be joined by a short lead, for a monthly fee, for ever.",
     "doneText": "The Meet-Me Room is in: trays on the wall, tags on every duct. Two customers have already asked to be joined to each other.",
@@ -276,7 +276,7 @@
       { "verb": "Label every tray and duct", "clicks": 2, "minutes": 10 }
     ] },
 
-  { "id": "proj-dc-core", "name": "The core rack", "act": 5, "site": "halden", "east": 24, "south": 8, "cost": 2500, "parts": "lorry",
+  { "id": "proj-dc-core", "name": "The core rack", "act": 5, "site": "halden", "east": 0, "south": 4.6, "cost": 2500, "parts": "lorry",
     "requiresProjects": ["proj-dc-meetme"],
     "story": "The heart of it: one full rack with two routers (one is the spare), the switches, the patch panels, and power from both A and B. Everything else in the building will plug into this.",
     "doneText": "The core rack is up and every lamp on it is green. The big brass pin on the board is lit. Now bring the rest of the network home to it.",
@@ -312,7 +312,7 @@
       { "verb": "Patch both strings and test each way round", "clicks": 2, "minutes": 15 }
     ] },
 
-  { "id": "proj-migration", "name": "Migration night", "act": 5, "site": "halden", "east": -24, "south": 32, "cost": 1000, "parts": "none",
+  { "id": "proj-migration", "name": "Migration night", "act": 5, "site": "halden", "east": -2.5, "south": 4.6, "cost": 1000, "parts": "none",
     "requiresProjects": ["proj-home-eastgate"],
     "story": "Every hosting customer's server lives in a fish cold store in Eastgate. Move them all to the hall in one night, between one and five, before Sol opens up and finds his web page down. Carry, fasten, connect, bring up, check every light.",
     "doneText": "Every server is in the hall and every light is green, at ten to five. Sol's web page never blinked. The cold store has gone back to fish.",
@@ -348,7 +348,7 @@
       { "verb": "Splice in the leased path and test both", "clicks": 2, "minutes": 20, "needs": ["toolbox"], "waitDays": 10, "waitText": "NezTel's legal department is reading the lease, slowly" }
     ] },
 
-  { "id": "proj-dc-lit", "name": "Light the board", "act": 5, "site": "halden", "east": 0, "south": 32, "cost": 1500, "parts": "none",
+  { "id": "proj-dc-lit", "name": "Light the board", "act": 5, "site": "halden", "east": 7, "south": -4.5, "cost": 1500, "parts": "none",
     "requiresProjects": ["proj-home-farland"],
     "story": "Everyone's here. Walk every string on the board, run the Sunday generator test live with the whole network on it, fix whatever goes dark, and then throw the big switch Jory wired up on the board's frame for the occasion.",
     "doneText": "You pulled the mains with the whole network on it and nothing went dark. Then you threw the big switch, and every fairy light on the board ran along its string, one after another.",
@@ -360,7 +360,7 @@
       { "verb": "Throw the big switch", "clicks": 1, "minutes": 5 }
     ] },
 
-  { "id": "proj-peering", "name": "Shake hands with NezTel", "act": 5, "site": "halden", "east": 24, "south": 32, "cost": 800, "parts": "none",
+  { "id": "proj-peering", "name": "Shake hands with NezTel", "act": 5, "site": "halden", "east": 11, "south": 1.4, "cost": 800, "parts": "none",
     "requiresProjects": ["proj-dc-core"],
     "story": "NezTel has rented a cage in your Meet-Me Room. One short lead between your rack and theirs and your traffic stops going the long way round the planet. Nez's engineer is coming to shake hands. Nez's engineer is nicer than Nez.",
     "doneText": "One lead between your rack and NezTel's, and a handshake. Traffic is cheaper. Nez now knows exactly what's in your building.",

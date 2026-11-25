@@ -94,8 +94,8 @@ public partial class GameRoot : Node3D
     private Dictionary<string, InstallJob> _installs => Sim.Installs;   // the sim keeps the jobs; the houses show them
 
     private float Hour => (6f + _dayClock / DayLengthSeconds * SleepRules.Bedtime / 60f) % 24f;
-    /// <summary>Something has the player's attention: a screen in the world, the title letter, or PIP's handset held up (FrontDoor.cs).</summary>
-    private bool AnyScreenOpen => _switch.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen || _frontDoor || _deviceUp;
+    /// <summary>Something has the player's attention: a screen in the world, the title letter, PIP's handset held up (FrontDoor.cs), or the early-access card (Halden.cs).</summary>
+    private bool AnyScreenOpen => _switch.IsOpen || _almanac.IsOpen || _notebook.IsOpen || _board.IsOpen || _frontDoor || _deviceUp || _cardView?.IsOpen == true;
 
     public override void _Ready()
     {
@@ -1395,6 +1395,8 @@ public partial class GameRoot : Node3D
         if (OS.GetCmdlineUserArgs().Contains("--shots=millbrook")) { await MillbrookShots(Shot); GetTree().Quit(); return; }
         // --shots=farland: only Farland and the ferry (EA3b)
         if (OS.GetCmdlineUserArgs().Contains("--shots=farland")) { await FarlandShots(Shot); GetTree().Quit(); return; }
+        // --shots=halden (with --from=act5): the data centre at each stage, inside, lit at night, from the roof, the card (Halden.cs)
+        if (OS.GetCmdlineUserArgs().Contains("--shots=halden")) { await HaldenShots(path, Shot); GetTree().Quit(); return; }
         // --shots=settings: the settings page and PIP's how-to-play, leaned into on the desk (SettingsShots.cs)
         if (OS.GetCmdlineUserArgs().Contains("--shots=settings")) { await SettingsShots(path, Shot); GetTree().Quit(); return; }
         // --shots=title: the title letter, the load page, and the pause page on PIP's handset (EA6a, FrontDoor.cs)

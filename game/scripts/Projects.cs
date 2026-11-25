@@ -14,7 +14,9 @@ public partial class GameRoot
         foreach (var def in _content.Projects)
         {
             if (_planet.SiteById(def.Site) is not { } site) continue;
-            var view = new ProjectSiteView(def) { Transform = TownBuilder.Place(_planet, site, (float)def.East, (float)def.South) };
+            // on Halden Flats the data centre itself shows the work (Halden.cs), so no grey frame there
+            bool dc = def.Site == "halden";
+            var view = new ProjectSiteView(def, frame: !dc) { Transform = TownBuilder.Place(_planet, site, (float)def.East, (float)def.South, dc ? DataCentre.Yaw : 0) };
             _town.Root.AddChild(view);
             _projects[def.Id] = view;
             var s = Sim.State;
@@ -36,6 +38,7 @@ public partial class GameRoot
                 RefreshIdleScreens();
             };
         }
+        BuildHalden();
         SyncProjects();
     }
 
@@ -58,5 +61,6 @@ public partial class GameRoot
             // crates stand at the site once the parts are there: unloaded, or left by the Yard's lorry
             view.Sync(open, clicks == 0 ? 0 : (float)done / clicks, built, line, started || YardRules.LorryArrived(s, id));
         }
+        SyncHalden();
     }
 }
