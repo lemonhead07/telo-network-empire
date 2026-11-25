@@ -6,7 +6,7 @@ namespace Telo.Game.Player;
 /// <summary>First-person walker on the planet, with a look-at interaction ray and a survey (fly) mode for development.</summary>
 public partial class FirstPersonController : SphereBody
 {
-    public const float WalkSpeed = 2.8f, SprintSpeed = 5.2f, SwimSpeed = 1.7f, JumpVelocity = 3.8f, MouseSensitivity = 0.0025f;
+    public const float WalkSpeed = 2.8f, SprintSpeed = 5.2f, SwimSpeed = 1.7f, JumpVelocity = 3.8f;
     public const float FlySpeed = 45f, FlyFastSpeed = 260f;
 
     public Camera3D Camera { get; private set; } = null!;
@@ -62,9 +62,10 @@ public partial class FirstPersonController : SphereBody
         if (!Active || IsFrozen()) return;
         if (e is InputEventMouseMotion mm && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
-            Turn(-mm.Relative.X * MouseSensitivity);
+            float k = GameSettings.MouseSensitivity;   // the player's settings page
+            Turn(-mm.Relative.X * k);
             var r = Camera.Rotation;
-            r.X = Mathf.Clamp(r.X - mm.Relative.Y * MouseSensitivity, -1.5f, 1.5f);
+            r.X = Mathf.Clamp(r.X - mm.Relative.Y * k * (GameSettings.InvertY ? -1 : 1), -1.5f, 1.5f);
             Camera.Rotation = r;
         }
         else if (e is InputEventMouseButton { Pressed: true } && Input.MouseMode != Input.MouseModeEnum.Captured)

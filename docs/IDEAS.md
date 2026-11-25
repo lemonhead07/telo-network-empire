@@ -4,6 +4,8 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 
 ## Inbox
 *(one line each: date, idea, where it came from)*
+- 2026-11-25 · [gameplay] **EA6 loose ends:** no confirm before a save overwrites a slot; no key rebinding; the Windows build has never been launched by a person (the first release's draft is the moment); Low graphics' FSR/FXAA path was only seen on OpenGL (the cloud has no Vulkan). From EA6.
+- 2026-11-25 · [geometry] **Models for the front door:** the title letter on its cork board above the desk, and PIP's handset held up for the pause (both placeholder boxes in `FrontDoor.cs`). The answering machine's aerial still pokes into the letter's bottom corner. From EA6.
 - 2026-11-24 · [gameplay] **Act 3 now runs 7.5 real hours against the 8-hour limit** (EA3: Millbrook's installs and the Farland ferry). Most of Millbrook's cost is the bot putting kit down at a far job and driving back to fetch it (seen between Millbrook, Wrenfold and Highmoor); teaching the bot to keep kit on the van for far jobs would buy the margin back. From EA3.
 - 2026-11-24 · [gameplay] **The ferry is free and always sails.** A fare, a timetable ("next sailing 14:20"), or weather that cancels a crossing would make the trip a decision. Later, a cable ship or light aircraft as more `Vehicles`. From EA3b.
 - 2026-11-24 · [geometry] **Landmarks for the far towns:** Millbrook's Corn Exchange, the Wheatsheaf and the exchange hut above Mill Lane; Farland's harbour (boats, lobster pots, the Anchor & Gull's sign) and a proper ferry model in place of the placeholder boxes (`Ferry.cs`). From EA3.

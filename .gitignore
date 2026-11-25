@@ -8,8 +8,9 @@ game/.godot/
 game/.import/
 *.translation
 # Builds
-# the export folder at the top only: a bare "build/" also hid src/Telo.Sim/Build/ on Windows
+# the export folders at the top only (build/ by hand, dist/ in release.yml): a bare "build/" also hid src/Telo.Sim/Build/ on Windows
 /build/
+/dist/
 *.x86_64
 *.exe
 *.pck
