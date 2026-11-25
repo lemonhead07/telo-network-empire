@@ -93,6 +93,10 @@ public abstract partial class ModalView : Control
     /// <summary>A key pressed while the player is using this view in the world. Return true if it was used. (Terminals are worked from the keyboard.)</summary>
     public virtual bool OnKey(InputEventKey key) => false;
 
+    /// <summary>Esc while the player is using this view in the world. Return true if the view dealt with it (went back a page);
+    /// false steps away from the screen, as Esc always has.</summary>
+    public virtual bool OnCancel() => false;
+
     protected static void Clear(Container c) { foreach (var n in c.GetChildren()) { c.RemoveChild(n); n.QueueFree(); } }
 
     protected Label Text(Container parent, string text, int size = 0)
