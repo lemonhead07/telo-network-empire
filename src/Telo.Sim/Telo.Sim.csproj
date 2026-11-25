@@ -6,5 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Telo.Sim</RootNamespace>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Godot's release export builds this as "ExportRelease", which the SDK doesn't know to optimise -->
+    <Optimize Condition="'$(Configuration)' == 'ExportRelease'">true</Optimize>
   </PropertyGroup>
 </Project>

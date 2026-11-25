@@ -1,5 +1,6 @@
 # Manual-only checks. Nothing runs on ordinary pushes, so day-to-day development uses no CI minutes.
-# Run it from GitHub: Actions tab -> "Check" -> "Run workflow". It also runs when a release tag (v*) is pushed.
+# Run it from GitHub: Actions tab -> "Check" -> "Run workflow". A release tag (v*) runs release.yml instead,
+# which does these checks too and smoke-tests the exported build, so a tag doesn't pay for them twice.
 # Cost: free. Private repos get 2,000 Actions minutes/month on the GitHub Free plan; one run here is ~3-5 minutes.
 name: Check
 
@@ -10,8 +11,6 @@ on:
         description: "Also boot the game headless (downloads Godot, slower)"
         type: boolean
         default: true
-  push:
-    tags: ["v*"]
 
 concurrency:
   group: check-${{ github.ref }}
@@ -35,7 +34,7 @@ jobs:
         run: dotnet build game/Telo.Game.csproj --nologo -v q
 
       - name: Headless smoke test (walk, drive, install, 700 days, save/load)
-        if: ${{ github.event_name == 'push' || inputs.smoke }}
+        if: ${{ inputs.smoke }}
         env:
           GODOT_VERSION: 4.7.1
         run: |
