@@ -127,6 +127,12 @@ public partial class GameRoot
         await shot("-halden-14-roof", roof, roof + (_town.Centre - _dc.GlobalPosition).Normalized() * 60f - _dc.GlobalBasis.Y * 6f, null);
         if (_projects.TryGetValue("proj-home-eastgate", out var eg))
             await shot("-halden-15-roof-eastgate", roof, roof + (eg.GlobalPosition - roof).Normalized() * 60f - _dc.GlobalBasis.Y * 5f, null);
+        // and the ladder works: up it, a second on the roof, still standing on the deck (not fallen through)
+        OnRoof(true);
+        for (int i = 0; i < 60; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+        float y = _dc.ToLocal(_player.GlobalPosition).Y;
+        GD.Print($"HALDEN ROOF standing={Mathf.Abs(y - DataCentre.Roof) < 0.4f} y={y:0.00}");
+        OnRoof(false);
         _dayClock = was; _ignoreHours = hours;
     }
 }

@@ -337,6 +337,14 @@ public partial class DataCentre : Node3D
         return path;
     }
 
+    /// <summary>On the building's plot (with its car park), once the hall stands.</summary>
+    public bool Near(Vector3 global)
+    {
+        if (!_hall.Visible) return false;
+        var p = ToLocal(global);
+        return Mathf.Abs(p.X) < 28f && Mathf.Abs(p.Z) < 26f && p.Y < Roof + 3f;
+    }
+
     private static bool InsideXZ(Vector3 p) => Mathf.Abs(p.X) < InX && Mathf.Abs(p.Z) < InZ;
 
     private static Room RoomOf(Vector3 local)

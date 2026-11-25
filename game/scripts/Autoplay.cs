@@ -379,7 +379,11 @@ public partial class GameRoot
         // and then walks there leaving it behind
         double brainDist = Places.DistanceM(_planet, Sim.Content, Me.Place, place);
         bool vanHere = _van.Driven || (_van.GlobalPosition - BodyPos()).Length() < 40;
-        if (_cargo.Held is null && vanHere && brainDist > Places.DriveOverM) { await Drive(ParkOf(place) ?? target); Me.VanAt = place; }
+        if (_cargo.Held is null && vanHere && brainDist > Places.DriveOverM)
+        {
+            await Drive(ParkOf(place) ?? target); Me.VanAt = place;
+            if (HaldenPark(place) is not null) await WalkTo(target, 1.0f);   // from the data centre's car park, in through the doors
+        }
         else await WalkTo(target, 1.0f);
         Me.Place = place;
     }
@@ -442,7 +446,8 @@ public partial class GameRoot
         {
             // outdoors, with a house in the way (Church Lane backs on to Main Street): round by the street, not through the wall
             var start = _player.GlobalPosition;
-            if ((p - start).Length() > 6 && !InRoom(start) && HouseOf(start) is null && !InRoom(p) && HouseOf(p) is null)
+            // (not at the data centre: the flats are empty, and DataCentre.Route already goes door to door)
+            if ((p - start).Length() > 6 && !InRoom(start) && HouseOf(start) is null && !InRoom(p) && HouseOf(p) is null && _dc?.Near(start) != true && _dc?.Near(p) != true)
             {
                 _roadNet ??= new RoadNet(_planet, _town, GetWorld3D().DirectSpaceState, new Godot.Collections.Array<Rid> { _van.GetRid(), _player.GetRid() });
                 if (!_roadNet.Clear(start, p))
