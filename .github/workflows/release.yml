@@ -1,0 +1,138 @@
+# Playable builds. Nothing runs on ordinary pushes: this only runs when a version tag (v0.2.0 ...) is pushed,
+# or by hand: Actions tab -> "Release" -> "Run workflow" -> type a version number like 0.2.0 -> Run.
+# It tests the sim, exports the game for Linux and Windows, boots the exported Linux build headless (the smoke test),
+# zips both and attaches them to a DRAFT pre-release on the Releases page. Nobody sees it until you press Publish there.
+# A run by hand also makes the v<version> tag on the commit it built.
+# Cost: ~8 minutes the first time (Godot and its export templates are downloaded, then cached), ~5 after.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number, like 0.2.0 (digits and dots)"
+        required: true
+        type: string
+
+permissions:
+  contents: write   # to make the tag and the draft release
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GODOT_VERSION: 4.7.1
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Work out the version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then V="${GITHUB_REF_NAME#v}"; else V="${INPUT_VERSION#v}"; fi
+          # Windows only accepts digits and dots in a program's version, so 0.2.0 yes, 0.2.0-beta no
+          if ! printf '%s' "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$V' is not a version number like 0.2.0"; exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && git ls-remote --exit-code --tags origin "refs/tags/v$V" > /dev/null; then
+            echo "::error::v$V already exists. Run it again with the next number."; exit 1
+          fi
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+          echo "TAG=v$V" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Simulation tests
+        run: dotnet test tests/Telo.Sim.Tests --nologo
+
+      - name: Cache Godot and its export templates
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable.mono
+          key: godot-${{ env.GODOT_VERSION }}-mono-linux-windows-v1
+
+      - name: Download Godot and the Linux and Windows export templates (first run only)
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSfL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          # the templates file is ~1.2 GB for every platform; keep only the five files these two exports use
+          curl -sSfL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_mono_export_templates.tpz"
+          T=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable.mono
+          mkdir -p "$T"
+          unzip -j -o templates.tpz templates/version.txt templates/icudt_godot.dat templates/linux_release.x86_64 \
+            templates/windows_release_x86_64.exe templates/windows_release_x86_64_console.exe -d "$T"
+          rm templates.tpz
+
+      - name: Put Godot on the path
+        run: |
+          mkdir -p ~/godot/bin
+          ln -sfn ~/godot/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64/Godot_v${GODOT_VERSION}-stable_mono_linux.x86_64 ~/godot/bin/godot
+          echo "$HOME/godot/bin" >> "$GITHUB_PATH"
+
+      - name: Stamp the version into the game (the title screen shows it)
+        run: |
+          sed -i "s/^config\/version=.*/config\/version=\"$VERSION\"/" game/project.godot
+          grep -qx "config/version=\"$VERSION\"" game/project.godot
+
+      - name: Export Linux and Windows
+        run: |
+          godot --headless --path game --import || true
+          mkdir -p "dist/telo-$VERSION-linux" "dist/telo-$VERSION-windows"
+          godot --headless --path game --export-release "Linux" "../dist/telo-$VERSION-linux/telo.x86_64"
+          godot --headless --path game --export-release "Windows Desktop" "../dist/telo-$VERSION-windows/telo.exe"
+          # Godot reports success even when the C# half of an export fails, so check the game's code went in
+          test -f "dist/telo-$VERSION-linux/data_Telo.Game_linuxbsd_x86_64/Telo.Game.dll"
+          test -f "dist/telo-$VERSION-windows/data_Telo.Game_windows_x86_64/Telo.Game.dll"
+          test -f "dist/telo-$VERSION-windows/telo.pck"
+
+      - name: Smoke test the exported Linux build (walk, drive, install, 700 days, save/load)
+        run: |
+          "dist/telo-$VERSION-linux/telo.x86_64" --headless -- --smoke | tee smoke.log
+          grep -q "SMOKE OK" smoke.log
+
+      - name: Zip the builds
+        working-directory: dist
+        run: |
+          zip -qr "telo-$VERSION-linux.zip" "telo-$VERSION-linux"
+          zip -qr "telo-$VERSION-windows.zip" "telo-$VERSION-windows"
+          ls -la *.zip
+
+      - name: Tag the commit (runs by hand only; a tag push already has one)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
+
+      - name: Attach the zips to a draft release
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<EOF
+          Early access build $VERSION (commit ${GITHUB_SHA::7}). This is a draft: download both, try them, then press Publish.
+
+          **Windows:** unzip, open the folder, run \`telo.exe\`. Windows may say it protected your PC (the game isn't signed yet): click *More info*, then *Run anyway*.
+          **Linux:** unzip, run \`telo.x86_64\`.
+          EOF
+          files="telo-$VERSION-linux.zip telo-$VERSION-windows.zip"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" $files --clobber
+          else
+            gh release create "$TAG" $files --draft --prerelease --verify-tag --title "TELO $VERSION (early access)" --notes-file notes.md
+          fi
