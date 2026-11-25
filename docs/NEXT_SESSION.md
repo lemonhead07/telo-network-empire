@@ -8,7 +8,7 @@
 
 **Master:** the owner asked to merge the lanes into `master` on 2026-11-24. The checks passed on `feature/gameplay` (build, 89 tests, smoke) and it was a clean fast-forward, but the session's permission rules refused the push to `master`, so `master` is still at 2026-11-22. Waiting for the owner's go-ahead.
 
-**Race to market (owner, 2026-11-25):** see the standing rule at the top of `CLAUDE.md`. Recommended critical path, awaiting the owner's yes: (1) **EA6 the early-access shell** plus export builds on a `v*` tag (nobody outside can play without it); (2) **a minimal Act 5 ending**: DC2 (the hall as boxes) and DC9 (the lit board and the early-access card), with DC3–DC8 moved to post-launch updates; (3) one owner playtest evening of Acts 0–2 and a fix pass on what hurt; then EA4, EA5, the rest of DC and Shop days as updates after launch.
+**Race to market (owner approved 2026-11-25):** the launch path is in `BUILD_PLAN.md` at the top of "Early access": EA6 → EA7 sound → DC2 + DC9 (minimal) → owner playtest → launch; the rest after launch. **EA6 is under way in session branch `ccr-b491c42c-uwwv1w`** (title in the world, save slots, pause on PIP's handset; `GameSettings`, settings and how-to-play views; release builds on a `v*` tag). A parallel session should not touch `GameRoot`'s startup, saving or pause, `FirstPersonController`, `PhoneView`, settings or `.github/workflows/`; **DC2 + a minimal DC9 is the parallel-safe item.** EA7 (sound) waits until EA6 is merged into the lane.
 
 ## Newest (2026-11-24): places for the far towns (EA3)
 
