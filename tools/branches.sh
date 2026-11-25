@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Branch helper for AI sessions (docs/BRANCHES.md). Only AI sessions work on this repo, so this does the bookkeeping.
 #
-#   tools/branches.sh                 list every branch on GitHub holding work that is in neither lane nor master
+#   tools/branches.sh                 how far each lane is ahead of master, and every branch holding work in neither lane nor master
 #   tools/branches.sh start <lane>    session start: merge master and the lane into the current branch
 #   tools/branches.sh finish <lane>   session end: merge the current branch into the lane and push the lane
 #
@@ -40,6 +40,9 @@ cmd=${1:-list}
 case "$cmd" in
   list)
     fetch
+    for l in feature/gameplay feature/geometry; do
+      echo "$l: $(git rev-list --count origin/master..origin/$l) ahead of master, $(git rev-list --count origin/$l..origin/master) behind"
+    done
     echo "Branches with work in neither lane nor master:"
     stranded
     ;;
@@ -61,6 +64,12 @@ case "$cmd" in
     for i in 1 2 3 4; do git push -q origin "HEAD:$here" && break; sleep $((i * 2)); done
     for i in 1 2 3 4; do git push -q origin "HEAD:refs/heads/$lane" && break; sleep $((i * 2)); done
     echo "$here is merged into $lane and pushed."
+    ahead=$(git rev-list --count "origin/master..HEAD")
+    if [ "$ahead" -gt 0 ]; then
+      echo "$lane is $ahead commit(s) ahead of master: make sure the standing PR '$lane -> master' is open (BRANCHES.md, 'Pull requests into master') and tell the owner to merge it."
+    else
+      echo "$lane is level with master: nothing for the owner to merge."
+    fi
     ;;
   *) sed -n '2,9p' "$0"; exit 2 ;;
 esac
