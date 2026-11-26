@@ -21,3 +21,6 @@ game/.import/
 # Python
 __pycache__/
 .claude/worktrees/
+
+# a local settings override (e.g. a smaller frame for Movie Maker recordings): never committed
+game/override.cfg
