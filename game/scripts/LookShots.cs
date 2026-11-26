@@ -24,7 +24,6 @@ public partial class GameRoot
             var dir = TownBuilder.Place(_planet, s, east, south).Origin.Normalized();
             return dir * (R + Mathf.Max((float)_planet.Height(PlanetBuilder.ToSim(dir)), 0f) + lift);
         }
-        void At(float hour) { _dayClock = DayLengthSeconds * (hour - 6f) * 60f / SleepRules.Bedtime; _slowTick = 0; }
         // --look=a,b: only those views (quicker while tuning)
         var only = OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--look="))?["--look=".Length..].Split(',');
         async Task Look(string name, float hour, Vector3 from, Vector3 to, Vector3? up = null)
@@ -97,7 +96,35 @@ public partial class GameRoot
             await Look("halden-night", 22.5f, _dc.ToGlobal(new Vector3(-27f, 12f, 36f)), _dc.ToGlobal(new Vector3(0, 2f, 0)));
             _ignoreHours = true;
         }
-        double avg = times.Count > 0 ? times.Average(t => t.Fps) : 0, min = times.Count > 0 ? times.Min(t => t.Fps) : 0;
-        GD.Print($"LOOK fps graphics={GameSettings.QualityName(GameSettings.Graphics)} avg={avg:0.00} min={min:0.00} views={times.Count}");
+        GD.Print($"LOOK fps graphics={GameSettings.QualityName(GameSettings.Graphics)} avg={(times.Count > 0 ? times.Average(t => t.Fps) : 0):0.00} min={(times.Count > 0 ? times.Min(t => t.Fps) : 0):0.00} views={times.Count}");
     }
+
+    /// <summary>
+    /// --shots=roads: straight down on every place a road out of town meets a settlement, where its drawn asphalt starts
+    /// (0.75 of the site's radius from the centre), so you can see whether it meets a street. Saves x-road-&lt;road&gt;-&lt;site&gt;.png
+    /// and prints how far from the centre each starts. The check for the road work in docs/TOWNS_AND_ROADS.md.
+    /// </summary>
+    private async Task RoadShots(Func<string, Vector3, Vector3, Vector3?, Task> shot)
+    {
+        float R = (float)_planet.RadiusM;
+        At(10.5f);
+        foreach (var road in _planet.Roads)
+            foreach (var site in _planet.Sites)
+            {
+                var c = PlanetBuilder.ToGodot(site.Dir);
+                bool first = (PlanetBuilder.ToGodot(road.Points[0]) - c).Length() * R < 1, last = (PlanetBuilder.ToGodot(road.Points[^1]) - c).Length() * R < 1;
+                if (!first && !last) continue;
+                var pts = road.Points.Select(PlanetBuilder.ToGodot).ToList();
+                if (last) pts.Reverse();
+                var start = pts.First(p => (p - c).Length() * R >= site.RadiusM * 0.75f);
+                var mid = (start * 0.6f + c * 0.4f).Normalized();   // between the asphalt's start and the middle of the place
+                float h = R + Mathf.Max((float)_planet.Height(PlanetBuilder.ToSim(mid)), 0f);
+                var north = (TownBuilder.Place(_planet, site, 0, -10).Origin - TownBuilder.Place(_planet, site, 0, 0).Origin).Normalized();
+                GD.Print($"ROAD {road.Id} at {site.Id}: asphalt starts {(start - c).Length() * R:0} m from the centre");
+                await shot($"-road-{road.Id["road-".Length..]}-{site.Id}", mid * (h + 110f), mid * h, north);
+            }
+    }
+
+    /// <summary>Sets the clock (and so the sun) to this hour for a picture.</summary>
+    private void At(float hour) { _dayClock = DayLengthSeconds * (hour - 6f) * 60f / SleepRules.Bedtime; _slowTick = 0; }
 }

@@ -17,9 +17,13 @@ public sealed class GroundDecal
             if (_mat is not null) return _mat;
             _mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/earth.gdshader") };
             _mat.SetShaderParameter("noise3d", PlanetBuilder.Noise);
+            _mat.SetShaderParameter("detail", (int)GameSettings.Graphics);
             return _mat;
         }
     }
+
+    /// <summary>Follows the graphics setting (GameSettings.Apply, through PlanetBuilder.SetDetail).</summary>
+    public static void SetDetail(int level) => _mat?.SetShaderParameter("detail", level);
 
     private readonly List<Vector3> _v = new(), _n = new();
     private readonly List<Color> _c = new();

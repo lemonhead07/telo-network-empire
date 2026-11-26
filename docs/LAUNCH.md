@@ -19,6 +19,7 @@ The owner wants it **polished before anything goes out** (D56): it should look f
 | Geometry | **LOOK2** surfaces | No textures anywhere: tiles, brick, asphalt, carpet, concrete | 1–2 sessions |
 | Geometry | **ROOM1** rooms that are lived in | Bare grey data-centre rooms, placeholder furniture in houses | 1 session |
 | Geometry | **ROOM2** the last boxes | Sol's, the farm, the Yard, the ferry, the title letter, staff | 1 session |
+| Geometry | **RD1** roads that meet the streets (added 26 Nov, `docs/TOWNS_AND_ROADS.md`) | Five roads stop 35–80 m short of a street, behind gardens | 1 session |
 | Geometry | **MK2** clips and trailer | Something to post, and a trailer for the page | 1–2 sessions |
 | Gameplay | **EA7** sound | A silent game feels unfinished in ten seconds | 1 session |
 | Gameplay | **HO1** no more progress bars | ~250 bare holds across 32 projects | 1 session |

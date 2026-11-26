@@ -48,7 +48,11 @@ public static class PlanetBuilder
     public static ShaderMaterial? TerrainMaterial { get; private set; }
 
     /// <summary>How much detail the ground's shader draws: 0 Low, 1 Medium, 2 High (GameSettings.Apply).</summary>
-    public static void SetDetail(int level) => TerrainMaterial?.SetShaderParameter("detail", level);
+    public static void SetDetail(int level)
+    {
+        TerrainMaterial?.SetShaderParameter("detail", level);
+        GroundDecal.SetDetail(level);
+    }
 
     private static NoiseTexture3D? _noise;
     /// <summary>One small tiling 3D noise, made in code (no image files). The ground and the earth along verges sample it at several sizes.</summary>

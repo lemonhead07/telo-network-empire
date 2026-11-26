@@ -13,7 +13,7 @@ public partial class PlanetSky : Node3D
     private DirectionalLight3D _sun = null!;
     private ShaderMaterial _air = null!, _stars = null!;
     private Godot.Environment _env = null!;
-    private float _townLongitude, _radius;
+    private float _townLongitude, _radius, _airR;
 
     public Vector3 SunDir { get; private set; } = Vector3.Right;
 
@@ -24,11 +24,16 @@ public partial class PlanetSky : Node3D
     /// <summary>The haze: a sixth gone at a kilometre, nearly a third at two.</summary>
     private const float FogDensity = 0.00017f;
 
+    // The sky shell. What is the same for every pixel (where you stand, how high the sun is there, whether you are out in
+    // space) is worked out once a frame in Relight and passed in, so the shader does only the per-pixel part.
     private const string AirShader = @"
 shader_type spatial;
 render_mode unshaded, cull_front, blend_mix, depth_draw_never, fog_disabled;
 uniform vec3 sun_dir = vec3(1.0, 0.0, 0.0);
-uniform float air_r = 3000.0;
+uniform vec3 cam_up = vec3(0.0, 1.0, 0.0);
+uniform float local_day = 1.0;   // how high the sun is where you stand, as daylight
+uniform float dusk = 0.0;        // how near sunrise or sunset it is where you stand
+uniform float outside = 0.0;     // 1 out in space
 uniform vec3 zenith : source_color;
 uniform vec3 horizon : source_color;
 uniform vec3 night : source_color;
@@ -37,24 +42,16 @@ uniform vec3 dusk_pink : source_color;
 varying vec3 wn;
 void vertex() { wn = normalize((MODEL_MATRIX * vec4(VERTEX, 0.0)).xyz); }
 void fragment() {
-    vec3 cam = CAMERA_POSITION_WORLD;
-    vec3 up = normalize(cam);
     vec3 view_w = normalize((INV_VIEW_MATRIX * vec4(-VIEW, 0.0)).xyz);
-    float d = dot(normalize(wn), sun_dir);          // daylight where this bit of sky is
-    float sun_h = dot(up, sun_dir);
-    // the sky's daylight: where this bit of sky is, softened towards how high the sun is where you stand
-    float day = mix(smoothstep(-0.40, 0.20, d), smoothstep(-0.25, 0.10, sun_h), 0.35);
-    float h = dot(view_w, up);                        // how high this bit of sky is above the horizon
-    float low = pow(1.0 - clamp(h, 0.0, 1.0), 3.0);
+    float d = dot(normalize(wn), sun_dir);            // daylight where this bit of sky is
+    float day = mix(smoothstep(-0.40, 0.20, d), local_day, 0.35);
+    float l = 1.0 - clamp(dot(view_w, cam_up), 0.0, 1.0);
+    float low = l * l * l;                              // 1 at the horizon
     vec3 col = mix(night, mix(zenith, horizon, low), day);
     // sunrise and sunset: a glow along the horizon, strongest towards the sun
-    float dusk = 1.0 - smoothstep(0.0, 0.40, abs(sun_h + 0.02));
     float toward = max(dot(view_w, sun_dir), 0.0);
-    vec3 glow = mix(dusk_pink, dusk_glow, toward * toward);
-    col = mix(col, glow, dusk * low * (0.35 + 0.55 * toward) * smoothstep(-0.25, 0.05, d));
-    float s = max(dot(view_w, sun_dir), 0.0);
-    col += vec3(1.0, 0.90, 0.72) * (smoothstep(0.9993, 0.9997, s) * 2.5 + pow(s, 60.0) * 0.30 * day);
-    float outside = smoothstep(air_r * 0.97, air_r * 1.6, length(CAMERA_POSITION_WORLD));
+    if (dusk > 0.001) col = mix(col, mix(dusk_pink, dusk_glow, toward * toward), dusk * low * (0.35 + 0.55 * toward) * smoothstep(-0.25, 0.05, d));
+    col += vec3(1.0, 0.90, 0.72) * (smoothstep(0.9993, 0.9997, toward) * 2.5 + pow(toward, 60.0) * 0.30 * day);
     ALBEDO = mix(col, mix(night, mix(zenith, horizon, 0.25), day), outside);   // from space: a thin blue shell
     ALPHA = clamp(day + dusk * 0.6, 0.04, 0.97) * mix(1.0, 0.28, outside);
 }";
@@ -91,7 +88,7 @@ void fragment() {
 
         _air = new ShaderMaterial { Shader = new Shader { Code = AirShader } };
         float airR = planetRadius + 650;
-        _air.SetShaderParameter("air_r", airR);
+        _airR = airR;
         _air.SetShaderParameter("zenith", Zenith); _air.SetShaderParameter("horizon", Horizon); _air.SetShaderParameter("night", NightSky);
         _air.SetShaderParameter("dusk_glow", DuskGlow); _air.SetShaderParameter("dusk_pink", DuskPink);
         AddChild(new MeshInstance3D
@@ -162,6 +159,12 @@ void fragment() {
         var amb = ambNight.Lerp(ambDay, day).Lerp(ambDusk, Mathf.Max(dusk, low * up) * 0.55f);
         _env.AmbientLightColor = amb.Lerp(ambDay, space);
         _env.AmbientLightEnergy = Mathf.Lerp(Mathf.Lerp(0.33f, 0.40f, day), 0.40f, space);
+
+        // the sky's per-frame numbers (the shader does only what differs from pixel to pixel)
+        _air.SetShaderParameter("cam_up", at.Normalized());
+        _air.SetShaderParameter("local_day", Mathf.SmoothStep(-0.25f, 0.10f, e));
+        _air.SetShaderParameter("dusk", dusk);
+        _air.SetShaderParameter("outside", Mathf.SmoothStep(_airR * 0.97f, _airR * 1.6f, at.Length()));
 
         // haze: the horizon's colour (as the sky shader draws it, averaged round the horizon)
         var haze = NightSky.Lerp(Horizon, day).Lerp(DuskPink.Lerp(DuskGlow, 0.35f), dusk * 0.45f * Mathf.SmoothStep(-0.25f, 0.05f, e));
