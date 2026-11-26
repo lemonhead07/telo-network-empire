@@ -46,8 +46,11 @@ void fragment() {
 
     // whose ground is this: the nearest corner of the triangle, its edge pushed about by the noise
     ivec3 id = ivec3(round(corner_biome));
-    float w1 = texture(noise3d, wpos / 38.0 + vec3(0.21)).r, w2 = texture(noise3d, wpos / 29.0 + vec3(0.63)).r;
-    vec3 b = bary + vec3(w1 - 0.5, w2 - 0.5, 1.0 - w1 - w2) * 0.6;
+    vec3 b = bary;
+    if (detail > 0) {   // Low keeps the borders crisp but straight: two samples fewer
+        float w1 = texture(noise3d, wpos / 38.0 + vec3(0.21)).r, w2 = texture(noise3d, wpos / 29.0 + vec3(0.63)).r;
+        b += vec3(w1 - 0.5, w2 - 0.5, 1.0 - w1 - w2) * 0.6;
+    }
     float m = max(b.x, max(b.y, b.z));
     vec3 w = smoothstep(vec3(m - 0.05), vec3(m), b);
     w /= (w.x + w.y + w.z);
