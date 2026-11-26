@@ -163,7 +163,7 @@ public partial class GameRoot : Node3D
         Telo.Game.Audio.Sfx.Indoors = () => PlayerIndoors(_van.Driven ? _van.GlobalPosition : _player.GlobalPosition);
         Telo.Game.Audio.Sfx.Hour = () => Hour;
         Telo.Game.Audio.Sfx.Ear = () => GetViewport().GetCamera3D()?.GlobalPosition ?? _player.GlobalPosition;
-        AddChild(new Telo.Game.Audio.Ambience());
+        AddChild(NewAmbience());   // wind, birds, crickets, the sea, room tone, the hall (AudioHooks.cs)
 
         // The only overlay left: a small status strip. (Target: wall calendar, cash tin, pager.)
         var ui = new CanvasLayer();
