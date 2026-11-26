@@ -44,6 +44,31 @@ public static class PlanetBuilder
         _ => new Color(0.52f, 0.60f, 0.36f), // town: mown verges and trodden grass
     };
 
+    /// <summary>The ground's material (game/shaders/terrain.gdshader), shared by every chunk. Settings change its detail.</summary>
+    public static ShaderMaterial? TerrainMaterial { get; private set; }
+
+    /// <summary>How much detail the ground's shader draws: 0 Low, 1 Medium, 2 High (GameSettings.Apply).</summary>
+    public static void SetDetail(int level) => TerrainMaterial?.SetShaderParameter("detail", level);
+
+    private static NoiseTexture3D? _noise;
+    /// <summary>One small tiling 3D noise, made in code (no image files). The ground and the earth along verges sample it at several sizes.</summary>
+    public static NoiseTexture3D Noise => _noise ??= new NoiseTexture3D
+    {
+        Width = 64, Height = 64, Depth = 64, Seamless = true, Normalize = true,
+        Noise = new FastNoiseLite { NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex, Seed = 1983, Frequency = 0.07f, FractalOctaves = 3, FractalGain = 0.5f },
+    };
+
+    private static ShaderMaterial MakeTerrainMaterial()
+    {
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/terrain.gdshader") };
+        mat.SetShaderParameter("noise3d", Noise);
+        mat.SetShaderParameter("detail", (int)GameSettings.Graphics);
+        return mat;
+    }
+
+    /// <summary>Corners whose smooth normal leans further than this from their facet's keep the facet's: cliffs and cuttings stay crisp.</summary>
+    private const float CreaseCos = 0.82f;   // about 35 degrees
+
     public static Node3D Build(Node3D parent, PlanetGen gen)
     {
         var root = new Node3D { Name = "Planet" };
@@ -51,40 +76,52 @@ public static class PlanetBuilder
         var body = new StaticBody3D { Name = "Terrain" };
         root.AddChild(body);
         float R = (float)gen.RadiusM;
+        TerrainMaterial = MakeTerrainMaterial();
+        SetBiomes(TerrainMaterial, R);
 
         for (int face = 0; face < 6; face++)
         {
-            int n = Edge + 1;
+            // the grid has a one-vertex border reaching into the next face, so normals at the edges match across the seam
+            int n = Edge + 3;
             var pos = new Vector3[n * n];
             var height = new float[n * n];
             var biome = new Biome[n * n];
             for (int j = 0; j < n; j++)
                 for (int i = 0; i < n; i++)
                 {
-                    var dir = FaceDir(face, i * 2f / Edge - 1, j * 2f / Edge - 1);
+                    var dir = FaceDir(face, (i - 1) * 2f / Edge - 1, (j - 1) * 2f / Edge - 1);
                     var sd = ToSim(dir);
                     float h = (float)gen.Height(sd);
                     height[j * n + i] = h;
-                    biome[j * n + i] = gen.BiomeAt(sd);
                     pos[j * n + i] = dir * (R + h);
+                    if (i > 0 && j > 0 && i < n - 1 && j < n - 1) biome[j * n + i] = gen.BiomeAt(sd);
+                }
+            // smooth normals from the neighbours either side (central differences), facing out
+            var norm = new Vector3[n * n];
+            for (int j = 1; j < n - 1; j++)
+                for (int i = 1; i < n - 1; i++)
+                {
+                    int k = j * n + i;
+                    var nn = (pos[k + 1] - pos[k - 1]).Cross(pos[k + n] - pos[k - n]).Normalized();
+                    norm[k] = nn.Dot(pos[k]) < 0 ? -nn : nn;
                 }
 
             for (int cj = 0; cj < ChunksPerEdge; cj++)
                 for (int ci = 0; ci < ChunksPerEdge; ci++)
                 {
-                    var lp = new LowPoly();
+                    var t = new TerrainChunk();
                     for (int qj = 0; qj < QuadsPerChunk; qj++)
                         for (int qi = 0; qi < QuadsPerChunk; qi++)
                         {
-                            int i = ci * QuadsPerChunk + qi, j = cj * QuadsPerChunk + qj;
+                            int i = ci * QuadsPerChunk + qi + 1, j = cj * QuadsPerChunk + qj + 1;
                             int a = j * n + i, b = a + 1, c = a + n + 1, d = a + n;
                             // alternate the diagonal so the facets don't all lean one way
-                            if (((i + j) & 1) == 0) { AddTri(lp, pos, height, biome, a, b, c, i, j); AddTri(lp, pos, height, biome, a, c, d, i, j + 7); }
-                            else { AddTri(lp, pos, height, biome, a, b, d, i, j); AddTri(lp, pos, height, biome, b, c, d, i, j + 7); }
+                            if (((i + j) & 1) == 0) { t.Tri(pos, norm, height, biome, a, b, c); t.Tri(pos, norm, height, biome, a, c, d); }
+                            else { t.Tri(pos, norm, height, biome, a, b, d); t.Tri(pos, norm, height, biome, b, c, d); }
                         }
-                    if (lp.TriangleCount == 0) continue;
-                    root.AddChild(lp.Instance($"T{face}_{ci}_{cj}"));
-                    body.AddChild(new CollisionShape3D { Shape = new ConcavePolygonShape3D { Data = lp.Faces() } });
+                    if (t.Count == 0) continue;
+                    root.AddChild(new MeshInstance3D { Name = $"T{face}_{ci}_{cj}", Mesh = t.Build(TerrainMaterial) });
+                    body.AddChild(new CollisionShape3D { Shape = new ConcavePolygonShape3D { Data = t.Faces() } });
                 }
         }
 
@@ -100,29 +137,78 @@ public static class PlanetBuilder
         return root;
     }
 
-    private static void AddTri(LowPoly lp, Vector3[] pos, float[] h, Biome[] biome, int a, int b, int c, int qi, int qj)
+    /// <summary>
+    /// One chunk of ground. Each corner has its position and normal (smooth, or the facet's at a crease); each triangle
+    /// also carries its three corners' biomes (CUSTOM0, one byte each) and each corner its place in the triangle (COLOR,
+    /// barycentric), so terrain.gdshader can give every spot the nearest corner's ground with a wobbly edge: borders
+    /// between sand and grass stay crisp instead of smearing across the 16 m grid.
+    /// </summary>
+    private sealed class TerrainChunk
     {
-        if (h[a] < SkipBelowM && h[b] < SkipBelowM && h[c] < SkipBelowM) return;
-        var centroid = (pos[a] + pos[b] + pos[c]) / 3;
-        var up = centroid.Normalized();
-        var normal = (pos[b] - pos[a]).Cross(pos[c] - pos[a]).Normalized();
-        float slope = Mathf.Abs(normal.Dot(up));
-        float hAvg = (h[a] + h[b] + h[c]) / 3;
+        private readonly List<Vector3> _v = new(), _n = new();
+        private readonly List<Color> _bary = new();
+        private readonly List<byte> _biomes = new();
+        public int Count => _v.Count / 3;
+        private static readonly Color[] Corner = { new(1, 0, 0), new(0, 1, 0), new(0, 0, 1) };
 
-        var bio = biome[a];
-        if (hAvg < 0) bio = Biome.Seabed;
-        var col = BiomeColor(bio);
-        if (bio is not (Biome.Seabed or Biome.Beach or Biome.Town))
+        public void Tri(Vector3[] pos, Vector3[] norm, float[] h, Biome[] biome, int a, int b, int c)
         {
-            if (slope < 0.74f) col = BiomeColor(Biome.Rock) * (bio == Biome.Snow ? 1.25f : 1f);
-            else if (slope < 0.84f) col = col.Lerp(BiomeColor(Biome.Rock), 0.5f);
+            if (h[a] < SkipBelowM && h[b] < SkipBelowM && h[c] < SkipBelowM) return;
+            var outward = (pos[a] + pos[b] + pos[c]).Normalized();
+            var fn = (pos[c] - pos[a]).Cross(pos[b] - pos[a]);   // front normal for Godot's clockwise winding
+            if (fn.Dot(outward) < 0) { (b, c) = (c, b); fn = -fn; }
+            fn = fn.Normalized();
+            byte B(int k) => (byte)(h[k] < 0 ? Biome.Seabed : biome[k]);
+            byte ba = B(a), bb = B(b), bc = B(c);
+            int corner = 0;
+            foreach (int k in new[] { a, b, c })
+            {
+                _v.Add(pos[k]);
+                _n.Add(norm[k].Dot(fn) < CreaseCos ? fn : norm[k]);
+                _bary.Add(Corner[corner++]);
+                _biomes.Add(ba); _biomes.Add(bb); _biomes.Add(bc); _biomes.Add(0);
+            }
         }
-        // small per-facet variation: "low poly, but minorly detailed"
-        uint k = (uint)(qi * 73856093) ^ (uint)(qj * 19349663) ^ (uint)(a * 83492791);
-        float jitter = 0.93f + (k % 1000) / 1000f * 0.14f;
-        col = col * jitter * (1f + Mathf.Clamp(hAvg, 0, 150) / 900f);
-        col.A = 1;
-        lp.Tri(pos[a], pos[b], pos[c], col, up);
+
+        public ArrayMesh Build(Material mat)
+        {
+            var arrays = new Godot.Collections.Array();
+            arrays.Resize((int)Mesh.ArrayType.Max);
+            arrays[(int)Mesh.ArrayType.Vertex] = _v.ToArray();
+            arrays[(int)Mesh.ArrayType.Normal] = _n.ToArray();
+            arrays[(int)Mesh.ArrayType.Color] = _bary.ToArray();
+            arrays[(int)Mesh.ArrayType.Custom0] = _biomes.ToArray();
+            var mesh = new ArrayMesh();
+            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays,
+                flags: (Mesh.ArrayFormat)((int)Mesh.ArrayCustomFormat.Rgba8Unorm << (int)Mesh.ArrayFormat.FormatCustom0Shift));
+            mesh.SurfaceSetMaterial(0, mat);
+            return mesh;
+        }
+
+        public Vector3[] Faces() => _v.ToArray();
+    }
+
+    /// <summary>What each biome's ground is, for the shader: its colour (linear), and how grassy and how rocky-when-steep it is.</summary>
+    private static void SetBiomes(ShaderMaterial mat, float radius)
+    {
+        var all = Enum.GetValues<Biome>();
+        var cols = new Vector3[all.Length]; var kinds = new Vector2[all.Length];
+        foreach (var bio in all)
+        {
+            var c = BiomeColor(bio).SrgbToLinear();
+            cols[(int)bio] = new Vector3(c.R, c.G, c.B);
+            kinds[(int)bio] = bio switch
+            {
+                Biome.Grassland or Biome.Forest => new Vector2(1, 1),
+                Biome.Town => new Vector2(1, 0),
+                Biome.Tundra => new Vector2(0.6f, 1),
+                Biome.Desert or Biome.Rock or Biome.Snow => new Vector2(0, 1),
+                _ => Vector2.Zero,   // beach and seabed: sand all the way
+            };
+        }
+        mat.SetShaderParameter("biome_col", cols);
+        mat.SetShaderParameter("biome_kind", kinds);
+        mat.SetShaderParameter("planet_r", radius);
     }
 
     // ---- props -------------------------------------------------------------------------------

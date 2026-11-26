@@ -14,7 +14,7 @@ The owner wants it **polished before anything goes out** (D56): it should look f
 
 | Lane | Item | What it fixes | Size |
 |---|---|---|---|
-| Geometry | **LOOK1** light and land | Flat midday light; hills that are big flat triangles | 1 session |
+| Geometry | ✅ **LOOK1** light and land (done 26 Nov, ahead of its week) | Flat midday light; hills that are big flat triangles | 1 session |
 | Geometry | **MK1** store pictures | Steam needs capsules and at least 5 screenshots; today's are test shots | 1 session |
 | Geometry | **LOOK2** surfaces | No textures anywhere: tiles, brick, asphalt, carpet, concrete | 1–2 sessions |
 | Geometry | **ROOM1** rooms that are lived in | Bare grey data-centre rooms, placeholder furniture in houses | 1 session |
