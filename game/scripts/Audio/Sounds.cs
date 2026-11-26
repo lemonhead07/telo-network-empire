@@ -44,6 +44,7 @@ public static partial class Sounds
     {
         var x = r.Make(variant);
         if (!r.Loop) x.DcBlock().Fade(0.002, 0.01);
+        if (Synth.Peak(x) > 0.98f) x.Normalize(0.98f);   // removing DC can lift the peaks of low thumps and buzzes: never let that clip
         for (int i = 0; i < x.Length; i++) x[i] = Math.Clamp(x[i], -1f, 1f);
         return x;
     }
