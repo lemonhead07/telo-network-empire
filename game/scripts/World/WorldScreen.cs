@@ -138,7 +138,7 @@ public partial class WorldScreen : Node3D
     public override void _Input(InputEvent e)
     {
         if (!View.IsOpen) return;
-        if (e.IsActionPressed("cancel")) { if (!View.OnCancel()) View.Close(); GetViewport().SetInputAsHandled(); return; }
+        if (e.IsActionPressed("cancel")) { Telo.Game.Audio.Sfx.Play("ui.back"); if (!View.OnCancel()) View.Close(); GetViewport().SetInputAsHandled(); return; }
         if (e is InputEventKey { Pressed: true, Echo: false } key && View.OnKey(key)) { GetViewport().SetInputAsHandled(); return; }
         if (e is not InputEventMouse m) return;
         var cam = GetViewport().GetCamera3D();

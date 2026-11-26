@@ -1,4 +1,5 @@
 using Godot;
+using Telo.Game.Audio;
 using Telo.Game.Player;
 using Telo.Game.UI;
 using Telo.Game.World;
@@ -138,7 +139,7 @@ public partial class GameRoot : Node3D
             v.Closed += LeanBack;
         }
 
-        _player = new FirstPersonController { SeaRadius = radius, IsFrozen = () => AnyScreenOpen };
+        _player = new FirstPersonController { SeaRadius = radius, IsFrozen = () => AnyScreenOpen, StepSound = GroundSound };
         AddChild(_player);
         _player.GlobalTransform = _town.PlayerSpawn;
 
@@ -148,7 +149,7 @@ public partial class GameRoot : Node3D
         _cargo = new Cargo(_van, _player, this, () => Sim.State.Modems - _installs.Values.Count(j => j.IsDone(InstallStep.Modem)), () => Sim.State.LineCards,
             () => Telo.Sim.Build.YardRules.OnVan(Sim.State));
         _van.Door.Prompt = () => _cargo.Held is { } h ? $"Put the {h.Label} back on the van" : "Drive the van";
-        _van.Door.OnUse = () => { if (_cargo.Held is not null) _cargo.StowHeld(); else EnterVan(); };
+        _van.Door.OnUse = () => { if (_cargo.Held is not null) _cargo.StowHeld(sound: true); else EnterVan(); };
 
         // people who walk (EA2c): out to Sol's or round to a neighbour, as their routine in the sim says
         _walkers = new Walkers(Sim, _content, _planet, _town)
@@ -288,6 +289,10 @@ public partial class GameRoot : Node3D
         };
         view.PlantSpot.HoldSeconds = () => Hold(LineRules.PlantMinutes);
         view.StringSpot.HoldSeconds = () => Hold(LineRules.StringMinutes);
+        view.PlantSpot.HoldSound = () => "tool.dig";        // the hole, then the pole tamped in
+        view.PlantSpot.DoneSound = () => "tool.hammer";
+        view.StringSpot.StartSound = () => "kit.ladder";    // up against the pole, then the span pulled off the drum
+        view.StringSpot.HoldSound = () => "tool.cable";
         view.StringSpot.Prompt = () =>
         {
             var missing = LineRules.StringNeeds & ~KitOnSite();
@@ -299,6 +304,7 @@ public partial class GameRoot : Node3D
         view.StringSpot.OnUse = () =>
         {
             if (!LineRules.String(s, _content, _planet, p, KitOnSite())) return;
+            if (LineRules.Complete(s, _planet, p)) SoundCue.Coins(after: 0.6);   // the last span: the line's grant is paid
             Refresh();
         };
         Refresh();
@@ -330,6 +336,7 @@ public partial class GameRoot : Node3D
         };
         _rack.Slot.CanUse = () => Sim.State.LineCards > 0 && (BoardRules.FitNeeds & ~KitOnSite()) == Tools.None;
         _rack.Slot.HoldSeconds = () => Hold(BoardRules.FitMinutes);
+        _rack.Slot.DoneSound = () => "sw.card";
         _rack.Slot.OnUse = () =>
         {
             if (!BoardRules.FitCard(Sim.State, KitOnSite())) return;
@@ -343,17 +350,18 @@ public partial class GameRoot : Node3D
         var answering = RoomBuilder.Prop(room, "AnsweringMachine", new Vector3(0.72f, 0.8f, back + 0.4f), new Vector3(0.26f, 0.1f, 0.2f), new Color(0.08f, 0.08f, 0.08f),
             () => Sim.State.MessagesWaiting > 0 ? $"Play messages ({Sim.State.MessagesWaiting} waiting)" : "No new messages", PlayMessages);
         Dress(answering, "room.answering-machine");
+        _answering = answering;
 
         var handset = RoomBuilder.Prop(room, "Handset", new Vector3(1.3f, 0.86f, back + 0.36f), new Vector3(0.38f, 0.26f, 0.03f), new Color(0.1f, 0.11f, 0.14f),
             () => Onboarding.DeskOpen(Sim.State, _content) ? "Read PIP's Almanac" : "PIP's handset. It has more to show you once you know the round",
-            () => { if (Onboarding.DeskOpen(Sim.State, _content)) _almanac.Open(InterfaceTier.Terminal); });
+            () => { if (Onboarding.DeskOpen(Sim.State, _content)) { Sfx.Play("ui.select", _pipScreen.GlobalPosition); _almanac.Open(InterfaceTier.Terminal); } });
         handset.RotationDegrees = new Vector3(-18, 0, 0);
         Dress(handset, "room.pip-handset");
         _pipScreen = Screen(room, _almanac, 0.34f, new Vector3(1.3f, 0.865f, back + 0.385f), new Vector3(-18, 0, 0), glows: true);
 
         var notebook = RoomBuilder.Prop(room, "Notebook", new Vector3(1.85f, 0.745f, back + 0.5f), new Vector3(0.52f, 0.02f, 0.34f), new Color(0.5f, 0.12f, 0.1f),
             () => Onboarding.DeskOpen(Sim.State, _content) ? "Read the company notebook" : "The company notebook. Nothing in it yet: there is no company",
-            () => { if (Onboarding.DeskOpen(Sim.State, _content)) _notebook.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing")); });
+            () => { if (Onboarding.DeskOpen(Sim.State, _content)) { Sfx.Play("paper.page", _notebookScreen.GlobalPosition); _notebook.Open(WorkRules.InterfaceFor(Sim.State, Sim.Content, "billing")); } });
         Dress(notebook, "room.notebook");
         _notebookScreen = Screen(room, _notebook, 0.48f, new Vector3(1.85f, 0.758f, back + 0.5f), new Vector3(-90, 0, 0), glows: false);
 
@@ -377,7 +385,7 @@ public partial class GameRoot : Node3D
         room.AddChild(_rail);
         _rail.Prompt = TicketPrompt;
         _rail.CanUse = t => t.AssignedTo is null && Sim.State.StaffMembers.Any(m => m.Does.Contains(t.Kind));
-        _rail.Use = t => { if (!_clipboard.Remove(t.Key)) { _clipboard.Add(t.Key); _pip.Once("ticket"); } SyncPaper(); };
+        _rail.Use = t => { Sfx.Play("paper.slip", _rail.GlobalPosition); if (!_clipboard.Remove(t.Key)) { _clipboard.Add(t.Key); _pip.Once("ticket"); } SyncPaper(); };
         _calendar = new WallCalendar { Position = new Vector3(-RoomBuilder.W / 2 + 0.07f, 1.5f, 0.2f), RotationDegrees = new Vector3(0, 90, 0) };
         room.AddChild(_calendar);
         // the timesheet: tomorrow, hour by hour (spine step 5)
@@ -390,13 +398,13 @@ public partial class GameRoot : Node3D
             ? $"Put up {BookingRules.Ads[Sim.State.AdLevel + 1].Name} (${BookingRules.Ads[Sim.State.AdLevel + 1].WeeklyCost} a week)"
             : BookingRules.MaxAdLevel(Sim.State, _content) == 0 ? "The ad board. Nothing to advertise yet" : "Every ad you can buy is up";
         _ads.Hot.CanUse = () => Sim.State.AdLevel < BookingRules.MaxAdLevel(Sim.State, _content);
-        _ads.Hot.OnUse = () => { BookingRules.SetAds(Sim.State, _content, Sim.State.AdLevel + 1); SyncPaper(); };
+        _ads.Hot.OnUse = () => { Sfx.Play("paper.slip", _ads.Hot.GlobalPosition); BookingRules.SetAds(Sim.State, _content, Sim.State.AdLevel + 1); SyncPaper(); };
         _ads.Hot.AltPrompt = () => Sim.State.AdLevel > 0 ? $"Cancel {BookingRules.Ads[Sim.State.AdLevel].Name}" : null;
-        _ads.Hot.OnAlt = () => { BookingRules.SetAds(Sim.State, _content, Sim.State.AdLevel - 1); SyncPaper(); };
+        _ads.Hot.OnAlt = () => { Sfx.Play("paper.page", _ads.Hot.GlobalPosition); BookingRules.SetAds(Sim.State, _content, Sim.State.AdLevel - 1); SyncPaper(); };
         _sheet.Hot.Prompt = () => $"Plan tomorrow: fill the timesheet with what fits";
-        _sheet.Hot.OnUse = () => { Telo.Sim.Plan.PlanRules.AutoPlan(Sim.State, _content, _planet, PlanDay()); SyncPaper(); };
+        _sheet.Hot.OnUse = () => { Sfx.Play("paper.page", _sheet.Hot.GlobalPosition); Telo.Sim.Plan.PlanRules.AutoPlan(Sim.State, _content, _planet, PlanDay()); SyncPaper(); };
         _sheet.Hot.AltPrompt = () => "Clear the sheet";
-        _sheet.Hot.OnAlt = () => { Telo.Sim.Plan.PlanRules.PlanFor(Sim.State, PlanDay()).Slots.Clear(); SyncPaper(); };
+        _sheet.Hot.OnAlt = () => { Sfx.Play("paper.page", _sheet.Hot.GlobalPosition); Telo.Sim.Plan.PlanRules.PlanFor(Sim.State, PlanDay()).Slots.Clear(); SyncPaper(); };
 
         // Camp bed. Sleeping is how days pass quickly.
         var bed = RoomBuilder.Prop(room, "Bed", new Vector3(-2.2f, 0.22f, 1.4f), new Vector3(0.9f, 0.44f, 1.9f), RoomBuilder.Fabric,
@@ -478,6 +486,7 @@ public partial class GameRoot : Node3D
     private void PlayMessages()
     {
         if (Sim.State.MessagesWaiting == 0) return;
+        Sfx.Play("am.beep", _answering?.GlobalPosition);
         if (Sim.TakeEnquiry() is not null) _pip.Once("customer");
     }
 
@@ -487,7 +496,7 @@ public partial class GameRoot : Node3D
         var s = Sim.State;
         if (lot.Kind == LotKind.Depot)
             return s.HasDepot ? ("1 Main Street: your depot. Staff collect their tickets here each morning and are paid by the week", null)
-                : StaffRules.CanLeaseDepot(s) ? ($"Sign the lease on 1 Main Street: ${StaffRules.DepotDeposit} down, ${StaffRules.DepotRentPerMonth} a month. Your staff will work from here", () => { if (StaffRules.LeaseDepot(s)) _pip.Once("depot"); })
+                : StaffRules.CanLeaseDepot(s) ? ($"Sign the lease on 1 Main Street: ${StaffRules.DepotDeposit} down, ${StaffRules.DepotRentPerMonth} a month. Your staff will work from here", () => { if (StaffRules.LeaseDepot(s)) { Sfx.Play("paper.page", DoorAt(lot)); _pip.Once("depot"); } })
                 : s.StaffMembers.Count == 0 ? ("TO LET: 1 Main Street. A yard and a workshop. (For when you have someone to put in it.)", null)
                 : ($"TO LET: 1 Main Street. ${StaffRules.DepotDeposit} down; you have ${s.Cash}", null);
         // people keep hours: nobody comes to the door when nobody is in (a job already under way carries on)
@@ -529,7 +538,7 @@ public partial class GameRoot : Node3D
         {
             // the shop and the farm aren't enterable yet: the job is still done at the door
             if (capped) return ($"{quick.Title} for {lot.Resident}. {BookingRules.CapReason}", null);
-            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay})", Job(() => TownRules.CompleteJob(s, _content, quick.Id)));
+            return ($"{quick.Title} for {lot.Resident} (+${quick.Pay})", Job(() => { TownRules.CompleteJob(s, _content, quick.Id); SoundCue.Coins(DoorAt(lot)); }));
         }
         var cust = TownRules.CustomerAt(s, lot.Id);
         if (cust is { SocketFitted: false } && _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { Install: not null } view)
@@ -544,7 +553,7 @@ public partial class GameRoot : Node3D
         }
         if (cust is { SocketFitted: false })
             return s.Modems > 0
-                ? ($"Fit the wall socket for {cust.Name} (uses a modem)", capped ? null : Job(() => TownRules.FitSocket(s, cust.Id)))
+                ? ($"Fit the wall socket for {cust.Name} (uses a modem)", capped ? null : Job(() => { Sfx.Play("tool.screw", DoorAt(lot)); TownRules.FitSocket(s, cust.Id); }))
                 : ($"{cust.Name} is waiting for a socket. You have no modems (Sol's Electronics sells them)", null);
         if (cust is not null)
             return (cust.Installed ? $"{lot.Resident}: subscriber, satisfaction {cust.Satisfaction}%" : $"{lot.Resident}: socket fitted. Jumper their line at the switchboard", null);
@@ -558,7 +567,7 @@ public partial class GameRoot : Node3D
         if (s.Day < h.RetryDay)
             return (h.Status == HouseholdStatus.Declined ? $"{lot.Resident} said no. Try again in {h.RetryDay - s.Day} days" : $"Nobody home at {lot.Resident}'s. Try tomorrow", null);
         if (s.NezLots.Contains(lot.Id)) return ($"{lot.Resident} signed with the national phone monopoly. There's a plaque by the door", null);
-        return ($"Knock on {lot.Resident}'s door", () => Sim.Knock(lot.Id));
+        return ($"Knock on {lot.Resident}'s door", () => { Sfx.Play("door.knock", DoorAt(lot)); Sim.Knock(lot.Id); });
     }
 
     // ---- the install at a customer's house: the sim owns the job, the house shows it -------------
@@ -606,7 +615,11 @@ public partial class GameRoot : Node3D
         if (view.DoorOpen == open) return;
         view.DoorOpen = open;
         view.SetDoor?.Invoke(open);
+        if (view.Door.IsInsideTree()) Sfx.Play(open ? "door.open" : "door.close", view.Door.GlobalPosition);
     }
+
+    /// <summary>Where a building's front door is, for the sounds made at it (null if it isn't built).</summary>
+    private Vector3? DoorAt(LotDef lot) => _town.Lots.FirstOrDefault(l => l.Lot.Id == lot.Id) is { } v && v.Door.IsInsideTree() ? v.Door.GlobalPosition : null;
 
     /// <summary>Houses catch up with the sim: finished installs are visible, and doors close behind you once you've left.</summary>
     private void SyncHouses(Vector3 playerPos)
@@ -661,11 +674,15 @@ public partial class GameRoot : Node3D
         {
             if (!task.Done) { task.Do(KitOnSite()); return; }
             complete(task.Bodged);
+            SoundCue.Coins(bench.GlobalPosition);   // handed back, and paid
             EndOddJob(view.Lot.Id);
         };
         bench.AltPrompt = () => task.Done ? null : "Give it a thump and call it done";
         bench.HoldSeconds = () => task.Done ? 0f : Hold(task.MinutesFor(task.Next!));
-        bench.OnAlt = () => { if (task.Bodge()) _pip.Once("thump"); };
+        // each step sounds like what it says: open it up, trace the fault, fix it, test it
+        bench.HoldSound = () => task.Next is { } d ? SoundCue.ForStep(d.Verb).Hold : null;
+        bench.DoneSound = () => task.Next is { } d ? SoundCue.ForStep(d.Verb).Done : null;
+        bench.OnAlt = () => { if (task.Bodge()) { Sfx.Play("tool.thump", bench.GlobalPosition); _pip.Once("thump"); } };
         view.Body.AddChild(bench);
         _oddJobs[view.Lot.Id] = (task, bench, wanted);
         Sim.Benches[view.Lot.Id] = new Telo.Sim.Act.Bench(task, kind, refId);
@@ -739,6 +756,7 @@ public partial class GameRoot : Node3D
                 {
                     if (TicketToGive(member) is not { } t || !StaffRules.Assign(Sim.State, _content, t.Key, member.Id)) return;
                     _clipboard.Remove(t.Key);
+                    Sfx.Play("paper.slip", fig.GlobalPosition);
                     _pip.Once("given");
                     SyncPaper();
                 };
@@ -858,7 +876,7 @@ public partial class GameRoot : Node3D
             _pip.Once("pager");
             var now = Attention.Needs(s, _content);
             if (_paged is not null)
-                foreach (var need in now.Where(n => !_paged.Contains(n.Key))) _pip.Say("Pager: " + need.Text);
+                foreach (var need in now.Where(n => !_paged.Contains(n.Key))) _pip.Say("Pager: " + need.Text, "pip.beep");
             _paged = now.Select(n => n.Key).ToHashSet();
         }
         if (_roadBarrier is not null)
@@ -907,6 +925,8 @@ public partial class GameRoot : Node3D
     private void WireLot(LotView view)
     {
         view.Door.HoldSeconds = () => LotAction(view.Lot).Use is null ? 0f : LotHold(view.Lot);
+        view.Door.HoldSound = () => LotSounds(view.Lot).Hold;
+        view.Door.DoneSound = () => LotSounds(view.Lot).Done;
         view.Door.Prompt = () => LotAction(view.Lot).Prompt;
         view.Door.CanUse = () => LotAction(view.Lot).Use is not null;
         view.Door.OnUse = () => LotAction(view.Lot).Use?.Invoke();
@@ -917,16 +937,17 @@ public partial class GameRoot : Node3D
                 ? $"Buy a modem at the counter: ${TownRules.ModemPrice} (you have {Sim.State.Modems})"
                 : $"A modem is ${TownRules.ModemPrice}. You have ${Sim.State.Cash}";
             counter.CanUse = () => !Shut() && Sim.State.Cash >= TownRules.ModemPrice;
-            counter.OnUse = () => { if (!Shut()) TownRules.BuyModem(Sim.State); };
+            counter.OnUse = () => { if (!Shut() && TownRules.BuyModem(Sim.State)) Sfx.Play("cash.till", counter.GlobalPosition); };
             // a second thing on Sol's counter, once the Board has started filling up
             counter.AltPrompt = () => !Shut() && Onboarding.DeskOpen(Sim.State, _content) && Sim.State.LastEvening is { Engaged: > 0 } && BoardRules.CanAddLine(Sim.State) && Sim.State.Cash >= BoardRules.CardPrice
                 ? $"Buy a line card for the Board: ${BoardRules.CardPrice}" : null;
-            counter.OnAlt = () => { if (!Shut() && BoardRules.BuyCard(Sim.State)) { _cargo.Refresh(); _pip.Once("card"); } };
+            counter.OnAlt = () => { if (!Shut() && BoardRules.BuyCard(Sim.State)) { Sfx.Play("cash.till", counter.GlobalPosition); _cargo.Refresh(); _pip.Once("card"); } };
         }
     }
 
     private void EnterVan()
     {
+        VanDoor();
         _player.SetActive(false);
         _van.SetDriven(true);
         _phone.Reparent(_van.Camera, false);
@@ -941,7 +962,7 @@ public partial class GameRoot : Node3D
     {
         if (_player is null || _town is null) return;
         if (_switch?.IsOpen == true) _switch.Close();
-        if (_van.Driven) ExitVan();
+        if (_van.Driven) ExitVan(quiet: true);
         if (collapsed)
         {
             _cargo.StowHeld();
@@ -952,8 +973,9 @@ public partial class GameRoot : Node3D
         _minuteFrac = 0;
     }
 
-    private void ExitVan()
+    private void ExitVan(bool quiet = false)
     {
+        if (!quiet) VanDoor();
         _van.SetDriven(false);
         _player.SetActive(true);
         _phone.Reparent(_player.Camera, false);
@@ -1020,6 +1042,7 @@ public partial class GameRoot : Node3D
             _cargo.Refresh();
             foreach (var refresh in _lineRefresh) refresh();
             WatchProgress();
+            ListenToTheWorld(0.5f);   // the answering machine, Sol's door bell (Hearing.cs)
         }
 
         if (targetLot is not null && _town.Lots.FirstOrDefault(l => l.Lot.Id == targetLot) is { } t)

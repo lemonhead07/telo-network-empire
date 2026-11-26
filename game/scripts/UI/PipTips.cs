@@ -84,8 +84,12 @@ public sealed class PipTips
         if (_said.Add(key) && Lines.TryGetValue(key, out var text)) Say(text);
     }
 
-    /// <summary>Say something that isn't a one-off tip.</summary>
-    public void Say(string text) { if (Phone is { } p) p.Say(text); else _hud.Say(text); }
+    /// <summary>Say something that isn't a one-off tip. <paramref name="sound"/> is heard as it comes up: a text arriving, or the pager's beep.</summary>
+    public void Say(string text, string sound = "pip.text")
+    {
+        if (Phone is { } p) p.Say(text, sound);
+        else { _hud.Say(text); Telo.Game.Audio.Sfx.Play(sound); }
+    }
     /// <summary>When set, PIP talks on the phone instead of in a bubble (spine step 4).</summary>
     public PhoneView? Phone { get; set; }
 

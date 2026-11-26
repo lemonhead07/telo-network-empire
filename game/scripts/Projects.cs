@@ -26,6 +26,10 @@ public partial class GameRoot
             view.Spot.CanUse = () => ProjectRules.Blocked(s, _content, def, KitOnSite()) is null;
             view.Spot.HoldSeconds = () => ProjectRules.Step(s, def) is { } st && ProjectRules.Blocked(s, _content, def, KitOnSite()) is null
                 ? Hold(ProjectRules.Started(s, def.Id) ? st.Minutes : YardRules.UnloadMinutes) : 0f;
+            // unloading the parts starts the job (a crate set down, or the paperwork for a project with no parts); then each step sounds like what it says
+            view.Spot.HoldSound = () => ProjectRules.Started(s, def.Id) && ProjectRules.Step(s, def) is { } st ? SoundCue.ForStep(st.Verb).Hold : "work.tick";
+            view.Spot.DoneSound = () => !ProjectRules.Started(s, def.Id) ? (def.Parts == Telo.Sim.Content.PartsBy.None ? "paper.page" : "kit.crate")
+                : ProjectRules.Step(s, def) is { } st ? SoundCue.ForStep(st.Verb).Done : "work.done";
             view.Spot.OnUse = () =>
             {
                 bool crate = !ProjectRules.Started(s, def.Id) && def.Parts == Telo.Sim.Content.PartsBy.Van;

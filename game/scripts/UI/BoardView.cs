@@ -103,7 +103,9 @@ public partial class BoardView : ModalView
             >= Godot.Key.Kp0 and <= Godot.Key.Kp9 => (int)(key.PhysicalKeycode - Godot.Key.Kp0),
             _ => -1,
         };
+        Telo.Game.Audio.Sfx.Play("ui.key");   // the terminal's keyboard: every key clacks
         if (n < 0) return false;
+        if (n > _keys.Count) Telo.Game.Audio.Sfx.PlayAfter(0.08, "ui.error");   // nothing on that number
         Press(n);
         return true;
     }

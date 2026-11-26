@@ -1,4 +1,5 @@
 using Godot;
+using Telo.Game.Audio;
 using Telo.Game.World;
 
 namespace Telo.Game.Player;
@@ -31,6 +32,16 @@ public partial class FirstPersonController : SphereBody
     public float HoldProgress { get; private set; }
     private Interactable? _holding;
     private float _held;
+
+    // ---- sound (EA7): a footstep for each stride walked on the ground, and the sounds of holding E to work ----------------
+    /// <summary>Metres between footsteps.</summary>
+    public const float WalkStride = 0.75f, SprintStride = 1.0f;
+    /// <summary>What the ground sounds like where you are (a footstep's sound id). Set by GameRoot; asked once a step.</summary>
+    public Func<Vector3, string> StepSound { get; set; } = _ => "step.grass";
+    private float _stride, _air, _workIn;
+    private bool _leftFoot;
+    private Vector3 _lastFeet;
+    private static readonly Dictionary<string, float> SoundLength = new();
 
     public override void _Ready()
     {
@@ -102,6 +113,7 @@ public partial class FirstPersonController : SphereBody
             Velocity = dir.Normalized() * (Input.IsActionPressed("sprint") ? FlyFastSpeed : FlySpeed);
             MoveAndSlide();
             AlignToPlanet();
+            _air = 0; _lastFeet = GlobalPosition;   // no footsteps in the air
         }
         else
         {
@@ -109,6 +121,7 @@ public partial class FirstPersonController : SphereBody
             var dir = (GlobalBasis * new Vector3(input.X, 0, input.Y)).Normalized();
             float speed = InWater ? SwimSpeed : Input.IsActionPressed("sprint") ? SprintSpeed : WalkSpeed;
             MoveOnPlanet(dir * speed * Pace, delta);
+            Footsteps((float)delta, Input.IsActionPressed("sprint"));
         }
         Focus = _ray.IsColliding() ? _ray.GetCollider() as Interactable : null;
         if (Focus is null && _look.IsColliding() && _look.GetCollider() is Interactable far && (far.CollisionLayer & LookLayer) != 0) Focus = far;
@@ -116,11 +129,43 @@ public partial class FirstPersonController : SphereBody
         // hold E to work: the job is done when the hold completes; keep holding to carry straight on
         if (Focus is { } f && Input.IsActionPressed("interact") && f.CanUse() && f.HoldSeconds() is var need and > 0)
         {
-            if (f != _holding) { _holding = f; _held = 0; }
+            if (f != _holding) { _holding = f; _held = 0; _workIn = WorkSound(f.StartSound, null, f); }
+            _workIn -= (float)delta;
+            if (_workIn <= 0) _workIn = WorkSound(f.HoldSound, "work.tick", f);
             _held += (float)delta;
             HoldProgress = Mathf.Clamp(_held / need, 0, 1);
-            if (_held >= need) { _held = 0; HoldProgress = 0; f.OnUse?.Invoke(); }
+            if (_held >= need) { _held = 0; HoldProgress = 0; WorkSound(f.DoneSound, "work.done", f); _workIn = 0.35f; f.OnUse?.Invoke(); }
         }
         else { _holding = null; _held = 0; HoldProgress = 0; }
+    }
+
+    /// <summary>A footstep each stride along the ground (none in the air or the water); a thud on landing from a jump. In your ear.</summary>
+    private void Footsteps(float delta, bool sprint)
+    {
+        var at = GlobalPosition;
+        var moved = at - _lastFeet;
+        _lastFeet = at;
+        float d = (moved - Up * moved.Dot(Up)).Length();
+        if (d > 1.5f) d = 0;   // put somewhere (out of the van, into bed, off the ferry): not a step
+        if (InWater) { _air = 0; return; }
+        if (!IsOnFloor()) { _air += delta; return; }
+        if (_air > 0.35f) { Sfx.Play("step.land", db: -2); _stride = 0; }
+        _air = 0;
+        _stride += d;
+        float every = sprint ? SprintStride : WalkStride;
+        if (_stride < every) return;
+        _stride = Mathf.Min(_stride - every, every);
+        _leftFoot = !_leftFoot;
+        Sfx.Play(StepSound(at), db: sprint ? 0 : -2, pitch: _leftFoot ? 0.97f : 1.03f);
+    }
+
+    /// <summary>Play a work sound from the thing being worked (unset: <paramref name="usual"/>). Returns the seconds before the next may play.</summary>
+    private static float WorkSound(Func<string?>? sound, string? usual, Interactable at)
+    {
+        if ((sound is null ? usual : sound()) is not { } id) return 0;
+        Sfx.Play(id, at.GlobalPosition);
+        if (!SoundLength.TryGetValue(id, out var len))
+            SoundLength[id] = len = Sfx.StreamsFor(id) is { Length: > 0 } w ? (float)w.Average(x => x.GetLength()) : 0;
+        return Mathf.Max(0.3f, len + 0.04f);   // one after another: a long sound (a drill, a spade) isn't stacked on itself
     }
 }

@@ -30,6 +30,8 @@ public partial class MenuView : ModalView
 
     /// <summary>Open a page over this one (Esc or Back returns).</summary>
     public void Go(Func<Page> page) { _pages.Push(page); _sel = -1; _status = ""; Rebuild(); }
+    /// <summary>The menu makes its own sounds: a tick as the choice moves, a beep when one is chosen, a buzz when it can't be.</summary>
+    protected override string? ClickSound => null;
     public void Back() { if (_pages.Count > 0) _pages.Pop(); _sel = -1; Rebuild(); }
     /// <summary>Back to the first page with nothing selected yet (each time the menu is brought up).</summary>
     public void Reset() { _pages.Clear(); _sel = -1; _status = ""; }
@@ -54,7 +56,7 @@ public partial class MenuView : ModalView
             b.AutowrapMode = TextServer.AutowrapMode.WordSmart;   // a long slot label takes two lines rather than running off the page
             b.FocusMode = Control.FocusModeEnum.None;
             b.AddThemeFontSizeOverride("font_size", ItemSize);
-            b.MouseEntered += () => { if (item.Enabled && _sel != at) { _sel = at; Highlight(); } };
+            b.MouseEntered += () => { if (item.Enabled && _sel != at) { _sel = at; Highlight(); Telo.Game.Audio.Sfx.Play("ui.move", db: -6); } };
             _shown.Add((b, item));
         }
         Highlight();
@@ -92,7 +94,8 @@ public partial class MenuView : ModalView
     /// <summary>Choices run after the click or key has been dealt with: they may swap the page, cover it, or reload the world.</summary>
     private void Activate(Item item)
     {
-        if (!item.Enabled || item.Do is null) return;
+        if (!item.Enabled || item.Do is null) { Telo.Game.Audio.Sfx.Play("ui.error"); return; }
+        Telo.Game.Audio.Sfx.Play("ui.select");
         Callable.From(() => { item.Do(); if (IsOpen && IsInsideTree()) Rebuild(); }).CallDeferred();
     }
 
@@ -101,16 +104,17 @@ public partial class MenuView : ModalView
         var items = _shown.Select(s => s.Item).ToList();
         switch (key.Keycode)
         {
-            case Key.Up or Key.W: _sel = Next(items, _sel, -1); Highlight(); return true;
-            case Key.Down or Key.S or Key.Tab: _sel = Next(items, _sel, +1); Highlight(); return true;
+            case Key.Up or Key.W: _sel = Next(items, _sel, -1); Highlight(); Telo.Game.Audio.Sfx.Play("ui.move"); return true;
+            case Key.Down or Key.S or Key.Tab: _sel = Next(items, _sel, +1); Highlight(); Telo.Game.Audio.Sfx.Play("ui.move"); return true;
             case Key.Enter or Key.KpEnter or Key.Space or Key.E:
                 if (_sel >= 0 && _sel < items.Count) Activate(items[_sel]);
                 return true;
-            case Key.Backspace or Key.Left: if (_pages.Count > 0) Back(); return true;
+            case Key.Backspace or Key.Left: if (_pages.Count > 0) { Telo.Game.Audio.Sfx.Play("ui.back"); Back(); } return true;
         }
         int n = key.Keycode is >= Key.Key1 and <= Key.Key9 ? (int)(key.Keycode - Key.Key1)
             : key.Keycode is >= Key.Kp1 and <= Key.Kp9 ? (int)(key.Keycode - Key.Kp1) : -1;
         if (n >= 0 && n < items.Count && items[n].Enabled) { _sel = n; Highlight(); Activate(items[n]); return true; }
+        if (n >= 0 && n < items.Count) Telo.Game.Audio.Sfx.Play("ui.error");   // a greyed-out line (an empty slot)
         return false;
     }
 
