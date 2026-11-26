@@ -15,18 +15,29 @@ public partial class PhoneView : ModalView
     public Simulation Sim { get; set; } = null!;
     private string _next = "", _where = "";
     private float _hour;
-    private readonly Queue<string> _live = new();
+    private readonly Queue<(string Text, string Sound)> _live = new();
     private string? _saying;
     private float _sayLeft;
+    private TextMessage? _lastText;
+    private bool _textsSeen;
 
-    /// <summary>PIP says something now (a tip, a pager beep). Shown on the phone for its reading time.</summary>
-    public void Say(string text) => _live.Enqueue(text);
+    /// <summary>PIP says something now (a tip, a pager beep). Shown on the phone for its reading time, with its sound as it comes up.</summary>
+    public void Say(string text, string sound = "pip.text") => _live.Enqueue((text, sound));
 
     public void Tick(float delta, float hour, string next, string where)
     {
         _hour = hour; _next = next; _where = where;
         _sayLeft -= delta;
-        if (_sayLeft <= 0) { _saying = _live.Count > 0 ? _live.Dequeue() : null; _sayLeft = _saying is null ? 0 : Mathf.Clamp(_saying.Length * 0.07f, 4.5f, 9f); }
+        if (_sayLeft <= 0)
+        {
+            _saying = null;
+            if (_live.Count > 0) { var (text, sound) = _live.Dequeue(); _saying = text; Telo.Game.Audio.Sfx.Play(sound); }
+            _sayLeft = _saying is null ? 0 : Mathf.Clamp(_saying.Length * 0.07f, 4.5f, 9f);
+        }
+        // a text from someone (the morning's): one blip however many came in while you slept
+        var last = Sim.State.Texts.Count > 0 ? Sim.State.Texts[^1] : null;
+        if (_textsSeen && last != _lastText && last is { Out: false }) Telo.Game.Audio.Sfx.Play("pip.text");
+        _lastText = last; _textsSeen = true;
     }
 
     public override void Rebuild()

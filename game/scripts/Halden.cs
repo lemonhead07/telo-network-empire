@@ -19,6 +19,9 @@ public partial class GameRoot
     private WorldScreen? _cardScreen;
     private bool _dcWasLit;
 
+    /// <summary>Inside the data centre's walls, under its roof (the background goes quiet and the hall hums: Audio/).</summary>
+    private bool InsideHalden(Vector3 world) => _dc?.Inside(world) == true;
+
     private void BuildHalden()
     {
         if (_planet.SiteById("halden") is not { } flats) return;
@@ -27,6 +30,8 @@ public partial class GameRoot
         _dc.LadderUp.Prompt = () => "Climb the ladder to the roof";
         _dc.LadderUp.HoldSeconds = () => Hold(2);
         _dc.LadderUp.OnUse = () => OnRoof(true);
+        _dc.LadderUp.HoldSound = _dc.LadderDown.HoldSound = () => "step.metal";   // rung by rung
+        _dc.LadderUp.DoneSound = _dc.LadderDown.DoneSound = () => "step.metal";
         _dc.LadderDown.Prompt = () => "Climb back down the ladder";
         _dc.LadderDown.HoldSeconds = () => Hold(2);
         _dc.LadderDown.OnUse = () => OnRoof(false);
@@ -38,7 +43,7 @@ public partial class GameRoot
         _cardView.Opened += () => LeanInto(_cardScreen);
         _cardView.Closed += LeanBack;
         _dc.Card.Prompt = () => "Read the card on the desk";
-        _dc.Card.OnUse = () => _cardView.Open(InterfaceTier.Paper);   // reading it holds you still, as the other screens do (AnyScreenOpen)
+        _dc.Card.OnUse = () => { Telo.Game.Audio.Sfx.Play("paper.page", _dc.Card.GlobalPosition); _cardView.Open(InterfaceTier.Paper); };   // reading it holds you still, as the other screens do (AnyScreenOpen)
         _dcWasLit = ProjectRules.Done(Sim.State, "proj-dc-lit");
         // the routes home glow from the roof at night, once the board is lit: to each homing project's far end
         _dc.BuildRoutes(_planet, _projects.Where(p => p.Key.StartsWith("proj-home-")).Select(p => p.Value.GlobalPosition));

@@ -1,4 +1,5 @@
 using Godot;
+using Telo.Game.Audio;
 using Telo.Sim.Minigames.Install;
 using Telo.Sim.Town;
 
@@ -101,6 +102,9 @@ public partial class InstallSite : Node3D
         _phone.CanUse = () => _job is { CanFinish: true };
         _phone.OnUse = () => { if (_job is { CanFinish: true }) _act?.Invoke(InstallStep.Test, false); };
         _phone.HoldSeconds = () => _job is { CanFinish: true } ? HoldFor(InstallJob.TestMinutes) : 0f;
+        _phone.StartSound = () => "line.hook";   // lift the handset, listen (quiet), and what you hear is the test's result (NoteTest)
+        _phone.HoldSound = () => null;
+        _phone.DoneSound = () => null;
 
         // the job sheet hangs by the door while you work
         var sheetPos = new Vector3(1.25f, f + 1.4f, 3.27f);
@@ -114,7 +118,7 @@ public partial class InstallSite : Node3D
         _sheet = Hotspot(sheetPos, new Vector3(0.4f, 0.5f, 0.2f));
         _sheet.Prompt = SheetPrompt;
         _sheet.CanUse = () => _job is { CanFinish: true };
-        _sheet.OnUse = () => { if (_job is { CanFinish: true }) _signOff?.Invoke(); };
+        _sheet.OnUse = () => { if (_job is { CanFinish: true }) { Sfx.Play("paper.slip", _sheet.GlobalPosition); _signOff?.Invoke(); } };
 
         Sync();
     }
@@ -153,8 +157,39 @@ public partial class InstallSite : Node3D
         Sync();
     }
 
-    public void NoteTest(InstallTestResult r) =>
+    public void NoteTest(InstallTestResult r)
+    {
         _testNote = r.DialTone ? "Dial tone. Clear as a bell." : r.FaultAt is { } s ? $"No dial tone. Something is wrong at the {InstallJob.Def(s).Title.ToLowerInvariant()}: redo it." : "";
+        // what the handset says: dial tone, and the modem on the table answering down the line; or a click and nothing
+        if (r.DialTone)
+        {
+            SoundCue.PlayFor("line.dial", _phone, 1.4);
+            Sfx.PlayAfter(1.5, "line.modem", _phone.GlobalPosition, db: -4);
+        }
+        else Sfx.Play("line.dead", _phone.GlobalPosition);
+        Sfx.PlayAfter(r.DialTone ? 1.45 : 1.2, "line.hook", _phone.GlobalPosition);   // handset back on its cradle
+    }
+
+    // ---- what each step sounds like (EA7) ----------------------------------------------------------
+    /// <summary>The tool at work while E is held on a step (or on this house's twist).</summary>
+    private string ToolFor(Spot s) => s.Twist
+        ? _job?.Twist?.Id switch { "ivy" => "tool.cable", "old-box" => "tool.screw", "wallpaper" => "tool.clip", _ => "work.tick" }
+        : s.Step switch
+        {
+            InstallStep.DropWire => "tool.cable",
+            InstallStep.JunctionBox => "tool.screw",
+            InstallStep.Socket => "tool.drill",
+            InstallStep.Cable => "tool.staple",
+            _ => "work.tick",   // the modem: unboxed and plugged in, heard as it clips home
+        };
+
+    /// <summary>When the step is done: the socket screwed to the wall, the modem's plug clipped home; otherwise the usual click.</summary>
+    private static string DoneFor(Spot s) => s.Twist ? "work.done" : s.Step switch
+    {
+        InstallStep.Socket => "tool.screw",
+        InstallStep.Modem => "tool.clip",
+        _ => "work.done",
+    };
 
     public void Sync()
     {
@@ -244,8 +279,19 @@ public partial class InstallSite : Node3D
         hot.CanUse = () => SpotReady(spot);
         hot.OnUse = () => { if (SpotReady(spot)) _act?.Invoke(step, false); };
         hot.HoldSeconds = () => SpotReady(spot) ? HoldFor(_job!.MinutesFor(step)) : 0f;
+        // the top clip of the drop wire is up the ladder: it rattles against the wall as you start
+        hot.StartSound = () => !twist && step == InstallStep.DropWire && _job is { } j && j.Progress(step) == j.TwistOffset(step) ? "kit.ladder" : null;
+        hot.HoldSound = () => ToolFor(spot);
+        hot.DoneSound = () => DoneFor(spot);
         hot.AltPrompt = () => SpotRushable(spot) ? "Bodge it" : null;
-        hot.OnAlt = () => { if (SpotRushable(spot)) _act?.Invoke(step, true); };
+        hot.OnAlt = () =>
+        {
+            if (!SpotRushable(spot)) return;
+            // the bodge: a thump, and the same tool, rougher
+            Sfx.Play("tool.thump", hot.GlobalPosition);
+            Sfx.PlayAfter(0.12, ToolFor(spot), hot.GlobalPosition, db: 2, pitch: 0.78f);
+            _act?.Invoke(step, true);
+        };
         _spots.Add(spot);
     }
 

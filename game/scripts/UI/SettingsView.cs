@@ -106,7 +106,7 @@ public partial class SettingsView : ModalView
     {
         var r = _rows[i];
         r.Panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
-        r.Panel.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) { _sel = i; Refresh(); } };
+        r.Panel.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) { if (_sel != i) Telo.Game.Audio.Sfx.Play("ui.move"); _sel = i; Refresh(); } };
         var h = new HBoxContainer();
         h.AddThemeConstantOverride("separation", 14);
         r.Panel.AddChild(h);
@@ -179,6 +179,7 @@ public partial class SettingsView : ModalView
 
     private void Change(int d, bool wrap)
     {
+        Telo.Game.Audio.Sfx.Play("ui.select");
         _rows[_sel].Step(d, wrap);
         Changed();
     }
@@ -194,12 +195,12 @@ public partial class SettingsView : ModalView
     {
         switch (key.PhysicalKeycode)
         {
-            case Key.Up or Key.W: _sel = (_sel + _rows.Count - 1) % _rows.Count; Refresh(); return true;
-            case Key.Down or Key.S: _sel = (_sel + 1) % _rows.Count; Refresh(); return true;
+            case Key.Up or Key.W: _sel = (_sel + _rows.Count - 1) % _rows.Count; Refresh(); Telo.Game.Audio.Sfx.Play("ui.move"); return true;
+            case Key.Down or Key.S: _sel = (_sel + 1) % _rows.Count; Refresh(); Telo.Game.Audio.Sfx.Play("ui.move"); return true;
             case Key.Left or Key.A: Change(-1, false); return true;
             case Key.Right or Key.D: Change(+1, false); return true;
             case Key.Enter or Key.KpEnter or Key.Space: Change(+1, true); return true;
-            case Key.Key0 or Key.Kp0 or Key.Backspace: Close(); return true;
+            case Key.Key0 or Key.Kp0 or Key.Backspace: Telo.Game.Audio.Sfx.Play("ui.back"); Close(); return true;
         }
         int n = key.PhysicalKeycode switch
         {
@@ -209,6 +210,7 @@ public partial class SettingsView : ModalView
         };
         if (n < 1 || n > _rows.Count) return false;
         _sel = n - 1; Refresh();
+        Telo.Game.Audio.Sfx.Play("ui.move");
         return true;
     }
 

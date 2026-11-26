@@ -121,9 +121,14 @@ public partial class HowToPlayView : ModalView
 
     private void Turn(int d)
     {
+        int was = _page;
         _page = Math.Clamp(_page + d, 0, Pages.Length - 1);
+        if (_page != was) Telo.Game.Audio.Sfx.Play("paper.page");
         Rebuild();
     }
+
+    /// <summary>Its buttons turn pages (Turn makes the sound) or close the book.</summary>
+    protected override string? ClickSound => null;
 
     public override bool OnKey(InputEventKey key)
     {
@@ -132,7 +137,7 @@ public partial class HowToPlayView : ModalView
             case Key.Left or Key.A or Key.Up or Key.W or Key.Pageup: Turn(-1); return true;
             case Key.Right or Key.D or Key.Down or Key.S or Key.Pagedown or Key.Space: Turn(+1); return true;
             case Key.Enter or Key.KpEnter: if (_page < Pages.Length - 1) Turn(+1); else Close(); return true;
-            case Key.Key0 or Key.Kp0 or Key.Backspace: Close(); return true;
+            case Key.Key0 or Key.Kp0 or Key.Backspace: Telo.Game.Audio.Sfx.Play("ui.back"); Close(); return true;
         }
         int n = key.PhysicalKeycode switch
         {
@@ -141,6 +146,7 @@ public partial class HowToPlayView : ModalView
             _ => 0,
         };
         if (n < 1 || n > Pages.Length) return false;
+        if (_page != n - 1) Telo.Game.Audio.Sfx.Play("paper.page");
         _page = n - 1; Rebuild();
         return true;
     }

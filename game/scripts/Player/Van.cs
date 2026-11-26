@@ -1,4 +1,5 @@
 using Godot;
+using Telo.Game.Audio;
 using Telo.Game.World;
 
 namespace Telo.Game.Player;
@@ -64,8 +65,36 @@ public partial class Van : SphereBody
 
     public void SetDriven(bool driven)
     {
+        if (driven == Driven) { Camera.Current = driven; return; }
         Driven = driven;
         Camera.Current = driven;
+        // the engine (EA7): the starter, then idle fading in; switched off when you get out
+        if (driven)
+        {
+            Sfx.Play("van.start", GlobalPosition + Up);
+            _engine ??= Sfx.Loop("van.engine", this, db: -80);
+            _engineIn = 0.9f;   // the loop comes in once the engine has caught
+        }
+        else
+        {
+            if (_engine is not null) Sfx.Play("van.stop", GlobalPosition + Up);
+            _engine?.Stop(); _engine = null;
+        }
+    }
+
+    private SfxLoop? _engine;
+    private float _engineIn, _lastSpeed;
+
+    /// <summary>Pitch with road speed (idle 1, about 2.6 flat out), a lift while accelerating, louder with throttle; a rumble off-road.</summary>
+    private void Engine(float dt, float throttle)
+    {
+        if (_engine is null) return;
+        if (_engineIn > 0) { _engineIn -= dt; _engine.Db = -80; return; }
+        float accel = (Mathf.Abs(Speed) - Mathf.Abs(_lastSpeed)) / Mathf.Max(dt, 1e-3f);
+        float revs = Mathf.Abs(Speed) / MaxSpeed;
+        float target = 1f + 1.6f * revs + (accel > 0.5f ? 0.18f : 0f) + 0.12f * Mathf.Abs(throttle);
+        _engine.Pitch = Mathf.Lerp(_engine.Pitch, target, Mathf.Min(1f, 4f * dt));
+        _engine.Db = -4f + 4f * Mathf.Abs(throttle) + 2f * revs + (OnRoad ? 0f : 2f);
     }
 
     public override void _PhysicsProcess(double delta)
@@ -78,7 +107,9 @@ public partial class Van : SphereBody
         float target = throttle > 0 ? (OnRoad ? MaxSpeed : OffRoadSpeed) * throttle : ReverseSpeed * throttle;
         if (InWater) target = Mathf.Clamp(target, -WaterSpeed, WaterSpeed);
         float rate = Mathf.Abs(target) < Mathf.Abs(Speed) || Mathf.Sign(target) != Mathf.Sign(Speed) ? Brake : Accel;
+        _lastSpeed = Speed;
         Speed = Mathf.MoveToward(Speed, target, rate * dt);
+        Engine(dt, throttle);
 
         Turn(steer * TurnRate * dt * Mathf.Clamp(Speed / 6f, -1f, 1f));
         MoveOnPlanet(Forward * Speed, delta);

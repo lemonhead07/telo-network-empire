@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Renders every synthesised sound (game/scripts/Audio, EA7) to .wav without Godot. Run: tools/soundreel.sh outdir -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Telo.SoundReel</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../game/scripts/Audio/Synth.cs" />
+    <Compile Include="../../game/scripts/Audio/Sounds*.cs" />
+  </ItemGroup>
+</Project>

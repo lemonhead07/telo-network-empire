@@ -1,4 +1,5 @@
 using Godot;
+using Telo.Game.Audio;
 using Telo.Sim.Net;
 using Telo.Sim.World;
 
@@ -310,40 +311,68 @@ public partial class SwitchboardStation : Node3D
     private void Click(Hot hot)
     {
         var s = Sim.State;
+        var at = SpotAt(hot);
         BoardPosition? At(int row) => row < B.Positions.Count ? B.Positions[row] : null;
         void EmptyHandOn(BoardPosition p)
         {
-            if (p.Loose) { if (SwitchRules.Reseat(s, p.CustomerId)) Tip("reseat"); }
-            else if (p.Jumper >= 0) { if (SwitchRules.Pull(s, p.CustomerId) is not null) Tip("pulled"); }
+            if (p.Loose) { if (SwitchRules.Reseat(s, p.CustomerId)) { Sfx.Play("sw.jumper.in", at); Tip("reseat"); } }
+            else if (p.Jumper >= 0) { Sfx.Play("sw.jumper.out", at); if (SwitchRules.Pull(s, p.CustomerId) is not null) Tip("pulled"); }
         }
+        // a tool off the shelf, or put back
+        void Take(Hand tool) { bool taking = _hand != tool; _hand = taking ? tool : Hand.Empty; _wireFrom = null; Sfx.Play(taking ? "kit.pickup" : "kit.putdown", at, db: -6); }
         switch (hot.Kind)
         {
-            case Spot.Probe: _hand = _hand == Hand.Probe ? Hand.Empty : Hand.Probe; _wireFrom = null; break;
-            case Spot.TestSet: _hand = _hand == Hand.TestSet ? Hand.Empty : Hand.TestSet; _wireFrom = null; break;
-            case Spot.Hook: _hand = _hand == Hand.Wire ? Hand.Empty : Hand.Wire; _wireFrom = null; break;
-            case Spot.DirtyHook: _hand = _hand == Hand.Dirty ? Hand.Empty : Hand.Dirty; _wireFrom = null; break;
+            case Spot.Probe: Take(Hand.Probe); break;
+            case Spot.TestSet: Take(Hand.TestSet); break;
+            case Spot.Hook: Take(Hand.Wire); break;
+            case Spot.DirtyHook: Take(Hand.Dirty); break;
             case Spot.Terminal when At(hot.Index) is { } p:
-                if (_hand == Hand.Probe) { if (SwitchRules.ReadTag(s, p.CustomerId)) Tip("probe"); }
-                else if (_hand == Hand.Wire) _wireFrom = p.CustomerId;
-                else if (_hand == Hand.Dirty) { if (SwitchRules.HotWire(s, p.CustomerId)) { _hand = Hand.Empty; Tip("hotwire"); } }
+                if (_hand == Hand.Probe) { Sfx.Play("sw.probe", at); if (SwitchRules.ReadTag(s, p.CustomerId)) Tip("probe"); }
+                else if (_hand == Hand.Wire) { _wireFrom = p.CustomerId; Sfx.Play("sw.jumper.in", at, db: -4); }
+                else if (_hand == Hand.Dirty) { if (SwitchRules.HotWire(s, p.CustomerId)) { Sfx.Play("sw.jumper.in", at, pitch: 0.85f); _hand = Hand.Empty; Tip("hotwire"); } }
                 else if (_hand == Hand.Empty) EmptyHandOn(p);
                 break;
             case Spot.Port:
-                if (_hand == Hand.TestSet) { if (!SwitchRules.TestPort(s, hot.Index)) Tip("badport"); }
+                if (_hand == Hand.TestSet) { bool good = SwitchRules.TestPort(s, hot.Index); Sfx.Play(good ? "sw.test.ok" : "sw.test.bad", at); if (!good) Tip("badport"); }
                 else if (_hand == Hand.Wire && _wireFrom is not null)
                 {
+                    Sfx.Play("sw.jumper.in", at);
                     if (SwitchRules.Jumper(s, _wireFrom, hot.Index) is not null) Tip("pulled");
                     _hand = Hand.Empty; _wireFrom = null;
                 }
                 else if (_hand == Hand.Empty && SwitchRules.OnPort(s, hot.Index) is { } on) EmptyHandOn(on);
                 break;
             case Spot.Switch:
-                _lastThrow = Sim.ThrowSwitch().ToDictionary(r => r.CustomerId, r => r.Result);
+                var tried = Sim.ThrowSwitch();
+                _lastThrow = tried.ToDictionary(r => r.CustomerId, r => r.Result);
                 _flash = 4;
+                ThrowSounds(at, tried);
                 if (_lastThrow.Count > 0) Tip(_lastThrow.Values.All(r => r == ThrowResult.Live) ? "thrown" : "thrownbad");
                 break;
-            case Spot.Panel: SwitchRules.AddPanel(s); break;
+            case Spot.Panel: if (SwitchRules.AddPanel(s)) { Sfx.Play("tool.screw", at); Sfx.PlayAfter(0.5, "tool.screw", at); } break;
         }
+    }
+
+    /// <summary>Where a spot on the board is in the world (its sounds come from there).</summary>
+    private Vector3 SpotAt(Hot hot) => ToGlobal(new Vector3(hot.Area.GetCenter().X, hot.Area.GetCenter().Y, Face));
+
+    /// <summary>
+    /// The big switch: a clunk, then a relay clicking over for each new line as it's tried, from its port; a crossed line
+    /// murmurs, a dead one clicks faintly into nothing; if any came up live, you're paid.
+    /// </summary>
+    private void ThrowSounds(Vector3 at, List<(string CustomerId, ThrowResult Result)> tried)
+    {
+        Sfx.Play("sw.throw", at);
+        for (int i = 0; i < tried.Count; i++)
+        {
+            var (id, result) = tried[i];
+            double when = 0.35 + i * 0.16;
+            var port = SwitchRules.Pos(Sim.State, id) is { Jumper: >= 0 } p ? ToGlobal(PortAt(p.Jumper)) : at;
+            Sfx.PlayAfter(when, "sw.relay", port);
+            if (result == ThrowResult.Crossed) Sfx.PlayAfter(when + 0.1, "line.crossed", port);
+            else if (result == ThrowResult.Dead) Sfx.PlayAfter(when + 0.1, "line.dead", port, db: -8);
+        }
+        if (tried.Any(t => t.Result == ThrowResult.Live)) SoundCue.Coins(at, after: 0.6 + tried.Count * 0.16);   // a line live: the modem and the first month paid
     }
 
     private string HandText() => _hand switch

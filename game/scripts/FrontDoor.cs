@@ -137,12 +137,13 @@ public partial class GameRoot
         {
             bool ok = SaveSlots.Write(slot, Sim.State);
             _pause.Back();
+            if (!ok) Telo.Game.Audio.Sfx.Play("ui.error");
             _pause.Say(ok ? $"Saved in {SaveSlots.Name(slot)}." : "Couldn't write that slot.");
         })).Append(new MenuView.Item("Back", () => _pause.Back())).ToList());
 
     private MenuView.Page LoadPage(MenuView menu) => new("LOAD", menu == _pause ? "Pick a saved game. The one you're playing isn't saved by this." : "Pick a saved game.",
         SaveSlots.All.Select(slot => SaveSlots.Read(slot) is { } info
-                ? new MenuView.Item($"{SaveSlots.Name(slot)}: {Describe(info)}", () => LoadSlot(slot, menu.Say))
+                ? new MenuView.Item($"{SaveSlots.Name(slot)}: {Describe(info)}", () => LoadSlot(slot, why => { Telo.Game.Audio.Sfx.Play("ui.error"); menu.Say(why); }))
                 : new MenuView.Item($"{SaveSlots.Name(slot)}: empty", null, false))
             .Append(new MenuView.Item("Back", () => menu.Back())).ToList());
 
@@ -258,7 +259,7 @@ public partial class GameRoot
 
     public void Load()
     {
-        if (SaveSlots.Newest() is { } newest) LoadSlot(newest.Slot, _pip.Say);
+        if (SaveSlots.Newest() is { } newest) LoadSlot(newest.Slot, why => _pip.Say(why, "ui.error"));
     }
 
     /// <summary>

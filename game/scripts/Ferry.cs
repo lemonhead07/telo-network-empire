@@ -182,6 +182,7 @@ public partial class GameRoot
         var to = _quayViews.First(v => v.Crossing == from.Crossing && v.Quay == from.Other);
         bool van = VanOnSlip(from);
         if (_van.Driven) ExitVan();
+        Telo.Game.Audio.Sfx.Play("ferry.horn", from.Boat.GlobalPosition);   // all aboard (EA7)
         await Fade(1f, 0.6f);
         if (Ferries.Sail(Sim, _planet, from.Crossing))
         {
@@ -191,6 +192,7 @@ public partial class GameRoot
             _player.Camera.Rotation = Vector3.Zero;
             for (int i = 0; i < 8; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
             RefreshIdleScreens();
+            Telo.Game.Audio.Sfx.Play("ferry.horn", to.Boat.GlobalPosition, db: -4);   // tied up at the other side
         }
         await Fade(0f, 0.9f);
         _sailing = false;

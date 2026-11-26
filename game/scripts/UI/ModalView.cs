@@ -85,7 +85,7 @@ public abstract partial class ModalView : Control
 
     public override void _UnhandledInput(InputEvent e)
     {
-        if (IsOpen && !InWorld && e.IsActionPressed("cancel")) { Close(); GetViewport().SetInputAsHandled(); }
+        if (IsOpen && !InWorld && e.IsActionPressed("cancel")) { Telo.Game.Audio.Sfx.Play("ui.back"); Close(); GetViewport().SetInputAsHandled(); }
     }
 
     public abstract void Rebuild();
@@ -107,13 +107,18 @@ public abstract partial class ModalView : Control
         return l;
     }
 
-    protected Button Btn(Container parent, string text, Action onPress, bool enabled = true)
+    /// <summary>What a button sounds like when it's pressed (EA7): a page on paper, a soft beep on a screen. Null: the view makes its own.</summary>
+    protected virtual string? ClickSound => Tier == InterfaceTier.Paper ? "paper.page" : "ui.select";
+
+    /// <param name="sound">This button's own sound instead of <see cref="ClickSound"/>.</param>
+    protected Button Btn(Container parent, string text, Action onPress, bool enabled = true, string? sound = null)
     {
         var b = new Button { Text = text, Disabled = !enabled };
+        if ((sound ?? ClickSound) is { } click) b.Pressed += () => Telo.Game.Audio.Sfx.Play(click);
         b.Pressed += onPress;
         parent.AddChild(b);
         return b;
     }
 
-    protected Button CloseButton() => Btn(Footer, InWorld ? "Step back [Esc]" : "Close [Esc]", Close, IsOpen);
+    protected Button CloseButton() => Btn(Footer, InWorld ? "Step back [Esc]" : "Close [Esc]", Close, IsOpen, sound: "ui.back");
 }

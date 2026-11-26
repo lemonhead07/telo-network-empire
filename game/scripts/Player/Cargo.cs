@@ -1,4 +1,5 @@
 using Godot;
+using Telo.Game.Audio;
 using Telo.Game.World;
 using Telo.Sim.Town;
 
@@ -135,6 +136,11 @@ public sealed class Cargo
     public void PickUp(Carryable item)
     {
         if (Held is not null || item.Where == Carryable.Place.Held) return;
+        if (item.IsInsideTree())
+        {
+            Sfx.Play("kit.pickup", item.GlobalPosition);
+            if (item.Tool is Tools.Ladder or Tools.Toolbox) Sfx.Play(item.Tool == Tools.Ladder ? "kit.ladder" : "kit.toolbox", item.GlobalPosition);
+        }
         Move(item, _player, item.HeldPose, Carryable.Place.Held);
         Held = item;
         _player.Pace = item.TwoHanded ? TwoHandedPace : 1f;
@@ -149,7 +155,14 @@ public sealed class Cargo
         spot.Origin += _player.Forward * 0.9f;
         Move(item, _world, spot * item.GroundPose, Carryable.Place.Ground);
         Release();
+        if (item.IsInsideTree()) Sfx.Play(SetDownSound(item.Tool), item.GlobalPosition);
     }
+
+    /// <summary>Kit set down: the drum's (and a pole's) wooden thump, the crate, the ladder's rattle, or just something put down.</summary>
+    private static string SetDownSound(Tools tool) => tool switch
+    {
+        Tools.CableDrum or Tools.Pole => "kit.drum", Tools.Parts => "kit.crate", Tools.Ladder => "kit.ladder", _ => "kit.putdown",
+    };
 
     public void Stow(Carryable item)
     {
@@ -158,7 +171,13 @@ public sealed class Cargo
         Refresh();
     }
 
-    public void StowHeld() { if (Held is { } h) Stow(h); }
+    /// <param name="sound">The player putting it back on the van (not PIP tidying up after you fell asleep).</param>
+    public void StowHeld(bool sound = false)
+    {
+        if (Held is not { } h) return;
+        Stow(h);
+        if (sound && h.IsInsideTree()) Sfx.Play("kit.putdown", h.GlobalPosition);
+    }
 
     private void Release() { Held = null; _player.Pace = 1f; }
 
