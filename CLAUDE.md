@@ -45,6 +45,7 @@ blender -b --factory-startup --python tools/models/dc.py -- all     # Data Centr
 blender -b --factory-startup --python tools/models/lineup.py -- site. --out sites  # contact sheet of models by id prefix → docs/img/props/lineup-sites.png
 godot --path game res://scenes/Showroom.tscn [-- --shot=/abs/x.png]  # every model on a lawn in the real renderer (orbit with the mouse)
 xvfb-run -a godot --path game -- --from=act6 --shots=look --shot=/abs/x.png [--graphics=low] [--look=town,aerial]  # the outdoors in its light, frames per second per view (LOOK1)
+xvfb-run -a godot --path game -- --from=act6 --shots=roads --shot=/abs/x.png    # straight down on every place a road meets a settlement (docs/TOWNS_AND_ROADS.md)
 tools/soundreel.sh /abs/dir [line|foley|ambience|sw.]           # every synthesised sound to .wav + spectrograms + reel.wav (no Godot needed)
 ```
 
