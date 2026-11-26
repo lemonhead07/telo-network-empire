@@ -30,7 +30,9 @@ Because a road is a straight line between centres, where it arrives has nothing 
 | Eastgate to the quay | Eastgate | east 33, south 58 | High Street (south 8) | **~50 m, behind the back fences** (on purpose, to miss Kestrel Point) |
 | Farland to its quay | Farland | east −8, south −69 | Harbour Lane's top (−5, −56) | ~13 m |
 
-Pictures: `--shots=roads` (below) looks straight down on each of these.
+![Roads today, from above](img/roads-today.jpg)
+
+*From above (`--shots=roads`): top row, the town (three roads stop in the grass south of Main Street's gardens), Kettle Cross (its road stops north of the village), the town's north-west corner (two roads stop behind the north row); bottom row, Wrenfold (its road stops south-east of the gardens), the town's south side again, and Millbrook, where the farm road meets Mill Lane as it should.*
 
 Other things the straight lines cause:
 - **Steep roads.** The Highmoor road climbs at **22.6%** in places (a van would struggle; a real road would wind). The others are 3–9%.
