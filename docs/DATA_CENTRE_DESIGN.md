@@ -55,7 +55,7 @@ This fits the game's core idea: **the job changes as you play.** In Act 0 you wi
 
 ## 3. The pin board: lay the network out yourself (D47)
 
-A big cork board in the Planning Room with a hand-drawn map of everything you own on the planet. You lean in, the same way you lean into the switchboard (D26), and the mouse is your hand.
+A big cork board in the Planning Room with a hand-drawn map of everything you own on the planet. You work it standing at it, the crosshair as your hand (D51; it was a lean-in like the switchboard, D26).
 
 ### What's on it
 - **Pins = sites.** Every building with your equipment in it gets a pin: the exchange at 1 Main Street, the Eastgate cabinet, the cold store, Kestrel Point, the Millbrook hut, the Farland exchanges, and the new data centre (a big brass pin in the middle). Pins appear as projects are built. A pin's colour shows its kind: copper exchange, cabinet, landing, hosting.
@@ -80,7 +80,7 @@ A big cork board in the Planning Room with a hand-drawn map of everything you ow
 
 ## 4. The rack (D48)
 
-A lean-in station like `SwitchboardStation`: you stand in front of a real 42-unit rack, the mouse is your hand, and the kit is on a trolley beside you. It is **easy on purpose**. There are five kinds of box, three colours of cable, and every port is labelled in plain words ("TO MILLBROOK", "CUSTOMER 3", "POWER A"). There is no configuration text, no addresses and no commands (CLAUDE.md: crime and tech stay abstract).
+A station like `SwitchboardStation`: you stand in front of a real 42-unit rack, the crosshair is your hand (D51, no lean-in), and the kit is on a trolley beside you. It is **easy on purpose**. There are five kinds of box, three colours of cable, and every port is labelled in plain words ("TO MILLBROOK", "CUSTOMER 3", "POWER A"). There is no configuration text, no addresses and no commands (CLAUDE.md: crime and tech stay abstract).
 
 ### The boxes (bought at the Yard, carried on the trolley)
 | Box | Height | What it does in the game |
@@ -226,7 +226,7 @@ The hiring itself works the D25 way: you hand Dana her first work order in perso
 | Already built | How the Data Centre uses it |
 |---|---|
 | Projects (`ProjectRules`, `projects.json`) | Every build in §6 is a project; homing projects get a link and two rack visits |
-| The switchboard station (D26) | The rack station is its cousin: lean in, the mouse is your hand, leads are meshes, lamps show state |
+| The switchboard station (D26) | The rack station is its cousin: the crosshair is your hand (D51), leads are meshes, lamps show state |
 | `ThrowSwitch` (live/dead/crossed) | Bring It Up (§5a) uses the same three outcomes |
 | Tone probe, reseat, smudged tags | Test plug, reseat, wrong labels in 5a and 5b |
 | The Board / lines in, line cards | String capacity and the evening sag (§3) |
@@ -243,7 +243,7 @@ The hiring itself works the D25 way: you hand Dana her first work order in perso
 
 - **No real networking.** No addresses, protocols, commands or config screens. Ports have plain names; a link is up or not; a cable is copper, fibre, microwave or ocean.
 - **No dashboards.** The board is a physical object; the lights are bulbs. Screens arrive with the Sight branch in Act 6.
-- **No floating menus.** The board, the rack, the clip rail and the load dial are all objects you lean into.
+- **No floating menus.** The board, the rack, the clip rail and the load dial are all objects you work under the crosshair, never leaned into (D51).
 - **No failure screens.** Every mistake costs time, money or satisfaction.
 - **No mobile.** Not even one mast before `proj-dc-lit`. The leaflet in the car park is the only phone.
 - **Placeholders first** (D15): labelled boxes for the hall, rooms, racks and board. Models come later (props listed in §12).

@@ -48,6 +48,7 @@ Every session is **one** of these two. A dev session also names its **lane**, ge
 - **Done when:** what the screenshot or play-through shows, plus any rule a test should pin.
 - **Not in scope:** the tempting next thing, named so it stays out.
 - **Props:** every visible thing it adds, as a prop id with a brief (size, pivot, anchors, states, three takes, one charm detail), shipped as a labelled box. See `docs/MODELS_AND_VARIETY.md`.
+- **In the world (D51):** how the player sees and works it under the crosshair while free to walk and look; which object shows its state; which thing delivers any message. No lean-in, free mouse, screen overlay or floating label (`docs/IN_WORLD.md`).
 - **Size:** fits one session. If not, split it.
 
 ### Token-saving habits (both modes)
