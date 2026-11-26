@@ -44,6 +44,7 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 ## Shaped
 *(talked through, not ready to build; link to TECH_TREE / HANDOFF sections where relevant)*
 
+- 2026-11-26 · **Launch, marketing and keeping it going** shaped into `docs/LAUNCH.md` (D52–D55, proposed): what's left before early access, three launch plans (recommended: Next Fest 22 Feb – 1 Mar 2027, early access 11 Mar), the owner's Steamworks jobs, who the game is for and where to post, a weekly clip routine, Ko-fi and store-page text ready to paste (`docs/marketing/`), and what keeps it going after launch. New items MK1, MK2, DEMO1, LK1 in `BUILD_PLAN.md`. Owner questions Q1–Q5 in its §9.
 - 2026-11-26 · **Everything in the world, under the crosshair** (D51) shaped into `docs/IN_WORLD.md`: the seven-line rule, a review of every screen, owner questions Q1–Q4, items IW1–IW4 in `BUILD_PLAN.md`. The owner will add gameplay detail for story events (IW4) later.
 - 2026-11-15 · **Tech tree & hand-off ladder** shaped into `docs/TECH_TREE.md` (8 branches × 4 tiers, 96 tasks, 12 gameplay mechanics). Open questions in its §6.
 - 2026-11-15 · **Model requests and job variety** shaped into `docs/MODELS_AND_VARIETY.md` (D30–D33). Switchboard twists (mouse nest, tag in someone else's hand, empty hook, blown lamp, caller mid-jumper) wait for the full kit model. Other families to shape later in the same form: pole line, odd jobs, catalogue products.

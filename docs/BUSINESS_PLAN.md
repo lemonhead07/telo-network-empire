@@ -2,6 +2,8 @@
 
 *Not financial or legal advice. Figures are rough industry rules of thumb as of late 2026. Check the current Steamworks terms before relying on any number.*
 
+> **2026-11-26:** the launch plan, dates (Steam Next Fest February 2027, early access March 2027, proposed), Ko-fi set-up and marketing routine now live in `docs/LAUNCH.md`; its §8 updates the ideas below and §9 asks whether early access should be $14.99 rather than $19.99. The timeline in §5 here is history.
+
 ## 1. Product
 
 | | |
