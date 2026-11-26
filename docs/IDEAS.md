@@ -44,6 +44,7 @@ The parking lot. Dev sessions **add** one-liners to the Inbox and never build fr
 ## Shaped
 *(talked through, not ready to build; link to TECH_TREE / HANDOFF sections where relevant)*
 
+- 2026-11-26 · **Polished before anything goes out** shaped into `docs/POLISH.md` (D56–D58): the bar (looks finished; doing something is doing something), the nine verbs every project step fits, today's bare holds and unfinished places, and items LOOK1–2, ROOM1–2, HO1–4 in `BUILD_PLAN.md`, run on both lanes at once. The parked work points on `claude/world-building-system-fmjwd3` are HO1's starting point.
 - 2026-11-26 · **Launch, marketing and keeping it going** shaped into `docs/LAUNCH.md` (D52–D55, proposed): what's left before early access, three launch plans (recommended: Next Fest 22 Feb – 1 Mar 2027, early access 11 Mar), the owner's Steamworks jobs, who the game is for and where to post, a weekly clip routine, Ko-fi and store-page text ready to paste (`docs/marketing/`), and what keeps it going after launch. New items MK1, MK2, DEMO1, LK1 in `BUILD_PLAN.md`. Owner questions Q1–Q5 in its §9.
 - 2026-11-26 · **Everything in the world, under the crosshair** (D51) shaped into `docs/IN_WORLD.md`: the seven-line rule, a review of every screen, owner questions Q1–Q4, items IW1–IW4 in `BUILD_PLAN.md`. The owner will add gameplay detail for story events (IW4) later.
 - 2026-11-15 · **Tech tree & hand-off ladder** shaped into `docs/TECH_TREE.md` (8 branches × 4 tiers, 96 tasks, 12 gameplay mechanics). Open questions in its §6.

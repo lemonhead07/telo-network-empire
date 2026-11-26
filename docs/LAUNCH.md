@@ -1,6 +1,6 @@
 # Launch, Marketing and Keeping It Going
 
-*Idea session, 2026-11-26. Decisions D52–D55 (proposed, waiting on the owner). Ready-to-paste text: `docs/marketing/KOFI.md` (the Ko-fi page) and `docs/marketing/STEAM_PAGE.md` (the store page). Money background: `docs/BUSINESS_PLAN.md`. Dates checked against Valve's published 2027 calendar on 2026-11-26; check them again in Steamworks before relying on them.*
+*Idea session, 2026-11-26. Decisions: D52 plan B (decided by the owner), D53–D55 (proposed), D56–D58 polish first (decided; the bar is in `docs/POLISH.md`). Ready-to-paste text: `docs/marketing/KOFI.md` (the Ko-fi page) and `docs/marketing/STEAM_PAGE.md` (the store page). Money background: `docs/BUSINESS_PLAN.md`. Dates checked against Valve's published 2027 calendar on 2026-11-26; check them again in Steamworks before relying on them.*
 
 ## 1. Where we are
 
@@ -10,15 +10,24 @@ The whole of early access plays start to finish: Acts 0–5, about 26 hours for 
 
 ### In the game (the launch path in `BUILD_PLAN.md`)
 
-| # | Item | What it fixes | Size |
+The owner wants it **polished before anything goes out** (D56): it should look finished, and every task should be real hands-on work (`docs/POLISH.md`). Two lanes work at once:
+
+| Lane | Item | What it fixes | Size |
 |---|---|---|---|
-| 1 | **MK1** store pictures (new) | Steam needs capsule art and at least 5 screenshots before the page can go up, and today's pictures are test shots (flat midday light, debug text) | 1 session |
-| 2 | **EA7** sound | A silent game feels unfinished in the first ten seconds | 1 session |
-| 3 | **IW1** screens under the crosshair | The new feel (D51): no leaning in, no freezing | 1–2 sessions |
-| 4 | **Owner playtest** + fix pass | The bot plays perfectly; people don't. One evening of Acts 0–2 | 1 evening + 1 session |
-| 5 | **LK1** launch kit (new) | Saves in a plain `TELO` folder (Steam Cloud can sync it), "where are my saves and logs" for bug reports, the credits as a 1983 phone directory | 1 session |
-| 6 | **DEMO1** the demo (new) | Steam Next Fest needs a free demo: Act 0, ending on a card; the save carries into the full game | 1 session |
-| 7 | **MK2** clips and trailer (new) | 20–40 second clips for posting and a 60–90 second trailer, recorded from the real game | 1–2 sessions |
+| Geometry | **LOOK1** light and land | Flat midday light; hills that are big flat triangles | 1 session |
+| Geometry | **MK1** store pictures | Steam needs capsules and at least 5 screenshots; today's are test shots | 1 session |
+| Geometry | **LOOK2** surfaces | No textures anywhere: tiles, brick, asphalt, carpet, concrete | 1–2 sessions |
+| Geometry | **ROOM1** rooms that are lived in | Bare grey data-centre rooms, placeholder furniture in houses | 1 session |
+| Geometry | **ROOM2** the last boxes | Sol's, the farm, the Yard, the ferry, the title letter, staff | 1 session |
+| Geometry | **MK2** clips and trailer | Something to post, and a trailer for the page | 1–2 sessions |
+| Gameplay | **EA7** sound | A silent game feels unfinished in ten seconds | 1 session |
+| Gameplay | **HO1** no more progress bars | ~250 bare holds across 32 projects | 1 session |
+| Gameplay | **IW1** screens under the crosshair | The new feel (D51) | 1–2 sessions |
+| Gameplay | **HO2** verbs you can feel, Acts 0–1 | Carry, run, connect, test, climb, hand over, wait | 1–2 sessions |
+| Gameplay | **Owner playtest** + fix pass | The bot plays perfectly; people don't | 1 evening + 1 session |
+| Gameplay | **HO4** no jobs at the door | Repairs and the shop and farm odd jobs | 1 session |
+| Gameplay | **LK1** launch kit, **DEMO1** the demo | Save folder, credits, bug reports; the Act 0 demo | 2 sessions |
+| Gameplay | **HO3** verbs for Acts 2–5 | The last 25 projects; what's left by March ships as an update | 1–2 sessions |
 
 Small things for the fix pass: "Sol's Electronics's" on the "what next" line (engineering backlog), a confirm before a save overwrites a slot, PIP's bubble covering the switchboard.
 
@@ -47,24 +56,28 @@ Steam Next Fest is the biggest free way for a small game to be seen: a week wher
 | Good | Fastest money and feedback | Seven weeks later than A, keeps the one free festival, still in the first quarter | Models, IW2, crews (EA4) and the data-centre games (DC3–DC8) could all be in |
 | Bad | Launching to nobody; Steam shows new games more when they sell well in the first days, and that moment only comes once | A tight run of sessions: sound, IW1, playtest, demo and trailer by early February | Four months later; others in the genre get there first |
 
-**Recommendation: B (D52).** It's the race-to-market choice that doesn't throw away the launch. A buys seven weeks and costs the festival forever; C buys polish the owner has said can wait.
+**Chosen: B (D52, owner, 2026-11-26), keeping 11 March, with the polish bar (D56).** It's the race-to-market choice that doesn't throw away the launch: A buys seven weeks and costs the festival forever; C costs four months.
 
-## 4. The calendar for B
+## 4. The calendar (plan B, chosen 2026-11-26)
 
-| Week of | Claude (sessions) | Owner |
-|---|---|---|
-| 30 Nov | **MK1** store pictures | Steamworks account and fee; Ko-fi page and first post |
-| 7 Dec | **EA7** sound | Store page filled in; **submit for review by Fri 11 Dec** (Valve takes a few working days and slows down over the holidays) |
-| 14 Dec | **IW1** | Page goes live as "Coming soon". Post it everywhere (§6) |
-| 21 Dec | IW1 continued, if needed | **Playtest:** one evening, Acts 0–2, with a notebook (what confused you, when you got bored) |
-| 4 Jan | Fix pass from the playtest | **Register for Next Fest by Sun 10 Jan, 11:59pm Pacific** |
-| 11 Jan | **LK1** + **DEMO1** | Make the demo's app in Steamworks |
-| 25 Jan | **MK2** clips and trailer | Upload the demo; **submit it for review by Mon 1 Feb** (Valve asks for three weeks) |
-| 8 Feb | Fixes from demo feedback | Next Fest materials due **Mon 8 Feb**; trailer on the store page |
-| **22 Feb** | Small fixes only | **Next Fest** (to 1 Mar): answer every forum post, post a clip a day |
-| 1 Mar | The launch build | Set the release date; submit the full build for review |
-| **Thu 11 Mar** | Watch the forums; fix what breaks | **Early access.** A 10% launch discount for the week, which ends as the Spring Sale starts (18–25 Mar) |
-| Apr–Jun | A named free update every 4–6 weeks (§8) | One post per update |
+About one session a week in each lane. Pictures and the demo have hard dates; everything else can slide a week.
+
+| Week of | Geometry lane | Gameplay lane | Owner |
+|---|---|---|---|
+| 30 Nov | **LOOK1** light and land | **EA7** sound | Steamworks account and fee; Ko-fi page and first post |
+| 7 Dec | **MK1** store pictures | **HO1** no more progress bars | Fill in the store page; **submit it for review by Fri 11 Dec** (Valve takes a few working days and slows over the holidays) |
+| 14 Dec | **LOOK2** surfaces | **IW1** | The page goes live as "Coming soon". Post it everywhere (§6) |
+| 21 Dec | **ROOM1** rooms | **HO2** verbs, Acts 0–1 | |
+| 28 Dec | | | **Playtest:** one evening, Acts 0–2, with a notebook (what confused you, when you got bored, what felt fake) |
+| 4 Jan | **ROOM2** the last boxes | Fix pass from the playtest, then **HO4** | **Register for Next Fest by Sun 10 Jan, 11:59pm Pacific**; swap in new pictures on the page |
+| 11 Jan | spare | **LK1** + **DEMO1** | Make the demo's app in Steamworks |
+| 18 Jan | **MK2** clips | Demo fixes | |
+| 25 Jan | **MK2** trailer | **HO3** verbs, Acts 2–5 | Upload the demo; **submit it for review by Mon 1 Feb** (Valve asks for three weeks) |
+| 8 Feb | | **HO3** continued | Next Fest materials and the trailer due **Mon 8 Feb** |
+| **22 Feb** | | Small fixes only | **Next Fest** (to 1 Mar): answer every forum post, post a clip a day |
+| 1 Mar | | The launch build; fixes from Next Fest | Set the release date; submit the full build for review |
+| **Thu 11 Mar** | | Watch the forums; fix what breaks | **Early access.** A 10% launch discount for the week, which ends as the Spring Sale starts (18–25 Mar) |
+| Apr–Jun | | A named free update every 4–6 weeks (§8), starting with whatever HO3 didn't reach | One post per update |
 
 ## 5. Steam settings worth knowing
 
@@ -136,7 +149,7 @@ Most small games sell the bulk of their copies at launch and in sales. What keep
 
 ## 9. Questions for the owner
 
-- **Q1** Launch plan: A, **B** or C (§3)?
+- ~~**Q1** Launch plan~~: **B, keeping 11 March** (owner, 2026-11-26), polished first (D56).
 - **Q2** Price: **$14.99** or $19.99 in early access?
 - **Q3** Ko-fi: are the three tiers and the "nothing for sale before Steam" rule right (§7)? Can you run a monthly members' post?
 - **Q4** How it's made: say it plainly on Steam and Ko-fi (**recommended, D54**), or only where Steam requires it?

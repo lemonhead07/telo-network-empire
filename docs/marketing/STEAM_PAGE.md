@@ -67,7 +67,7 @@ Steam's content survey asks whether players will see or hear content made with A
 
 > TELO is made by one person working with an AI assistant (Claude, by Anthropic). The AI wrote the game's code and its in-game text, and wrote the scripts that build its 3D models in Blender; the developer decides what goes in. No AI image generator was used, and no AI runs while you play.
 
-*(All true on 2026-11-26: every model is built by a script in `tools/models/`, and `game/assets` holds no images. Keep it true: if that changes, change this.)*
+*(True on 2026-11-26: every model is built by a script in `tools/models/`, and the surface textures LOOK2 adds are made by a script too (`tools/textures/`). Keep it true: if anything is ever made another way, change this.)*
 
 ## Content survey notes
 
