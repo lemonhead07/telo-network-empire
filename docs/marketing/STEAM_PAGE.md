@@ -51,7 +51,7 @@
 > More of the planet and its history (mobile masts and beyond), more staff to hand work to, more variety in every job, real models where some buildings are still simple shapes, translations, and controller support for Steam Deck.
 
 **What is the state of the early-access version?**
-> Acts 0 to 5 are complete and play start to finish (20 to 30 hours). Keyboard and mouse, English only. Some buildings and rooms use simple placeholder shapes. Saves carry over between updates.
+> It's an early, alpha-stage build. Acts 0 to 5 are complete and play start to finish (20 to 30 hours). Keyboard and mouse, English only. Expect rough edges: the look, the models and the variety of jobs will keep improving in updates. Saves carry over between updates.
 
 **Will the price change?**
 > Yes: it's $19.99 in early access and will go up at 1.0. Buying in early access is the cheapest way in.
@@ -65,13 +65,15 @@ Simulation, Management, Automation, First-Person, Economy, Open World, Building,
 
 *(Steam's tag list changes; pick the nearest it offers.)*
 
-## AI disclosure (D54)
+## AI disclosure (D54: said only here, where Steam requires it)
 
-Steam's content survey asks whether players will see or hear content made with AI. Answer **yes, pre-generated**, with something like:
+The owner's choice (2026-11-26): say how it's made only where it's required. That's this survey: nowhere else on the store page, Ko-fi or social posts. Steam's content survey asks whether players will see or hear content made with AI. Answer **yes, pre-generated**, with something like:
 
-> TELO is made by one person working with an AI assistant (Claude, by Anthropic). The AI wrote the game's code and its in-game text, and wrote the scripts that build its 3D models in Blender; the developer decides what goes in. No AI image generator was used, and no AI runs while you play.
+> TELO is made by one person working with AI tools. AI helped write the game's code and its in-game text and the scripts that build its 3D models, and some video in the trailer and clips is AI-assisted; the developer decides what goes in. No AI runs while you play.
 
-*(True on 2026-11-26: every model is built by a script in `tools/models/`, and the surface textures LOOK2 adds are made by a script too (`tools/textures/`). Keep it true: if anything is ever made another way, change this.)*
+*(Keep it true. The video line is there because the owner plans to mix video content; delete it if the trailer and clips end up being gameplay footage only. Today every model is built by a script in `tools/models/`, and LOOK2's textures will be too (`tools/textures/`). If anything else is ever made with an AI tool, add it here.)*
+
+*Mixed video, one rule:* AI-made shots are fine for mood, titles and transitions, but anything that looks like gameplay must be the real game. Steam asks that store screenshots show the game itself, and players who feel misled by a trailer refund and review accordingly.
 
 ## Content survey notes
 
