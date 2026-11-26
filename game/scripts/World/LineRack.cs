@@ -67,8 +67,12 @@ public partial class LineRack : Node3D
         Show(0, 0, "");
     }
 
+    /// <summary>Where the next empty slot is (the last slot once the rack is full), in the rack's space.</summary>
+    public Vector3 NextSlotAt { get; private set; } = SlotAt(0);
+
     public void Show(int lines, int inUse, string tally)
     {
+        NextSlotAt = SlotAt(Mathf.Clamp(lines, 0, Sockets - 1));
         for (int i = 0; i < Sockets; i++)
         {
             bool fitted = i < lines, busy = i < inUse;

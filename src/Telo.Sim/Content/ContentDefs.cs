@@ -231,6 +231,11 @@ public sealed record ProjectStepDef
     public int WaitDays { get; init; }
     /// <summary>What you're waiting for, in words.</summary>
     public string WaitText { get; init; } = "";
+    /// <summary>
+    /// Looks only (HO1): which stage of the site's model this step builds and is worked at (its <c>stage-n</c> parts and
+    /// <c>wp-sn-…</c> points); unset means the step's own index, -1 none (a wait, a word with someone). No rule reads it.
+    /// </summary>
+    public int? Stage { get; init; }
 }
 
 /// <summary>What finishing a project changes.</summary>

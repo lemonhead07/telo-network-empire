@@ -100,6 +100,7 @@ public partial class FirstPersonController : SphereBody
         if (IsFrozen())
         {
             if (!Flying) MoveOnPlanet(Vector3.Zero, delta);
+            _holding?.OnHold?.Invoke(0); _holding = null; _held = 0;
             Focus = null; HoldProgress = 0;
             return;
         }
@@ -129,14 +130,15 @@ public partial class FirstPersonController : SphereBody
         // hold E to work: the job is done when the hold completes; keep holding to carry straight on
         if (Focus is { } f && Input.IsActionPressed("interact") && f.CanUse() && f.HoldSeconds() is var need and > 0)
         {
-            if (f != _holding) { _holding = f; _held = 0; _workIn = WorkSound(f.StartSound, null, f); }
+            if (f != _holding) { _holding?.OnHold?.Invoke(0); _holding = f; _held = 0; _workIn = WorkSound(f.StartSound, null, f); }
             _workIn -= (float)delta;
             if (_workIn <= 0) _workIn = WorkSound(f.HoldSound, "work.tick", f);
             _held += (float)delta;
             HoldProgress = Mathf.Clamp(_held / need, 0, 1);
+            f.OnHold?.Invoke(HoldProgress);   // the work shows on the thing (WorkPoints: the piece turns, sinks, slides home)
             if (_held >= need) { _held = 0; HoldProgress = 0; WorkSound(f.DoneSound, "work.done", f); _workIn = 0.35f; f.OnUse?.Invoke(); }
         }
-        else { _holding = null; _held = 0; HoldProgress = 0; }
+        else { _holding?.OnHold?.Invoke(0); _holding = null; _held = 0; HoldProgress = 0; }
     }
 
     /// <summary>A footstep each stride along the ground (none in the air or the water); a thud on landing from a jump. In your ear.</summary>

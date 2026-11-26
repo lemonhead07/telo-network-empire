@@ -125,6 +125,9 @@ public partial class GameRoot
         string summary = $"AUTOPLAY {(Done(until) ? "OK" : "STOPPED")}: until={until} {Sim.State.Date} step={Onboarding.Current(Sim.State, _content)} act={Sim.State.ActIndex} subs={Sim.State.TotalSubscribers} cash={Sim.State.Cash} farm={farm} photos={_shotN} assists={_assists}";
         _autoLog.Add(summary);
         GD.Print(summary);
+        // HO1: work is done at points on things; any hold that still showed a bar is listed (talking and travelling may)
+        GD.Print($"HOLD BARS {HoldBars.Count}{(HoldBars.Count > 0 ? ": " + string.Join(" | ", HoldBars) : "")}");
+        _autoLog.Add($"HOLD BARS: {string.Join(" | ", HoldBars)}");
         if (_autoDir is not null) Godot.FileAccess.Open($"{_autoDir}/autoplay.txt", Godot.FileAccess.ModeFlags.Write)?.StoreString(string.Join("\n", _autoLog));
         Engine.TimeScale = 1;
         GetTree().Quit(Done(until) ? 0 : 1);
@@ -611,6 +614,35 @@ public partial class GameRoot
     /// <summary>Walk up to a thing, look at it, and press or hold E on it (R for the second way).</summary>
     private async Task Use(Interactable it, bool alt = false)
     {
+        // work done at points on the thing (WorkPoints): walk to it, then work each point in turn, as a player would
+        // (the second way, R, is pressed on the next point: it does the whole step at once, as the host's R did)
+        if (it.Pieces is { } wp && wp.Host == it)
+        {
+            if (alt)
+            {
+                await WalkTo(it.GlobalPosition, 1.4f);
+                for (int k = 0; k < 6 && wp.Next is null; k++) await Physics(2);
+                if (wp.Next is { } at) await Use(at, alt: true);
+                else { it.OnAlt?.Invoke(); _autoLog.Add($"   (no work points on {it.Name}: pressed R directly)"); }
+                return;
+            }
+            await WalkTo(it.GlobalPosition, 1.4f);
+            for (int k = 0; k < 6 && wp.Next is null; k++) await Physics(2);
+            if (wp.Next is null)
+            {
+                await Seconds(it.HoldSeconds());
+                if (it.CanUse()) it.OnUse?.Invoke();
+                _autoLog.Add($"   (no work points on {it.Name}: did the work directly)");
+                return;
+            }
+            var round = wp.Points.ToList();
+            foreach (var point in round)
+            {
+                if (!IsInstanceValid(point) || wp.Next != point || !point.CanUse()) break;
+                await Use(point);
+            }
+            return;
+        }
         var p = it.GlobalPosition;
         await WalkTo(p, 1.4f);
         await Aim(p);

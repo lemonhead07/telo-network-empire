@@ -24,8 +24,11 @@ public partial class GameRoot
                 ? ProjectRules.Blocked(s, _content, def, KitOnSite()) is { } why ? $"{def.Name}: {why}" : ProjectRules.NextVerb(s, def)!
                 : $"{def.Name}: built";
             view.Spot.CanUse = () => ProjectRules.Blocked(s, _content, def, KitOnSite()) is null;
-            view.Spot.HoldSeconds = () => ProjectRules.Step(s, def) is { } st && ProjectRules.Blocked(s, _content, def, KitOnSite()) is null
-                ? Hold(ProjectRules.Started(s, def.Id) ? st.Minutes : YardRules.UnloadMinutes) : 0f;
+            // the step's time while there is work here you could do: the points stay out (with the reason) when only kit is
+            // missing; none while the project is locked, the parts aren't bought or delivered, or the step waits on someone
+            view.Spot.HoldSeconds = () => ProjectRules.Step(s, def) is not { } st || ProjectRules.Locked(s, _content, def) is not null ? 0f
+                : !ProjectRules.Started(s, def.Id) ? (YardRules.NotOnSite(s, _content, def, Telo.Sim.Town.Tools.Parts) is null ? Hold(YardRules.UnloadMinutes) : 0f)
+                : ProjectRules.ProgressOf(s, def.Id).WaitUntil > s.Day ? 0f : Hold(st.Minutes);
             // unloading the parts starts the job (a crate set down, or the paperwork for a project with no parts); then each step sounds like what it says
             view.Spot.HoldSound = () => ProjectRules.Started(s, def.Id) && ProjectRules.Step(s, def) is { } st ? SoundCue.ForStep(st.Verb).Hold : "work.tick";
             view.Spot.DoneSound = () => !ProjectRules.Started(s, def.Id) ? (def.Parts == Telo.Sim.Content.PartsBy.None ? "paper.page" : "kit.crate")
@@ -41,6 +44,8 @@ public partial class GameRoot
                 SyncProjects();
                 RefreshIdleScreens();
             };
+            // no bar (HO1): each click of a step is worked at points on the thing (the model's wp-s<stage>-… empties)
+            WorkPoints.Attach(view.Spot, view.Places);
         }
         BuildHalden();
         SyncProjects();
@@ -62,8 +67,15 @@ public partial class GameRoot
                 : !started ? $"{def.Name}\n{YardRules.NotOnSite(s, _content, def, Telo.Sim.Town.Tools.Parts) ?? ProjectRules.StartVerb(def)}"
                 : prog.WaitUntil > s.Day ? $"{def.Name}\n{def.Steps.ElementAtOrDefault(prog.Step)?.WaitText ?? "waiting"}"
                 : $"{def.Name}\n{ProjectRules.Step(s, def)?.Verb}";
+            bool waiting = started && !built && prog.WaitUntil > s.Day;
+            // the signboard: what it waits on and until when, else the step you are on
+            string board = built ? $"{def.Name}\nBUILT"
+                : waiting ? $"{def.Name}\n{ProjectRules.Blocked(s, _content, def, Telo.Sim.Town.Tools.All)}"
+                : started ? $"{def.Name}\nStep {prog.Step + 1} of {def.Steps.Count}: {ProjectRules.Step(s, def)?.Verb}"
+                : $"{def.Name}\n{YardRules.NotOnSite(s, _content, def, Telo.Sim.Town.Tools.Parts) ?? ProjectRules.StartVerb(def)}";
             // crates stand at the site once the parts are there: unloaded, or left by the Yard's lorry
-            view.Sync(open, clicks == 0 ? 0 : (float)done / clicks, built, line, started || YardRules.LorryArrived(s, id));
+            view.Sync(open, built ? def.Steps.Count : prog.Step, started, built, waiting, clicks == 0 ? 0 : (float)done / clicks, line, board,
+                started || YardRules.LorryArrived(s, id));
         }
         SyncHalden();
     }

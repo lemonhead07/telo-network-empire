@@ -29,8 +29,8 @@
     "steps": [
       { "verb": "Plant poles along the Wrenfold lane", "clicks": 4, "minutes": 30, "needs": ["pole"] },
       { "verb": "String the wire in from the road", "clicks": 3, "minutes": 15, "needs": ["cableDrum", "ladder"] },
-      { "verb": "Wait for the council to pass the wayleave", "clicks": 1, "minutes": 10, "waitDays": 9, "waitText": "the parish council is arguing about the poles" },
-      { "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
+      { "stage": -1, "verb": "Wait for the council to pass the wayleave", "clicks": 1, "minutes": 10, "waitDays": 9, "waitText": "the parish council is arguing about the poles" },
+      { "stage": 2, "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
     ] },
 
   { "id": "proj-wrenfold-room", "model": "site.street-cabinet", "name": "A Board terminal in Wrenfold's reading room", "act": 1, "site": "wrenfold", "east": 46, "south": 2, "cost": 180,
@@ -39,10 +39,10 @@
     "doneText": "The reading room's terminal is on the Board. The Thursday club has already started a file area about marrows.",
     "reward": { "monthlyRevenue": 20 },
     "steps": [
-      { "verb": "Carry the terminal in and set it up", "clicks": 1, "minutes": 25, "needs": ["toolbox"] },
-      { "verb": "Run a line from the terminal box", "clicks": 2, "minutes": 15, "needs": ["cableDrum", "ladder"] },
-      { "verb": "Fit the socket and the acoustic coupler", "clicks": 2, "minutes": 15, "needs": ["toolbox"] },
-      { "verb": "Show the Thursday club how to log in", "clicks": 2, "minutes": 30 }
+      { "stage": 1, "verb": "Carry the terminal in and set it up", "clicks": 1, "minutes": 25, "needs": ["toolbox"] },
+      { "stage": 2, "verb": "Run a line from the terminal box", "clicks": 2, "minutes": 15, "needs": ["cableDrum", "ladder"] },
+      { "stage": 3, "verb": "Fit the socket and the acoustic coupler", "clicks": 2, "minutes": 15, "needs": ["toolbox"] },
+      { "stage": 4, "verb": "Show the Thursday club how to log in", "clicks": 2, "minutes": 30 }
     ] },
 
   { "id": "proj-kettle-poles", "model": "site.pole-stack", "name": "Poles over to Kettle Cross", "act": 1, "site": "kettle-cross", "east": -46, "south": 2, "cost": 450,
@@ -53,8 +53,8 @@
     "steps": [
       { "verb": "Plant poles along the old crossroads road", "clicks": 5, "minutes": 30, "needs": ["pole"] },
       { "verb": "String the wire in from the road", "clicks": 4, "minutes": 15, "needs": ["cableDrum", "ladder"] },
-      { "verb": "Wait for NezTel to move its old drop wire", "clicks": 1, "minutes": 10, "waitDays": 8, "waitText": "NezTel's linesman is 'scheduled'" },
-      { "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
+      { "stage": -1, "verb": "Wait for NezTel to move its old drop wire", "clicks": 1, "minutes": 10, "waitDays": 8, "waitText": "NezTel's linesman is 'scheduled'" },
+      { "stage": 2, "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
     ] },
 
   { "id": "proj-kettle-surgery", "model": "site.street-cabinet", "name": "A private line for the Kettle Cross surgery", "act": 1, "site": "kettle-cross", "east": 46, "south": 2, "cost": 250,
@@ -63,9 +63,9 @@
     "doneText": "The surgery's night line works. The hospital rang to ask who you were.",
     "reward": { "monthlyRevenue": 30 },
     "steps": [
-      { "verb": "Run a separate pair from the terminal box", "clicks": 2, "minutes": 20, "needs": ["cableDrum", "ladder"] },
-      { "verb": "Fit the surgery's modem and lock", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
-      { "verb": "Send a night's records as a test", "clicks": 1, "minutes": 30 }
+      { "stage": 2, "verb": "Run a separate pair from the terminal box", "clicks": 2, "minutes": 20, "needs": ["cableDrum", "ladder"] },
+      { "stage": 3, "verb": "Fit the surgery's modem and lock", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "stage": 4, "verb": "Send a night's records as a test", "clicks": 1, "minutes": 30 }
     ] },
 
   { "id": "proj-eastgate-trunk", "model": "site.street-cabinet", "name": "A second trunk cable to Eastgate", "act": 1, "site": "eastgate", "east": -62, "south": 2, "cost": 150,
@@ -73,8 +73,8 @@
     "story": "The pairs you ran back from the Eastgate cabinet are all taken, and Kettle Cross and Wrenfold both ride through it. A second trunk cable down the road, in NezTel's old duct if they'll let you, or on your own poles if they won't.",
     "doneText": "The second trunk is in. NezTel let you use the duct in the end, and then invoiced you for the privilege of being let.",
     "steps": [
-      { "verb": "Rod the old duct along the road", "clicks": 3, "minutes": 20, "needs": ["toolbox"] },
-      { "verb": "Wait for NezTel to answer about the duct", "clicks": 1, "minutes": 10, "waitDays": 12, "waitText": "NezTel's wayleave office is 'considering' your letter" },
+      { "stage": 2, "verb": "Rod the old duct along the road", "clicks": 3, "minutes": 20, "needs": ["toolbox"] },
+      { "stage": -1, "verb": "Wait for NezTel to answer about the duct", "clicks": 1, "minutes": 10, "waitDays": 12, "waitText": "NezTel's wayleave office is 'considering' your letter" },
       { "verb": "Pull the cable through", "clicks": 4, "minutes": 15, "needs": ["cableDrum"] },
       { "verb": "Joint it into the cabinet", "clicks": 2, "minutes": 25, "needs": ["toolbox"] },
       { "verb": "Test every new pair", "clicks": 1, "minutes": 15 }
@@ -88,8 +88,8 @@
     "steps": [
       { "verb": "Plant poles up the hill road", "clicks": 6, "minutes": 30, "needs": ["pole"] },
       { "verb": "String the wire up the hill", "clicks": 5, "minutes": 15, "needs": ["cableDrum", "ladder"] },
-      { "verb": "Wait for a day calm enough to tension the span", "clicks": 1, "minutes": 10, "waitDays": 6, "waitText": "it's blowing a gale on Highmoor" },
-      { "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
+      { "stage": -1, "verb": "Wait for a day calm enough to tension the span", "clicks": 1, "minutes": 10, "waitDays": 6, "waitText": "it's blowing a gale on Highmoor" },
+      { "stage": 2, "verb": "Fit the village's terminal box", "clicks": 2, "minutes": 20, "needs": ["toolbox"] }
     ] },
 
   { "id": "proj-highmoor-weather", "model": "site.street-cabinet", "name": "The weather station's data line", "act": 2, "site": "highmoor", "east": 58, "south": 2, "cost": 300,
@@ -98,9 +98,9 @@
     "doneText": "Highmoor's readings go down the line on the hour. The coast forecast now says 'fresh' when it is fresh.",
     "reward": { "monthlyRevenue": 35 },
     "steps": [
-      { "verb": "Run a pair up the mast to the hut", "clicks": 2, "minutes": 20, "needs": ["cableDrum", "ladder"] },
-      { "verb": "Fit the modem and the timer", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
-      { "verb": "Watch the first hour's readings go", "clicks": 1, "minutes": 30 }
+      { "stage": 2, "verb": "Run a pair up the mast to the hut", "clicks": 2, "minutes": 20, "needs": ["cableDrum", "ladder"] },
+      { "stage": 3, "verb": "Fit the modem and the timer", "clicks": 2, "minutes": 20, "needs": ["toolbox"] },
+      { "stage": 4, "verb": "Watch the first hour's readings go", "clicks": 1, "minutes": 30 }
     ] },
 
   { "id": "proj-modem-bank", "model": "site.modem-bank", "name": "Rack the modem bank", "act": 2, "site": "town-start", "east": 57, "south": 27, "cost": 400,
@@ -388,7 +388,7 @@
     "doneText": "The coast is covered. The Plough charges you rent for the chimney in pints.",
     "reward": { "region": 4000, "regionName": "mobile subscribers along the coast", "regionFee": 25, "regionCost": 21, "monthlyCost": 3000 },
     "steps": [
-      { "verb": "Agree the sites (church, tank, chimney)", "clicks": 2, "minutes": 15 },
+      { "stage": -1, "verb": "Agree the sites (church, tank, chimney)", "clicks": 2, "minutes": 15 },
       { "verb": "Fit the first of the coast masts", "clicks": 3, "minutes": 20, "needs": ["ladder", "toolbox"] },
       { "verb": "Wait for the crews to fit the rest", "clicks": 1, "minutes": 10, "waitDays": 14, "waitText": "the mast crews are working down the coast" },
       { "verb": "Hand calls between the masts on a drive down the coast", "clicks": 2, "minutes": 15 }
@@ -400,7 +400,7 @@
     "doneText": "Every mast has fibre behind it. Data on the phones is fast enough that people stop noticing it, which is the point.",
     "reward": { "perSubscriber": 3, "monthlyCost": 1500 },
     "steps": [
-      { "verb": "Plan the backhaul routes", "clicks": 1, "minutes": 20 },
+      { "stage": -1, "verb": "Plan the backhaul routes", "clicks": 1, "minutes": 20 },
       { "verb": "Blow fibre to the nearest masts", "clicks": 3, "minutes": 15, "needs": ["cableDrum"] },
       { "verb": "Wait for the crews to reach the rest", "clicks": 1, "minutes": 10, "waitDays": 10, "waitText": "the crews are blowing fibre down the coast" },
       { "verb": "Swap the copper out at the last mast", "clicks": 2, "minutes": 15, "needs": ["toolbox"] }

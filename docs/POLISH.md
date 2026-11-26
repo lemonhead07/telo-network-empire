@@ -47,9 +47,9 @@ All 119 project steps in Acts 0–5 fall into a few kinds of work. Build each ki
 **Bare holds still in the game:**
 | What | Today | Fixed by |
 |---|---|---|
-| 32 projects in Acts 0–5 (119 steps, about 250 holds) | Stand at one spot, hold E, a box grows | HO1 (points), HO2 (Acts 0–1 verbs), HO3 (Acts 2–5 verbs) |
-| Pole line: plant a pole, string a span | One hold each (kit needed) | HO1 |
-| A line card into the rack | One hold | HO1 |
+| 32 projects in Acts 0–5 (119 steps, about 250 holds) | ✅ Points on the staged model since HO1 (2026-11-26); the verbs still to come | HO2 (Acts 0–1 verbs), HO3 (Acts 2–5 verbs) |
+| Pole line: plant a pole, string a span | ✅ Points round the pole since HO1 (the span is still strung from the foot: climb is HO2) | HO2 |
+| A line card into the rack | ✅ Points at the next slot since HO1 | — |
 | Repairs | One hold at the front door | HO4 |
 | Odd jobs at Sol's and the farm | One hold at the door | HO4 |
 | Buying at the Yard, the ferry ticket, the ladder | Short holds | Fine as they are: talking and travelling, not work |

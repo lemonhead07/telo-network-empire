@@ -199,6 +199,7 @@ public partial class GameRoot : Node3D
         if (args.FirstOrDefault(a => a == "--autoplay" || a.StartsWith("--autoplay=")) is { } auto)
             _ = RunAutoplay(auto.Contains('=') ? auto[(auto.IndexOf('=') + 1)..] : null, args);
         if (args.FirstOrDefault(a => a.StartsWith("--shot=")) is { } shot) _ = TakeScreenshot(shot["--shot=".Length..]);
+        if (args.FirstOrDefault(a => a.StartsWith("--shot-projects=")) is { } ps) _ = TakeProjectShots(ps["--shot-projects=".Length..]);   // ProjectShots.cs
     }
 
     private static ContentDb LoadContent() => ContentDb.FromJson(ContentDb.FileNames.ToDictionary(
@@ -289,6 +290,16 @@ public partial class GameRoot : Node3D
         };
         view.PlantSpot.HoldSeconds = () => Hold(LineRules.PlantMinutes);
         view.StringSpot.HoldSeconds = () => Hold(LineRules.StringMinutes);
+        // no bar (HO1): a pole goes in at points round its foot, a span is clipped and pulled taut at the pole (WorkPoints)
+        WorkPoints.Attach(view.PlantSpot, _ => new WorkPlace[]
+        {
+            new(new Vector3(0.45f, -0.92f, 0.35f), "dig"), new(new Vector3(-0.4f, -0.92f, 0.4f), "dig"),
+            new(new Vector3(0, 0.6f, 0.35f), "lift"), new(new Vector3(0.1f, -0.94f, -0.45f), "tamp"),
+        });
+        WorkPoints.Attach(view.StringSpot, _ => new WorkPlace[]
+        {
+            new(new Vector3(0.25f, 0.7f, 0.3f), "clip"), new(new Vector3(0, 1.0f, 0.4f), "pull"), new(new Vector3(-0.25f, 0.7f, 0.3f), "clip"),
+        });
         view.PlantSpot.HoldSound = () => "tool.dig";        // the hole, then the pole tamped in
         view.PlantSpot.DoneSound = () => "tool.hammer";
         view.StringSpot.StartSound = () => "kit.ladder";    // up against the pole, then the span pulled off the drum
@@ -335,7 +346,13 @@ public partial class GameRoot : Node3D
                 : $"The Board: {ex.LinesIn} line(s) in";
         };
         _rack.Slot.CanUse = () => Sim.State.LineCards > 0 && (BoardRules.FitNeeds & ~KitOnSite()) == Tools.None;
-        _rack.Slot.HoldSeconds = () => Hold(BoardRules.FitMinutes);
+        _rack.Slot.HoldSeconds = () => Sim.State.LineCards > 0 ? Hold(BoardRules.FitMinutes) : 0f;   // otherwise it's only the rack to read
+        // no bar (HO1): the card is set in the next empty slot, plugged home and screwed in, at the model's points there
+        WorkPoints.Attach(_rack.Slot, w => w.FromModel(_rack.Model) is { Count: > 0 } at ? at : new WorkPlace[]
+        {
+            new(_rack.NextSlotAt + new Vector3(0, 0.04f, 0.03f), "place"), new(_rack.NextSlotAt + new Vector3(0, 0, 0.03f), "plug"),
+            new(_rack.NextSlotAt + new Vector3(0, -0.04f, 0.03f), "screw"),
+        });
         _rack.Slot.DoneSound = () => "sw.card";
         _rack.Slot.OnUse = () =>
         {
@@ -679,6 +696,15 @@ public partial class GameRoot : Node3D
         };
         bench.AltPrompt = () => task.Done ? null : "Give it a thump and call it done";
         bench.HoldSeconds = () => task.Done ? 0f : Hold(task.MinutesFor(task.Next!));
+        // no bar (HO1): each step is worked at points on the thing itself, its front and top
+        WorkPoints.Attach(bench, w =>
+        {
+            int n = Mathf.Clamp(Mathf.CeilToInt(bench.HoldSeconds() / 1.5f), 2, 4);
+            var motions = WorkPoints.Guess(task.Next?.Verb ?? "", n);
+            return Enumerable.Range(0, n).Select(i => new WorkPlace(motions[i] == "check"
+                ? new Vector3(-0.08f + 0.16f * i / Math.Max(1, n - 1), 0.16f, 0.02f)
+                : new Vector3(-0.15f + 0.3f * i / Math.Max(1, n - 1), i % 2 == 0 ? 0.03f : 0.09f, 0.16f), motions[i])).ToList();
+        });
         // each step sounds like what it says: open it up, trace the fault, fix it, test it
         bench.HoldSound = () => task.Next is { } d ? SoundCue.ForStep(d.Verb).Hold : null;
         bench.DoneSound = () => task.Next is { } d ? SoundCue.ForStep(d.Verb).Done : null;
@@ -1056,8 +1082,15 @@ public partial class GameRoot : Node3D
             : _cargo.Held is { } held ? $"Carrying the {held.Label}   [G] put it down" : null;
         _hud.Refresh(Sim, prompt, Hour, where, "");
         _phoneView.Tick((float)delta, Hour, AnyScreenOpen ? "" : "▶ " + next, where);
-        _hud.SetHold(_van.Driven ? 0 : _player.HoldProgress);
+        // no bars for work (HO1): work points and install spots show their progress on the piece itself (OnHold); a bar is
+        // left only for talking and travelling (the Yard, the ferry, the ladder) and the jobs still done at a door (HO4)
+        bool bar = !_van.Driven && _player.HoldProgress > 0.01f && _player.Focus is { Pieces: null, OnHold: null };
+        _hud.SetHold(bar ? _player.HoldProgress : 0);
+        if (bar && _player.Focus is { } barOn) HoldBars.Add($"{barOn.Name}: {barOn.Prompt().Split('(')[0].Trim()}");
     }
+
+    /// <summary>Every hold that still showed the bar this run (what it was on, what it said): --autoplay lists them at the end (HO1).</summary>
+    public static readonly SortedSet<string> HoldBars = new(StringComparer.Ordinal);
 
     public override void _UnhandledInput(InputEvent e)
     {

@@ -14,6 +14,10 @@ public partial class Interactable : StaticBody3D
     public Action? OnAlt { get; set; }
     /// <summary>How long E must be held to do this (real seconds). Zero means a single press. Work takes the time it takes; nothing jumps the clock.</summary>
     public Func<float> HoldSeconds { get; set; } = () => 0f;
+    /// <summary>Called every frame while E is held on this, with how far through it is (0..1), and with 0 when let go. The work shows on the thing itself.</summary>
+    public Action<float>? OnHold { get; set; }
+    /// <summary>Set when this thing's work is done at points on it (or when this is one of those points). See <see cref="WorkPoints"/>.</summary>
+    public WorkPoints? Pieces { get; set; }
 
     // sounds of holding E to work (EA7, Audio/), heard from this thing: unset means the usual tick and click; a func returning null is silent
     /// <summary>Once, as a hold begins (the handset lifted, the ladder set against the pole).</summary>

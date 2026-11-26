@@ -39,6 +39,11 @@ public partial class InstallSite : Node3D
     private readonly Dictionary<Node3D, Transform3D> _square = new();
     private readonly HashSet<InstallStep> _crooked = new();
     private double _t;
+    /// <summary>The spot E is held on now, and how far through (0..1): its piece slides into place as you work (HO1, no bar).</summary>
+    private Spot? _holdSpot;
+    private float _holdT;
+    private Node3D _phoneProp = null!;
+    private Vector3 _phoneHome;
     /// <summary>Real seconds of holding for a step of this many game minutes. Set by the game.</summary>
     public static Func<int, float> HoldFor { get; set; } = minutes => minutes * 0.33f;
 
@@ -97,6 +102,7 @@ public partial class InstallSite : Node3D
             .Box(new Vector3(0, 0.07f, 0), new Vector3(0.24f, 0.05f, 0.07f), new Color(0.42f, 0.1f, 0.08f)).Instance());
         phoneProp.Position = phone;
         AddChild(phoneProp);
+        _phoneProp = phoneProp; _phoneHome = phone;
         _phone = Hotspot(phone, new Vector3(0.34f, 0.3f, 0.34f));
         _phone.Prompt = PhonePrompt;
         _phone.CanUse = () => _job is { CanFinish: true };
@@ -105,6 +111,8 @@ public partial class InstallSite : Node3D
         _phone.StartSound = () => "line.hook";   // lift the handset, listen (quiet), and what you hear is the test's result (NoteTest)
         _phone.HoldSound = () => null;
         _phone.DoneSound = () => null;
+        // the telephone lifts a little in your hand while you listen (no bar: HO1)
+        _phone.OnHold = t => _phoneProp.Position = _phoneHome + new Vector3(0, 0.05f * Mathf.Sin(Mathf.Min(t * 4, 1) * Mathf.Pi / 2), 0);
 
         // the job sheet hangs by the door while you work
         var sheetPos = new Vector3(1.25f, f + 1.4f, 3.27f);
@@ -213,13 +221,37 @@ public partial class InstallSite : Node3D
         _sheetMesh.Visible = _job is not null;
     }
 
-    /// <summary>The marker for the step that is next pulses; the ones after it wait, small.</summary>
+    /// <summary>The marker for the step that is next pulses; the ones after it wait, small. While E is held it shrinks away.</summary>
     public override void _Process(double delta)
     {
         if (_job is null) return;
         _t += delta;
         foreach (var s in _spots)
-            s.Ghost.Scale = Vector3.One * (SpotTurn(s) ? 1.25f + 0.3f * (float)Math.Sin(_t * 6) : 0.55f);
+            s.Ghost.Scale = Vector3.One * (s == _holdSpot ? Mathf.Lerp(1.1f, 0.15f, _holdT)
+                : SpotTurn(s) ? 1.25f + 0.3f * (float)Math.Sin(_t * 6) : 0.55f);
+    }
+
+    /// <summary>
+    /// No bar (HO1): while E is held on a spot, the piece that step fits (the clip, the box, the socket) comes in from a
+    /// hand's width away and settles into place; let go and it goes back. The step itself is still done by the sim.
+    /// </summary>
+    private void HoldPiece(Spot spot, float t)
+    {
+        if (t <= 0)
+        {
+            if (_holdSpot == spot) { _holdSpot = null; _holdT = 0; Sync(); }
+            return;
+        }
+        _holdSpot = spot; _holdT = t;
+        if (_job is null) return;
+        int index = _job.Progress(spot.Step) - _job.TwistOffset(spot.Step);
+        var piece = _pieces.FirstOrDefault(p => p.Step == spot.Step && p.Index == index);
+        if (piece is null) return;
+        float e = 1 - (1 - t) * (1 - t);
+        piece.Node.Visible = true;
+        foreach (var child in piece.Node.GetChildren().OfType<Node3D>())
+            if (_square.TryGetValue(child, out var square))
+                child.Transform = new Transform3D(square.Basis.Scaled(Vector3.One * Mathf.Lerp(0.7f, 1f, e)), square.Origin + new Vector3(0, 0.12f * (1 - e), 0));
     }
 
     // ---- prompts -----------------------------------------------------------------------------
@@ -279,6 +311,7 @@ public partial class InstallSite : Node3D
         hot.CanUse = () => SpotReady(spot);
         hot.OnUse = () => { if (SpotReady(spot)) _act?.Invoke(step, false); };
         hot.HoldSeconds = () => SpotReady(spot) ? HoldFor(_job!.MinutesFor(step)) : 0f;
+        hot.OnHold = t => HoldPiece(spot, t);
         // the top clip of the drop wire is up the ladder: it rattles against the wall as you start
         hot.StartSound = () => !twist && step == InstallStep.DropWire && _job is { } j && j.Progress(step) == j.TwistOffset(step) ? "kit.ladder" : null;
         hot.HoldSound = () => ToolFor(spot);

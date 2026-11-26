@@ -35,7 +35,7 @@ public partial class GameRoot
     private MenuView _title = null!, _pause = null!;
     private Transform3D _phoneRest;
     private Node3D _deviceBody = null!;
-    private static readonly string[] DevFlags = { "--smoke", "--shot=", "--shots=", "--autoplay", "--from=" };
+    private static readonly string[] DevFlags = { "--smoke", "--shot=", "--shots=", "--shot-projects=", "--autoplay", "--from=" };
 
     private static bool IsDevRun(string[] args) => args.Any(a => DevFlags.Any(a.StartsWith));
 
