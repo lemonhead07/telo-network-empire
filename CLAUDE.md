@@ -80,6 +80,8 @@ The owner wants fast iteration. **Do not run the test suite or the smoke test af
 
 The owner wants to avoid GUIs. Anything you read or click is the surface of an object in the world.
 
+**Direction (D51, owner 2026-11-26): everything in the world, under the crosshair.** The camera is always the player's (no lean-in, no frozen walk), the crosshair is the only cursor (the centre ray's hit on a fixed screen is the pointer; small paper things like the Notebook and Almanac are picked up and read in your hands, wheel for pages, number keys to choose), the clock never stops for an interface, things show their own state and PIP's words go on the phone (no bubbles, no text under the crosshair, no floating markers), and story arrives as events delivered by things. Only the pause (Esc) is exempt. The rule, a review of every screen and the conversion items IW1–IW4: `docs/IN_WORLD.md`. Today's screens and the switchboard still lean in until IW1/IW2 land (the bullets below describe today's code); **anything new is built the new way**, the rack and the pin board included.
+
 - **Prefer real objects** (D26): the switchboard is the model, a `Node3D` station you lean into where the mouse is your hand (`SwitchboardStation`). `WorldScreen` is for things that are screens or pages in the story: it renders a `ModalView` into a `SubViewport` shown on a quad (the Board's terminal, PIP's handset, the notebook). Using the object leans the camera in (`GameRoot.LeanInto`); mouse clicks are projected onto the surface. Esc steps back.
 - Screens stay visible and live when idle (`view.Show(tier)`); `IsOpen` means the player is using one.
 - New "menus" must be added as a `WorldScreen` on a prop, never as a `CanvasLayer` overlay.

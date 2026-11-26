@@ -68,7 +68,7 @@ Replaces the frame's printed work sheet and absorbs the "lines in" rack that sit
 - **Top: lines in.** A lamp per line into the Board; empty sockets where a line card could go.
 - **Shelf: your tools.** A tone probe, a test set (a lineman's handset), spare jumper wires on a hook, and a test switch.
 
-**How you work it** (lean in; the mouse becomes your hand)
+**How you work it** (lean in; the mouse becomes your hand. *D51, 2026-11-26: becomes the crosshair as your hand, no lean-in; item IW2, `IN_WORLD.md`*)
 
 | You want to | You do | Today it is |
 |---|---|---|
