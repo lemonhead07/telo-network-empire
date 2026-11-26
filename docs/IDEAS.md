@@ -3,6 +3,7 @@
 The parking lot. Dev sessions **add** one-liners to the Inbox and never build from here. Idea sessions shape them, then promote ready ones into `BUILD_PLAN.md` (see `docs/SESSIONS.md`).
 
 ## Inbox
+- 2026-11-26 · **Why a day holds about two jobs** (owner played it: "I could only really fully do 2 tasks in a single day"). The clock runs at 3 game minutes a real second, so a 100 m walk costs about 1 h 45 of the day and a 1 km drive about 3 h 20; the daily cap of three jobs (`BookingRules.PlayerCap`) is rarely reached. The morning text now says so (below, in `NEXT_SESSION.md`). For the playtest to judge: whether the day feels too short at 8 real minutes (Settings has 12 and 16), and whether the phone's weekly capacity should count the player as two jobs a day, not three. Don't change the clock or the cap before AP1's honest travel times are in.
 *(one line each: date, idea, where it came from)*
 - 2026-11-26 · [gameplay] **The sounds were made without ears.** Every one was shaped by numbers and spectrograms in a cloud session; the owner's listen is the real check. Likely tuning after it: the mix (footsteps against the background), the van's engine at speed, how often the hold tick repeats, the birds' density. Levels are one number per sound (`gainDb` in `Audio/Sounds.*.cs`). From EA7.
 - 2026-11-26 · [gameplay] **Separate volumes for effects and background.** The buses exist (Sfx, Amb under Master); Settings only has Master. Two more sliders in `UI/SettingsView.cs` + `GameSettings`. From EA7.
