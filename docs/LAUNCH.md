@@ -1,10 +1,10 @@
 # Launch, Marketing and Keeping It Going
 
-*Idea session, 2026-11-26. Decisions: D52 plan B (decided by the owner), D53–D55 (proposed), D56–D58 polish first (decided; the bar is in `docs/POLISH.md`). Ready-to-paste text: `docs/marketing/KOFI.md` (the Ko-fi page) and `docs/marketing/STEAM_PAGE.md` (the store page). Money background: `docs/BUSINESS_PLAN.md`. Dates checked against Valve's published 2027 calendar on 2026-11-26; check them again in Steamworks before relying on them.*
+*Idea session, 2026-11-26. Decisions: D52 plan B (decided by the owner), D54 (decided: only where required), D55 (proposed), D56–D58 polish first (decided; the bar is in `docs/POLISH.md`), D59–D61 price, Ko-fi and money (the owner's answers, 2026-11-26; D60 replaces D53). Ready-to-paste text: `docs/marketing/KOFI.md` (the Ko-fi page) and `docs/marketing/STEAM_PAGE.md` (the store page). Money background: `docs/BUSINESS_PLAN.md`. Dates checked against Valve's published 2027 calendar on 2026-11-26; check them again in Steamworks before relying on them.*
 
 ## 1. Where we are
 
-The whole of early access plays start to finish: Acts 0–5, about 26 hours for the test bot (a perfect player), ending when you light the data centre and find the thank-you card on the night-shift desk. There's a title screen, saves, settings and a release workflow that builds Windows and Linux zips. **What players would notice first:** there's no sound at all, some screens still freeze you while you lean in, and the floating ▼ $ ! markers and text strip are still on screen.
+The whole of early access plays start to finish: Acts 0–5, about 26 hours for the test bot (a perfect player), ending when you light the data centre and find the thank-you card on the night-shift desk. There's a title screen, saves, settings and a release workflow that builds Windows and Linux zips. **What players would notice first:** some screens still freeze you while you lean in, and the floating ▼ $ ! markers and text strip are still on screen.
 
 ## 2. What's left before early access
 
@@ -20,7 +20,7 @@ The owner wants it **polished before anything goes out** (D56): it should look f
 | Geometry | **ROOM1** rooms that are lived in | Bare grey data-centre rooms, placeholder furniture in houses | 1 session |
 | Geometry | **ROOM2** the last boxes | Sol's, the farm, the Yard, the ferry, the title letter, staff | 1 session |
 | Geometry | **MK2** clips and trailer | Something to post, and a trailer for the page | 1–2 sessions |
-| Gameplay | **EA7** sound | A silent game feels unfinished in ten seconds | 1 session |
+| Gameplay | ✅ **EA7** sound (done 2026-11-26) | A silent game feels unfinished in ten seconds | 1 session |
 | Gameplay | **HO1** no more progress bars | ~250 bare holds across 32 projects | 1 session |
 | Gameplay | **IW1** screens under the crosshair | The new feel (D51) | 1–2 sessions |
 | Gameplay | **HO2** verbs you can feel, Acts 0–1 | Carry, run, connect, test, climb, hand over, wait | 1–2 sessions |
@@ -35,12 +35,13 @@ Small things for the fix pass: "Sol's Electronics's" on the "what next" line (en
 
 | When | What | Time |
 |---|---|---|
-| This week | **Steamworks account:** sign up at partner.steamgames.com, pay the $100 Steam Direct fee (you get it back once the game earns $1,000), do the tax interview and add bank details. Valve checks your identity, which can take days, and a new game has to wait about 30 days after the fee before it can release. Start now. | 1 hour, then waiting |
-| This week | **Ko-fi:** paste in the page from `docs/marketing/KOFI.md`, set up the tiers, post the first post | 1 hour |
+| This week | **Steamworks account:** sign up at partner.steamgames.com, pay the $100 Steam Direct fee (you get it back once the game earns $1,000), do the tax interview (give your Tax File Number as the foreign tax ID, §10) and add bank details. Valve checks your identity, which can take days, and a new game has to wait about 30 days after the fee before it can release. Start now. | 1 hour, then waiting |
+| This week | **Ko-fi:** set the page's currency to US dollars, paste in the page from `docs/marketing/KOFI.md`, set up the $5 membership, post the first post. Make the $20 shop item now but keep it hidden until the Steam page is live | 1 hour |
 | Before the page goes up | **Name check:** search "TELO" in the Steam store and a trademark search. Also know that in Argentine Spanish "telo" is slang for a love hotel. "TELO: Network Empire" is probably fine, but decide before the page is public, because renaming later loses momentum | 20 min |
 | By 11 Dec | **Store page:** paste in `docs/marketing/STEAM_PAGE.md`, upload MK1's pictures, fill in the content survey and the AI disclosure (D54), submit for review | 1–2 hours |
 | Before launch | **Run the Windows build** on a Windows PC (nobody has yet), or ask a friend to | 30 min |
 | Before 10 Jan | **Register for Next Fest** in Steamworks (from the game's page, not the demo's) | 15 min |
+| Early March | **Request Steam keys** in Steamworks, one for each Ko-fi buyer plus some for press (Valve checks requests, so allow a few days); send each buyer theirs on launch day | 30 min |
 
 ## 3. When: three ways to launch
 
@@ -64,27 +65,27 @@ About one session a week in each lane. Pictures and the demo have hard dates; ev
 
 | Week of | Geometry lane | Gameplay lane | Owner |
 |---|---|---|---|
-| 30 Nov | **LOOK1** light and land | **EA7** sound | Steamworks account and fee; Ko-fi page and first post |
-| 7 Dec | **MK1** store pictures | **HO1** no more progress bars | Fill in the store page; **submit it for review by Fri 11 Dec** (Valve takes a few working days and slows over the holidays) |
-| 14 Dec | **LOOK2** surfaces | **IW1** | The page goes live as "Coming soon". Post it everywhere (§6) |
+| 30 Nov | **LOOK1** light and land | ✅ EA7 sound; **AP1** the bot walks; **TIME1** the day on the timesheet (rules) | Steamworks account and fee; Ko-fi page and first post |
+| 7 Dec | **MK1** store pictures | **TIME2** (in the world), then **HO1** no more progress bars | Fill in the store page; **submit it for review by Fri 11 Dec** (Valve takes a few working days and slows over the holidays) |
+| 14 Dec | **LOOK2** surfaces | **IW1** | The page goes live as "Coming soon". Post it everywhere (§6). Show the $20 Ko-fi shop item |
 | 21 Dec | **ROOM1** rooms | **HO2** verbs, Acts 0–1 | |
 | 28 Dec | | | **Playtest:** one evening, Acts 0–2, with a notebook (what confused you, when you got bored, what felt fake) |
 | 4 Jan | **ROOM2** the last boxes | Fix pass from the playtest, then **HO4** | **Register for Next Fest by Sun 10 Jan, 11:59pm Pacific**; swap in new pictures on the page |
-| 11 Jan | spare | **LK1** + **DEMO1** | Make the demo's app in Steamworks |
+| 11 Jan | spare | **LK1** + **DEMO1** | Make the demo's app in Steamworks. **First build to Ko-fi buyers** (after LK1) |
 | 18 Jan | **MK2** clips | Demo fixes | |
 | 25 Jan | **MK2** trailer | **HO3** verbs, Acts 2–5 | Upload the demo; **submit it for review by Mon 1 Feb** (Valve asks for three weeks) |
 | 8 Feb | | **HO3** continued | Next Fest materials and the trailer due **Mon 8 Feb** |
 | **22 Feb** | | Small fixes only | **Next Fest** (to 1 Mar): answer every forum post, post a clip a day |
 | 1 Mar | | The launch build; fixes from Next Fest | Set the release date; submit the full build for review |
-| **Thu 11 Mar** | | Watch the forums; fix what breaks | **Early access.** A 10% launch discount for the week, which ends as the Spring Sale starts (18–25 Mar) |
+| **Thu 11 Mar** | | Watch the forums; fix what breaks | **Early access.** A 10% launch discount for the week, which ends as the Spring Sale starts (18–25 Mar). Send Ko-fi buyers their keys; the Ko-fi shop item now points to Steam |
 | Apr–Jun | | A named free update every 4–6 weeks (§8), starting with whatever HO3 didn't reach | One post per update |
 
 ## 5. Steam settings worth knowing
 
 - **Steam Cloud without code:** Steamworks' "Auto-Cloud" can sync a folder of files. Once LK1 moves the saves into a plain `TELO` folder, it's two paths in Steamworks: Windows `%APPDATA%/TELO/saves`, Linux `~/.local/share/TELO/saves`.
 - **The demo is its own app** on Steam, attached to the main game. It uses the same save folder, so a demo save carries straight on in the full game.
-- **AI disclosure** (D54): Steam's content survey asks about AI-made content that players see or hear. TELO's code, in-game text and the scripts that build its models were written with Claude, so the honest answer is "yes, pre-generated". Wording in `STEAM_PAGE.md`. Nothing runs AI while you play, so the extra rules for live AI don't apply.
-- **Keys for Ko-fi supporters:** Steam lets you request keys to give away. Keep within Valve's key rules (don't sell keys for less than the Steam price). The Ko-fi plan only gives keys to people who have already paid more than the price (D53).
+- **AI disclosure** (D54, owner 2026-11-26: **only where required**): Steam's content survey asks about AI-made content that players see or hear. TELO's code, in-game text and the scripts that build its models were written with AI help, and some trailer and clip video will be AI-assisted, so the honest answer is "yes, pre-generated". Wording in `STEAM_PAGE.md`. It isn't mentioned anywhere else (store text, Ko-fi, posts). Nothing runs AI while you play, so the extra rules for live AI don't apply. Store screenshots must be the real game; AI-made video is for mood and titles, never shown as gameplay.
+- **Keys for Ko-fi buyers:** Steam lets you request keys to sell or give away on other stores (up to 5,000 for a game's launch, more on request). Valve's rule is not to give Steam customers a worse deal than key buyers, so the Ko-fi price is never below Steam's: $20 against $19.99 (D60). Reviews from a key show on the store page but **don't count towards the review score**, so Ko-fi buyers' reviews are welcome but can't be what lifts the score: that has to come from Steam buyers.
 
 ## 6. Marketing: what to say, and where
 
@@ -124,12 +125,14 @@ About one session a week in each lane. Pictures and the demo have hard dates; ev
 
 ## 7. Ko-fi
 
-Full text to paste: `docs/marketing/KOFI.md`. In short (D53):
-- **Tips** renamed "a line card" ($3).
-- **Three memberships:** *Subscriber* $3 (a monthly letter, your name in the game's phone directory), *Line crew* $7 (test builds before Steam, a vote on what's next), *Exchange* $15, limited to 25 (name a file on the Board, a Steam key at launch).
+Full text to paste: `docs/marketing/KOFI.md`. In short (D60, the owner's tiers, 2026-11-26):
+- **Free:** anyone can follow. The page reads like the Steam store page; public posts every two weeks or so carry light dev news. Tips stay, renamed "a line card" ($3).
+- **Members, $5 a month:** the development content: a monthly letter from the switchboard, the devlog and clips before anyone else, a vote on what gets built next, and a name in the game's phone directory (the credits, LK1).
+- **Buy early access, $20 once, "just to support me":** a Steam key on launch day, the builds before Steam (Windows and Linux, from the first one fit for a stranger's computer: after LK1, mid-January), and a name in the directory.
+- **When:** follow and members from now. The $20 item opens when the Steam page goes live (mid-December), because by then the pictures show a game that looks finished. **From launch day it points to Steam:** a new game's first days of Steam sales decide how much Steam shows it, and Ko-fi buyers' reviews don't count towards the score (§5).
+- **US dollars,** so $20 on Ko-fi matches $19.99 on Steam for everyone.
 - **A goal:** proper capsule art from a real artist, $500.
-- **Don't sell the game on Ko-fi before Steam.** Sales in the first days on Steam decide how much Steam shows the game; every early buyer moved to Ko-fi is one fewer there.
-- **Stay on Ko-fi's free plan** until memberships and shop sales pass about $240 a month. Below that, its 5% fee costs less than the Gold plan (about $12 a month; check Ko-fi's current price). One-off tips carry no Ko-fi fee on any plan; PayPal or Stripe take their own cut either way.
+- **Stay on Ko-fi's free plan** until memberships and shop sales pass about $240 a month. Below that, its 5% fee costs less than the Gold plan (about $12 a month; check Ko-fi's current price). One-off tips carry no Ko-fi fee on any plan (switch off "Contributor" status, which new accounts start with); PayPal or Stripe take their own cut either way. Ko-fi pays out straight away; Steam pays a month or more later (§10).
 
 ## 8. Keeping it going after launch
 
@@ -142,19 +145,40 @@ Most small games sell the bulk of their copies at launch and in sales. What keep
 5. **Steam Deck:** controller support earns the "Verified" badge, and Deck owners buy a lot of sims. Godot exports to it cleanly; the work is controls and readable text.
 6. **A Supporter Pack** on Steam ($4.99): wallpapers, the Almanac as a printable PDF, the soundtrack once there is one. Almost free to make; lets fans pay more without leaving Steam.
 7. **Mods later:** the game's content is already data files (JSON). Steam Workshop support would keep a long tail of players.
-8. **Grants:** many countries fund games with a playable build (the UK Games Fund, Creative Europe MEDIA, the Canada Media Fund, arts councils). Tell Claude which country you're in and it can find the ones you qualify for.
+8. **Grants, later (D61):** the owner wants no loans or grants until the game makes money. After that, the Australian options are in §10.
 9. **A publisher,** only if Next Fest numbers are strong and someone offers. Read every contract with a lawyer; never give away the IP.
 
-**Price (open, Q2):** the business plan says $19.99. With box-like buildings and no music yet, **$14.99 in early access, rising to $19.99 at 1.0,** would make "worth it" reviews easier to get. Reviews are what Steam uses to decide what to show, and early buyers like a price that only goes up.
+**Price (decided, D59):** **$19.99 in early access** (owner, 2026-11-26), Steam's suggested price in other regions, 10% off in launch week, rising to $24.99 at 1.0. Claude had suggested $14.99 for a game with box buildings and no sound; the polish bar (D56) is what makes $19.99 fair, so it has to be met.
 
 ## 9. Questions for the owner
 
 - ~~**Q1** Launch plan~~: **B, keeping 11 March** (owner, 2026-11-26), polished first (D56).
-- **Q2** Price: **$14.99** or $19.99 in early access?
-- **Q3** Ko-fi: are the three tiers and the "nothing for sale before Steam" rule right (§7)? Can you run a monthly members' post?
-- **Q4** How it's made: say it plainly on Steam and Ko-fi (**recommended, D54**), or only where Steam requires it?
-- **Q5** Which country are you in (for grants, tax and the business setup)?
+- ~~**Q2** Price~~: **$19.99 on Steam** (owner, 2026-11-26; D59).
+- ~~**Q3** Ko-fi~~: **free, members (monthly), and the game for $20 "just to support me"** (owner, 2026-11-26; D60). The $5, the dates and the switch to Steam at launch are Claude's; change any of them freely.
+- ~~**Q4** How it's made~~: **only where required**, which is Steam's AI disclosure (owner, 2026-11-26; D54). The video will be mixed, so the disclosure covers it.
+- ~~**Q5** Country~~: **Australia**; profitable as soon as possible, no loans or grants until it makes money (owner, 2026-11-26; D61, §10).
+
+## 10. Money, from Australia (D61)
+
+*Not tax or legal advice: pointers for a first conversation with an accountant. Check each one when you get to it.*
+
+**The goal:** pay for itself as soon as possible, out of sales, with no loans or grants yet. Money arrives in this order:
+
+| From | What | When it reaches you |
+|---|---|---|
+| Ko-fi, now | Line cards (tips) and $5 memberships | Straight away, through PayPal or Stripe |
+| Ko-fi, mid-December | The $20 early-access purchase | Straight away |
+| Steam, 11 March | Sales at $19.99 (about $11–13 reaches you per copy, `BUSINESS_PLAN.md` §2) | Valve pays monthly in arrears, so March's sales arrive around the end of April. Check the exact timing in Steamworks |
+
+The costs before then are small: the $100 Steam fee (returned after $1,000 of sales), and the $500 capsule art if the Ko-fi goal pays for it.
+
+**Tax and set-up, in plain terms:**
+- **Steam's tax interview:** as an Australian, you fill in a US form (W-8BEN) and give your **Tax File Number** as the foreign tax ID. Australia has a tax treaty with the US, so this cuts the US tax Valve holds back from 30% to the treaty rate. Without the number it stays at 30%.
+- **GST:** Valve collects and pays Australia's GST on Steam sales to Australians. On your own sales (Ko-fi), you only have to register for GST once your business's turnover reaches A$75,000 a year.
+- **Income tax:** Steam and Ko-fi money is income, declared on your tax return. An **ABN** (free from the Australian Business Register) makes it tidy to run as a sole trader. Keep a note of what you spend on the game (Steam fee, art, a test PC); an accountant can tell you what counts.
+
+**Later, once it makes money (the owner, 2026-11-26):** Screen Australia and the state screen agencies (for example VicScreen, Screen Queensland, Screenwest) fund games that already have a playable build and a track record. The federal **Digital Games Tax Offset** refunds part of development spending, but only above A$500,000, so it's for a much bigger later stage. Check what each one offers when the time comes; they change.
 
 ## Sources
 
-Steam Next Fest and sale dates: [Steamworks upcoming events](https://partner.steamgames.com/doc/marketing/upcoming_events), [February 2027 Next Fest](https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest/feb_2027), [June 2027 Next Fest](https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest/june_2027), [PC Gamer on the 2027 calendar](https://www.pcgamer.com/games/steam-reveals-all-the-sale-dates-and-themed-events-for-the-first-half-of-2027/). Coming-soon rules: [Steamworks coming soon](https://partner.steamgames.com/doc/store/coming_soon), [release dates](https://partner.steamgames.com/doc/store/release_dates), [Next Fest rules](https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest). AI disclosure: [PC Gamer on the January 2026 change](https://www.pcgamer.com/software/ai/steam-updates-ai-disclosure-form-to-specify-that-its-focused-on-ai-generated-content-that-is-consumed-by-players-not-efficiency-tools-used-behind-the-scenes/). Ko-fi fees: [Ko-fi help: does Ko-fi take a fee?](https://help.ko-fi.com/hc/en-us/articles/360002506494).
+Steam Next Fest and sale dates: [Steamworks upcoming events](https://partner.steamgames.com/doc/marketing/upcoming_events), [February 2027 Next Fest](https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest/feb_2027), [June 2027 Next Fest](https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest/june_2027), [PC Gamer on the 2027 calendar](https://www.pcgamer.com/games/steam-reveals-all-the-sale-dates-and-themed-events-for-the-first-half-of-2027/). Coming-soon rules: [Steamworks coming soon](https://partner.steamgames.com/doc/store/coming_soon), [release dates](https://partner.steamgames.com/doc/store/release_dates), [Next Fest rules](https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest). AI disclosure: [PC Gamer on the January 2026 change](https://www.pcgamer.com/software/ai/steam-updates-ai-disclosure-form-to-specify-that-its-focused-on-ai-generated-content-that-is-consumed-by-players-not-efficiency-tools-used-behind-the-scenes/). Ko-fi fees: [Ko-fi help: does Ko-fi take a fee?](https://help.ko-fi.com/hc/en-us/articles/360002506494). Steam keys and reviews: [Steamworks keys](https://partner.steamgames.com/doc/features/keys), [Steam: reviews from keys no longer count towards the score (2016)](https://store.steampowered.com/news/24155), [PC Gamer on later review changes](https://www.pcgamer.com/valve-slightly-tweaks-steams-review-system-again). Steam tax: [Steamworks tax FAQ](https://partner.steamgames.com/doc/finance/taxfaq). GST on Steam: [TechRadar, 2017](https://techradar.com/news/australians-will-pay-an-extra-10-percent-on-steam-purchases-from-july).
