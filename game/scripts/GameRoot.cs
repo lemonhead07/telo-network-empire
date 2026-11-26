@@ -101,6 +101,7 @@ public partial class GameRoot : Node3D
     {
         InputSetup.Register();
         GameSettings.Apply();   // the player's window, graphics and volume (automated runs get the defaults)
+        AddChild(new Telo.Game.Audio.Sfx());   // every sound, synthesised at startup (EA7, Audio/)
         InstallSite.HoldFor = minutes => Hold(minutes);
         _content = LoadContent();
         // developer flags count for the launch they came with; after Quit to title or a load the game starts as a player's would
@@ -157,6 +158,12 @@ public partial class GameRoot : Node3D
             WorkUnderWay = WorkUnderWay,
         };
         AddChild(_walkers);
+
+        // what the ear is in: footsteps and the background read it (Audio/)
+        Telo.Game.Audio.Sfx.Indoors = () => PlayerIndoors(_van.Driven ? _van.GlobalPosition : _player.GlobalPosition);
+        Telo.Game.Audio.Sfx.Hour = () => Hour;
+        Telo.Game.Audio.Sfx.Ear = () => GetViewport().GetCamera3D()?.GlobalPosition ?? _player.GlobalPosition;
+        AddChild(new Telo.Game.Audio.Ambience());
 
         // The only overlay left: a small status strip. (Target: wall calendar, cash tin, pager.)
         var ui = new CanvasLayer();
@@ -780,6 +787,15 @@ public partial class GameRoot : Node3D
         if (queue > 0) return $"{m.Name}: {queue} ticket{(queue == 1 ? "" : "s")} in hand, {m.JobsToday} done today. Paid {pay} on Fridays";
         return s.HasDepot ? $"{m.Name}. Collects tickets from the depot each morning. Paid {pay} on Fridays"
             : $"{m.Name}, waiting for a job ticket. Take one from the rail in your room. Paid {pay} on Fridays";
+    }
+
+    /// <summary>Is this world position under a roof: your room, a house, or the data centre's hall?</summary>
+    private bool PlayerIndoors(Vector3 world)
+    {
+        var l = _town.Hq.ToLocal(world);
+        if (Mathf.Abs(l.X) < RoomBuilder.W / 2 && Mathf.Abs(l.Z) < RoomBuilder.D / 2 && l.Y < 3) return true;
+        foreach (var v in _town.Lots) if (v.Install is not null && Indoors(v, world, 0)) return true;
+        return InsideHalden(world);
     }
 
     /// <summary>Is this world position inside the house (plus a margin, e.g. the doorstep)?</summary>

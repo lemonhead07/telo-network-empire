@@ -19,6 +19,9 @@ public partial class GameRoot
     private WorldScreen? _cardScreen;
     private bool _dcWasLit;
 
+    /// <summary>Inside the data centre's walls, under its roof (the background goes quiet and the hall hums: Audio/).</summary>
+    private bool InsideHalden(Vector3 world) => _dc?.Inside(world) == true;
+
     private void BuildHalden()
     {
         if (_planet.SiteById("halden") is not { } flats) return;
