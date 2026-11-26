@@ -65,8 +65,8 @@ About one session a week in each lane. Pictures and the demo have hard dates; ev
 
 | Week of | Geometry lane | Gameplay lane | Owner |
 |---|---|---|---|
-| 30 Nov | **LOOK1** light and land | **EA7** sound | Steamworks account and fee; Ko-fi page and first post |
-| 7 Dec | **MK1** store pictures | **HO1** no more progress bars | Fill in the store page; **submit it for review by Fri 11 Dec** (Valve takes a few working days and slows over the holidays) |
+| 30 Nov | **LOOK1** light and land | ✅ EA7 sound; **AP1** the bot walks; **TIME1** the day on the timesheet (rules) | Steamworks account and fee; Ko-fi page and first post |
+| 7 Dec | **MK1** store pictures | **TIME2** (in the world), then **HO1** no more progress bars | Fill in the store page; **submit it for review by Fri 11 Dec** (Valve takes a few working days and slows over the holidays) |
 | 14 Dec | **LOOK2** surfaces | **IW1** | The page goes live as "Coming soon". Post it everywhere (§6). Show the $20 Ko-fi shop item |
 | 21 Dec | **ROOM1** rooms | **HO2** verbs, Acts 0–1 | |
 | 28 Dec | | | **Playtest:** one evening, Acts 0–2, with a notebook (what confused you, when you got bored, what felt fake) |
