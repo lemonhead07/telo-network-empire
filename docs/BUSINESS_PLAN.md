@@ -2,7 +2,7 @@
 
 *Not financial or legal advice. Figures are rough industry rules of thumb as of late 2026. Check the current Steamworks terms before relying on any number.*
 
-> **2026-11-26:** the launch plan, dates (Steam Next Fest February 2027, early access March 2027, proposed), Ko-fi set-up and marketing routine now live in `docs/LAUNCH.md`; its §8 updates the ideas below and §9 asks whether early access should be $14.99 rather than $19.99. The timeline in §5 here is history.
+> **2026-11-26:** the launch plan, dates (Steam Next Fest February 2027, early access March 2027, proposed), Ko-fi set-up and marketing routine now live in `docs/LAUNCH.md`; its §8 updates the ideas below. **The owner settled the open questions on 2026-11-26:** $19.99 in early access (D59); Ko-fi as free, members and a $20 purchase (D60); Australia, and no loans or grants until the game makes money (D61, `LAUNCH.md` §10). The timeline in §5 here is history.
 
 ## 1. Product
 
@@ -37,7 +37,7 @@ Ads inside a paid PC game draw negative Steam reviews, and reviews drive Steam's
 3. **Steam page + demo (M2).** Put the store page up as early as you have decent art. Wishlists build from that day. **Steam Next Fest** (three times a year) is the biggest free wishlist event for a demo.
 4. **Crowdfunding (optional, after the demo).** Kickstarter works when you *already* have an audience: a demo, a few thousand followers or wishlists. Use it to fund art and audio, not to find an audience. Backer rewards: your name in the Promise Ledger, a BBS file area named by you.
 5. **Patreon / Ko-fi (from M1).** A small, steady amount from the community, plus a private playtest Discord.
-6. **Grants.** Many countries run games funds (for example the UK Games Fund, Creative Europe MEDIA, the Canada Media Fund, and national arts councils). They usually want a playable prototype and a budget. Check which ones you're eligible for where you live.
+6. **Grants** *(owner, 2026-11-26: not until the game makes money; the Australian options are in `LAUNCH.md` §10)*. Many countries run games funds (for example the UK Games Fund, Creative Europe MEDIA, the Canada Media Fund, and national arts councils). They usually want a playable prototype and a budget. Check which ones you're eligible for where you live.
 7. **Publisher deal (after the demo shows traction).** Some publishers specialise in simulators and fund development, marketing and ports in exchange for a revenue share. Typical asks: 50–70% of revenue until they recoup, then a lower share. **Read every contract with a lawyer.** Avoid deals that take your IP or bind future games.
 8. **Early Access revenue (M3).** Sales fund Acts 3–7. This is the main plan; everything above just gets you here faster.
 

@@ -6,6 +6,10 @@
 
 **TELO: Network Empire**
 
+## Price (D59)
+
+**$19.99 (US)** in early access. Accept Steam's suggested price for every other region, Australia included. A **10% launch discount** for launch week (11–18 March). Nowhere else sells it for less (the Ko-fi purchase is $20, `KOFI.md`).
+
 ## Short description (shown beside the main picture; 300 characters at most, this is 284)
 
 > Wire your first phone line by hand in 1983, from a rented room with a plywood switchboard. Knock on doors, climb poles and hire help while the job itself changes, from screwdrivers to terminals to a humming data centre, on one small planet you can drive round in a quarter of an hour.
@@ -50,7 +54,7 @@
 > Acts 0 to 5 are complete and play start to finish (20 to 30 hours). Keyboard and mouse, English only. Some buildings and rooms use simple placeholder shapes. Saves carry over between updates.
 
 **Will the price change?**
-> Yes: it will go up at 1.0. Buying in early access is the cheapest way in.
+> Yes: it's $19.99 in early access and will go up at 1.0. Buying in early access is the cheapest way in.
 
 **How will you involve the community?**
 > Through the Steam forums, a regular update every month or so, and a monthly letter on Ko-fi. Feedback on pace, money and what's confusing goes straight into the next update.
