@@ -292,9 +292,12 @@ public partial class GameRoot
         }
     }
 
+    /// <summary>A line for the run's log that is also printed (headless runs keep no log file).</summary>
+    private void Note(string line) { _autoLog.Add(line); GD.Print("AUTO ", line); }
+
     private async Task Assist(string id)
     {
-        _assists++; _autoLog.Add($"   (assist: {id})");
+        _assists++; Note($"   (assist: {id})");
         var parts = id.Split(':');
         switch (parts[0])
         {
@@ -616,7 +619,7 @@ public partial class GameRoot
     {
         // work done at points on the thing (WorkPoints): walk to it, then work each point in turn, as a player would
         // (the second way, R, is pressed on the next point: it does the whole step at once, as the host's R did)
-        if (it.Pieces is { } wp && wp.Host == it)
+        if (it.Pieces is { } wp && wp.Host == it && (alt || it.HoldSeconds() > 0))
         {
             if (alt)
             {
@@ -638,8 +641,18 @@ public partial class GameRoot
             var round = wp.Points.ToList();
             foreach (var point in round)
             {
-                if (!IsInstanceValid(point) || wp.Next != point || !point.CanUse()) break;
-                await Use(point);
+                if (!IsInstanceValid(point) || wp.Next != point || !point.CanUse())
+                {
+                    Note($"   (work point on {it.Name} skipped: valid={IsInstanceValid(point)} next={wp.Next == point} canUse={IsInstanceValid(point) && point.CanUse()} host={it.CanUse()})");
+                    break;
+                }
+                for (int attempt = 0; attempt < 2 && IsInstanceValid(point) && wp.Next == point; attempt++)
+                {
+                    await Use(point);
+                    if (IsInstanceValid(point) && wp.Next == point)
+                        Note($"   (work point {point.Name} on {it.Name} not done, try {attempt + 1}: focus={_player.Focus?.Name ?? "none"} frozen={AnyScreenOpen} " +
+                             $"canUse={point.CanUse()} hold={point.HoldSeconds():0.00}s dist={(point.GlobalPosition - _player.Camera.GlobalPosition).Length():0.00} m layer={point.CollisionLayer})");
+                }
             }
             return;
         }
@@ -650,6 +663,20 @@ public partial class GameRoot
         if (_player.Focus == it)
         {
             if (alt) await Tap("alt_use");
+            else if (hold > 0 && it.Pieces is { } pw && pw.Host != it)
+            {
+                // a work point: hold E until the piece is done (the physics clock can fall behind the wall clock under load)
+                Input.ActionPress("interact");
+                ulong until = Time.GetTicksMsec() + (ulong)((hold * 4 + 3) * 1000 / Math.Max(Engine.TimeScale, 0.1));
+                bool snapped = false;
+                while (IsInstanceValid(it) && pw.Next == it && Time.GetTicksMsec() < until)
+                {
+                    await Physics(1);
+                    if (!snapped && _player.HoldProgress > 0.6f) { snapped = true; await Snap("hold"); }
+                }
+                Input.ActionRelease("interact");
+                await Physics(2);
+            }
             else if (hold > 0)
             {
                 Input.ActionPress("interact");
@@ -658,14 +685,25 @@ public partial class GameRoot
                 await Seconds(hold * 0.4f + 0.25f);
                 Input.ActionRelease("interact");
             }
-            else await Tap("interact");
+            else
+            {
+                // a thing whose points have just been worked (handing a rug job back) sometimes misses the first press, as a
+                // person's might straight after the last piece: press again, as they would
+                string before = it.Prompt();
+                await Tap("interact");
+                for (int again = 0; again < 2 && it.Pieces is not null && IsInstanceValid(it) && it.CanUse() && it.Prompt() == before && _player.Focus == it; again++)
+                {
+                    await Physics(6);
+                    await Tap("interact");
+                }
+            }
         }
         else
         {
             // couldn't line the crosshair up (something in the way): do what the press would have done
             await Seconds(hold);
             if (alt) it.OnAlt?.Invoke(); else if (it.CanUse()) it.OnUse?.Invoke();
-            _autoLog.Add($"   (pressed {it.Name} without the crosshair on it)");
+            Note($"   (pressed {it.Name} without the crosshair on it)");
         }
         _player.Camera.Rotation = Vector3.Zero;
         await Physics(4);

@@ -8,12 +8,13 @@ Every job step that used to be "hold E and watch a bar fill" is now done at **2�
 
 - Code: `game/scripts/World/WorkPoints.cs`. One call converts any held interaction: `WorkPoints.Attach(host, places)`.
 - The host `Interactable` keeps every rule (Prompt, CanUse, HoldSeconds, OnUse, OnAlt/bodge) and its sounds. WorkPoints only splits the hold across points and fires `OnUse` after the last.
-- While there is work (the host's `HoldSeconds` > 0) the host is parked on collision layer 32, where no look ray finds it, and only the next point can be looked at. Otherwise the host is back on its owner's layer, so a wait or "built" still reads when you look at it.
+- While there is work (the host's `HoldSeconds` > 0) the host's own collision shape is switched off, so no look ray finds it and only the next point can be looked at (its owner may keep setting its layer: the pole line does, every frame). Otherwise the host is back, so a wait or "built" still reads when you look at it.
+- A point is freed once it's done, perhaps while you are still looking at it: `FirstPersonController.Focus` never returns a freed thing.
 - A point's prompt is the host's plus the motion: "Stand the cabinet (1 of 1): tighten the bolt [3/3]". Missing kit still shows the points, with the reason.
 - R (the bodge) works on any point: the whole step is bodged at once, as before.
 - **Sounds** (EA7): the first point plays the host's start sound, each point its motion's own while held (`tool.screw`, `tool.dig`, `tool.clip` …) and a small one when done, and the last point the host's done sound (the step's own, from `SoundCue.ForStep`).
 - **No bar:** the HUD bar shows only when the thing you hold E on has no `OnHold` (work points and install spots animate the piece instead). What is left on the bar: talking and travelling (the Yard's counter, the ferry ticket, the data centre's ladder) and the two jobs still done at a front door (repairs, odd jobs at Sol's and the farm), which HO4 moves indoors. `--autoplay` prints `HOLD BARS n: …` at the end, listing every hold that still showed the bar.
-- The walking player (`Autoplay.Use`) works through the points in order (R on the next point for a bodge); `--smoke` and `--shot` still call `OnUse` directly.
+- The walking player (`Autoplay.Use`) works through the points in order (R on the next point for a bodge), holding E on each until it's done (under load the physics clock falls behind the wall clock), and prints why if a point won't finish; `--smoke` and `--shot` still call `OnUse` directly.
 
 ## Geometry and gameplay as one system
 

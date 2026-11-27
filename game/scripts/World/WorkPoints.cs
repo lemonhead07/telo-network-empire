@@ -18,14 +18,14 @@ public sealed record WorkPlace(Vector3 Pos, string Motion);
 /// geometry decides where you work and the sim decides how long: make the model, name the empties, done.
 /// Without a model the caller gives fallback places, or points are spread across the host's box.
 ///
-/// While there is work to do (the host's HoldSeconds is above zero) the host is parked on its own collision layer, where
-/// no look ray finds it, and only the next point can be looked at; otherwise the host is back where its owner put it, so
-/// its prompt (a wait, "built") still reads. Code that switches the host on and off (its layer / 0) keeps working unchanged.
+/// While there is work to do (the host's HoldSeconds is above zero) the host's own collision shape is switched off, so no
+/// look ray finds it and only the next point can be looked at; otherwise the host is back, so its prompt (a wait, "built")
+/// still reads. Code that switches the host on and off (its layer / 0) keeps working unchanged, however often it does.
 /// </summary>
 public partial class WorkPoints : Node3D
 {
-    /// <summary>The owner's "on" layer, and the layer the host waits on while its points are worked (no ray looks there).</summary>
-    public const uint Live = 2, Parked = 32;
+    /// <summary>The layer a live point is on (the look ray's).</summary>
+    public const uint Live = 2;
     /// <summary>The motions a point can have, and the words shown for each.</summary>
     public static readonly Dictionary<string, string> Motions = new()
     {
@@ -62,8 +62,7 @@ public partial class WorkPoints : Node3D
     private readonly List<Node3D> _pieces = new();
     private readonly List<WorkPlace> _plan = new();
     private int _done;
-    private bool _on;
-    private uint _ownerLayer = Live;
+    private bool _on, _hostHidden;
     /// <summary>A soft glow on the point to work next, so you can find it on the thing (no marker floats above it).</summary>
     private MeshInstance3D? _glow;
     private static StandardMaterial3D? _glowMat;
@@ -159,12 +158,15 @@ public partial class WorkPoints : Node3D
 
     public override void _PhysicsProcess(double delta)
     {
-        // the host's owner switches it on (layer 2) or off (0); we park it while there are points to work
-        uint layer = Host.CollisionLayer;
-        if (layer == 0) _on = false;
-        else if (layer != Parked) { _on = true; _ownerLayer = layer; }
+        // the host's owner switches it on (any layer) or off (0), as often as it likes; while there are points to work, the
+        // host's own shape is switched off so no ray finds it (only the next point can be looked at), and back on after
+        _on = Host.CollisionLayer != 0;
         bool working = _on && Host.HoldSeconds() > 0;
-        if (_on) Host.CollisionLayer = working ? Parked : _ownerLayer;
+        if (working != _hostHidden)
+        {
+            _hostHidden = working;
+            foreach (var shape in Host.GetChildren().OfType<CollisionShape3D>()) shape.Disabled = working;
+        }
         if (working)
         {
             // a different step (the prompt's first words changed with nothing done) means new places

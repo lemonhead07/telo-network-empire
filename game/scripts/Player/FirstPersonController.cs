@@ -27,7 +27,8 @@ public partial class FirstPersonController : SphereBody
     public float Pace { get; set; } = 1f;
 
     /// <summary>What the player is looking at right now (null if nothing interactable).</summary>
-    public Interactable? Focus { get; private set; }
+    public Interactable? Focus { get => _focus is not null && IsInstanceValid(_focus) ? _focus : null; private set => _focus = value; }
+    private Interactable? _focus;   // a work point is freed once it's done, perhaps while you are still looking at it
     /// <summary>How far through the current hold-to-work action (0 to 1).</summary>
     public float HoldProgress { get; private set; }
     private Interactable? _holding;
@@ -100,7 +101,8 @@ public partial class FirstPersonController : SphereBody
         if (IsFrozen())
         {
             if (!Flying) MoveOnPlanet(Vector3.Zero, delta);
-            _holding?.OnHold?.Invoke(0); _holding = null; _held = 0;
+            if (_holding is not null && IsInstanceValid(_holding)) _holding.OnHold?.Invoke(0);
+            _holding = null; _held = 0;
             Focus = null; HoldProgress = 0;
             return;
         }
@@ -130,7 +132,7 @@ public partial class FirstPersonController : SphereBody
         // hold E to work: the job is done when the hold completes; keep holding to carry straight on
         if (Focus is { } f && Input.IsActionPressed("interact") && f.CanUse() && f.HoldSeconds() is var need and > 0)
         {
-            if (f != _holding) { _holding?.OnHold?.Invoke(0); _holding = f; _held = 0; _workIn = WorkSound(f.StartSound, null, f); }
+            if (f != _holding) { if (_holding is not null && IsInstanceValid(_holding)) _holding.OnHold?.Invoke(0); _holding = f; _held = 0; _workIn = WorkSound(f.StartSound, null, f); }
             _workIn -= (float)delta;
             if (_workIn <= 0) _workIn = WorkSound(f.HoldSound, "work.tick", f);
             _held += (float)delta;
@@ -138,7 +140,7 @@ public partial class FirstPersonController : SphereBody
             f.OnHold?.Invoke(HoldProgress);   // the work shows on the thing (WorkPoints: the piece turns, sinks, slides home)
             if (_held >= need) { _held = 0; HoldProgress = 0; WorkSound(f.DoneSound, "work.done", f); _workIn = 0.35f; f.OnUse?.Invoke(); }
         }
-        else { _holding?.OnHold?.Invoke(0); _holding = null; _held = 0; HoldProgress = 0; }
+        else { if (_holding is not null && IsInstanceValid(_holding)) _holding.OnHold?.Invoke(0); _holding = null; _held = 0; HoldProgress = 0; }
     }
 
     /// <summary>A footstep each stride along the ground (none in the air or the water); a thud on landing from a jump. In your ear.</summary>
