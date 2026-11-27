@@ -45,7 +45,7 @@ void fragment() {
     }
 
     // whose ground is this: the nearest corner of the triangle, its edge pushed about by the noise
-    ivec3 id = ivec3(round(corner_biome));
+    ivec3 id = clamp(ivec3(round(corner_biome)), ivec3(0), ivec3(8));   // never read outside the table
     vec3 b = bary;
     if (detail > 0) {   // Low keeps the borders crisp but straight: two samples fewer
         float w1 = texture(noise3d, wpos / 38.0 + vec3(0.21)).r, w2 = texture(noise3d, wpos / 29.0 + vec3(0.63)).r;
@@ -63,7 +63,7 @@ void fragment() {
     // grass: dry and lush patches, then a mottle that reads as tufts up close
     float grass = kind.x;
     float dry = smoothstep(0.52, 0.78, far_n + (mid_n - 0.5) * 0.35);
-    float lush = smoothstep(0.48, 0.22, far_n + (mid_n - 0.5) * 0.3);
+    float lush = 1.0 - smoothstep(0.22, 0.48, far_n + (mid_n - 0.5) * 0.3);
     vec3 g = col;
     g = mix(g, g * dry_tint * 1.75, dry * 0.45);
     g = mix(g, g * lush_tint * 2.2, lush * 0.40);
