@@ -20,6 +20,7 @@ tests/Telo.Sim.Tests/  xUnit tests for the sim. Loads the real game/content JSON
 game/                  Godot 4.7 .NET project. The presentation layer: it shows the sim and drives it, but holds no rules.
   content/*.json       Data: acts, announcements, almanac, work (automation stages), premises (Last Mile), lots, products (the catalogue)
   content/tree/*.json  (planned, TECH_TREE.md) One file per tech-tree branch: nodes → tasks → hand-off stages. Replaces work.json
+  shaders/*.gdshader   The ground (terrain) and worn earth (earth), LOOK1
   scripts/GameRoot.cs  Composition root: loads content, owns Simulation, builds room, wires views
   scripts/UI/          HUD + in-world screens (the Board's terminal, Almanac, Notebook). TierStyle = paper/terminal/db/dashboard look
   scripts/World/       PlanetBuilder (terrain/ocean/trees), PlanetSky, TownBuilder, RoomBuilder, LowPoly (code-built models), Interactable
@@ -43,6 +44,8 @@ blender -b --factory-startup --python tools/models/town.py -- all   # houses, sh
 blender -b --factory-startup --python tools/models/dc.py -- all     # Data Centre props (DATA_CENTRE_DESIGN §12 ids); also village.py (village landmarks), modern.py (later ages: phones, screens, masts, orbit)
 blender -b --factory-startup --python tools/models/lineup.py -- site. --out sites  # contact sheet of models by id prefix → docs/img/props/lineup-sites.png
 godot --path game res://scenes/Showroom.tscn [-- --shot=/abs/x.png]  # every model on a lawn in the real renderer (orbit with the mouse)
+xvfb-run -a godot --path game -- --from=act6 --shots=look --shot=/abs/x.png [--graphics=low] [--look=town,aerial]  # the outdoors in its light, frames per second per view (LOOK1)
+xvfb-run -a godot --path game -- --from=act6 --shots=roads --shot=/abs/x.png    # straight down on every place a road meets a settlement (docs/TOWNS_AND_ROADS.md)
 tools/soundreel.sh /abs/dir [line|foley|ambience|sw.]           # every synthesised sound to .wav + spectrograms + reel.wav (no Godot needed)
 ```
 
@@ -77,6 +80,7 @@ The owner wants fast iteration. **Do not run the test suite or the smoke test af
 - Place things on the surface one by one with `TownBuilder.Place(gen, eastM, southM, yawDeg, lift)`: a long flat object would float off the curve (2 cm at 10 m, 1.3 m at 80 m).
 - A new town needs a `Site` in `PlanetGen` (flattens terrain) before buildings go on it.
 - One fixed world for now: seed 1983 (`GameRoot.DefaultSeed`). The planet is rebuilt from the save's seed on load.
+- **The look (LOOK1):** the ground is drawn by `game/shaders/terrain.gdshader`. `PlanetBuilder` gives it smooth normals (a facet's own normal where they lean more than 35°, so cliffs and road cuttings stay crisp), and per triangle its three corners' biomes (`CUSTOM0`) with each corner's barycentric place (`COLOR`), so every spot takes the nearest corner's ground with a noisy edge; biome colours and kinds are uniforms from `BiomeColor`. Detail is one `NoiseTexture3D` made in code (`PlanetBuilder.Noise`) sampled at several sizes: no image files, no seams. Worn earth along road verges and under hedgerows is `GroundDecal` + `earth.gdshader`. `PlanetSky` sets the light from the sun's height **where the camera is** (warm below about 20°, a dim blue night, haze the colour of the horizon that thins as you climb). Ambient occlusion and glow (Medium, High), bounced light and a wide sun (High) are switched in `GameSettings.ApplyEnvironment`/`ApplySun`; the ground's detail by `PlanetBuilder.SetDetail`. Automated runs take `--graphics=low|medium|high`.
 - Planet size is `PlanetGen.DefaultRadiusM`. The owner chose it for travel time (5 min flight, 12–20 min drive per lap); don't change it casually.
 
 ## No floating menus: screens live in the world

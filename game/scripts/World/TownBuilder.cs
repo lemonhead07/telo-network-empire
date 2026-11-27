@@ -354,6 +354,7 @@ public static class TownBuilder
     {
         float R = (float)gen.RadiusM;
         var asphalt = new Color(0.27f, 0.27f, 0.29f); var paint = new Color(0.85f, 0.8f, 0.6f);
+        var verges = new GroundDecal();   // worn earth either side of the asphalt (LOOK1)
         foreach (var road in gen.Roads)
         {
             var lp = new LowPoly();
@@ -370,20 +371,27 @@ public static class TownBuilder
                 return hit.Count > 0 ? (Vector3)hit["position"] + dir * 0.09f : null;
             }
 
-            Vector3? pl = null, pr = null, pc = null;
+            Vector3? pl = null, pr = null, pc = null, pvl = null, pvr = null;
             for (int i = 0; i < centre.Count; i++)
             {
                 var c = centre[i];
                 var along = (centre[Math.Min(i + 1, centre.Count - 1)] - centre[Math.Max(i - 1, 0)]).Normalized();
                 var side = along.Cross(c).Normalized();
                 Vector3? l = Ground((c * R - side * 3.2f).Normalized()), r = Ground((c * R + side * 3.2f).Normalized()), m = Ground(c);
+                Vector3? vl = Ground((c * R - side * 5.4f).Normalized()), vr = Ground((c * R + side * 5.4f).Normalized());
+                if (l is { } el && vl is { } ovl && (ovl - el).Length() > 3.2f) vl = null;   // the ray hit something by the road (a pole): no verge there
+                if (r is { } er && vr is { } ovr && (ovr - er).Length() > 3.2f) vr = null;
                 bool skip = gen.Sites.Any(s => (PlanetBuilder.ToGodot(s.Dir) - c).Length() * R < s.RadiusM * 0.75f); // the drawn road starts where the streets end
                 if (!skip && l is { } L && r is { } Rr && m is { } M && pl is { } PL && pr is { } PR && pc is { } PC)
                 {
                     lp.Quad(PL, PR, Rr, L, asphalt, c);
                     if (i % 2 == 0) lp.Quad(PC - side * 0.09f + c * 0.03f, PC + side * 0.09f + c * 0.03f, M + side * 0.09f + c * 0.03f, M - side * 0.09f + c * 0.03f, paint, c);
+                    // the verges: from just under the asphalt's edge out into the grass, a little lower than the road
+                    Vector3 In(Vector3 edge, Vector3 mid) => edge.Lerp(mid, 0.2f) - c * 0.04f;   // tucked under the asphalt, so no grass shows between
+                    if (vl is { } VL && pvl is { } PVL) verges.Strip(In(PL, PC), In(L, M), VL - c * 0.04f, PVL - c * 0.04f, 1f, 0f, c);
+                    if (vr is { } VR && pvr is { } PVR) verges.Strip(In(PR, PC), In(Rr, M), VR - c * 0.04f, PVR - c * 0.04f, 1f, 0f, c);
                 }
-                (pl, pr, pc) = (l, r, m);
+                (pl, pr, pc, pvl, pvr) = (l, r, m, vl, vr);
             }
             if (lp.TriangleCount > 0)
             {
@@ -392,6 +400,7 @@ public static class TownBuilder
                 root.AddChild(mi);
             }
         }
+        if (verges.Count > 0) root.AddChild(verges.Instance("Verges"));
     }
 
     /// <summary>A hollow house you can walk into: thin walls around a doorway, a floor, a ceiling and a few sticks of furniture.</summary>

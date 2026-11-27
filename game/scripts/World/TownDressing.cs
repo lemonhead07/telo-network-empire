@@ -365,7 +365,16 @@ public static class TownDressing
             .Box(new Vector3(0, 0.7f, 0.6f), new Vector3(0.28f, 0.3f, 0.32f), new Color(0.15f, 0.14f, 0.13f))
             .Box(new Vector3(-0.18f, 0.15f, 0.3f), new Vector3(0.08f, 0.3f, 0.08f), new Color(0.15f, 0.14f, 0.13f))
             .Box(new Vector3(0.18f, 0.15f, -0.3f), new Vector3(0.08f, 0.3f, 0.08f), new Color(0.15f, 0.14f, 0.13f)).Build();
-        var props = new Dictionary<Mesh, List<Transform3D>> { [hedge] = new(), [oakMesh] = new(), [bale] = new(), [sheep] = new() };
+        // the earth at a hedge's foot, where the plough turns and the sheep walk (LOOK1): strongest under it, fading out either side
+        var foot = new GroundDecal();
+        foreach (float side in new[] { -1f, 1f })
+        {
+            Vector3 P(float x, float z) => new(side * x, 0.07f, z);
+            foot.Strip(P(0, -1.8f), P(0, 1.8f), P(0.8f, 1.8f), P(0.8f, -1.8f), 1f, 1f, Vector3.Up)
+                .Strip(P(0.8f, -1.8f), P(0.8f, 1.8f), P(2.3f, 1.8f), P(2.3f, -1.8f), 1f, 0f, Vector3.Up);
+        }
+        var footMesh = foot.Build();
+        var props = new Dictionary<Mesh, List<Transform3D>> { [hedge] = new(), [footMesh] = new(), [oakMesh] = new(), [bale] = new(), [sheep] = new() };
 
         // something standing on the ground at (east, south), turned to face along `along` (site frame), optionally lying on its side
         void Stand(Mesh mesh, Site site, float east, float south, Vector3 along, float scale = 1f, bool onSide = false, float sink = 0.05f)
@@ -434,6 +443,7 @@ public static class TownDressing
                         uint uh = f.Seed ^ (uint)(ei * 977 + u * 131);
                         if ((uh >> 3) % 23 == 0) continue; // a gap where the hedge has thinned
                         Stand(hedge, site, f.East + pt.X, f.South + pt.Y, along, 0.85f + Frac(uh, 10) * 0.35f);
+                        Stand(footMesh, site, f.East + pt.X, f.South + pt.Y, along);
                         if ((uh >> 7) % 11 == 0) Stand(oakMesh, site, f.East + pt.X, f.South + pt.Y, along, 0.8f + Frac(uh, 14) * 0.5f);
                     }
                 }
@@ -470,7 +480,7 @@ public static class TownDressing
             centre /= xforms.Count;
             var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh, InstanceCount = xforms.Count };
             for (int i = 0; i < xforms.Count; i++) mm.SetInstanceTransform(i, new Transform3D(xforms[i].Basis, xforms[i].Origin - centre));
-            root.AddChild(new MultiMeshInstance3D { Multimesh = mm, Position = centre });
+            root.AddChild(new MultiMeshInstance3D { Multimesh = mm, Position = centre, CastShadow = mesh == footMesh ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On });
         }
     }
 }

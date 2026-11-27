@@ -1440,6 +1440,9 @@ public partial class GameRoot : Node3D
         if (OS.GetCmdlineUserArgs().Contains("--shots=settings")) { await SettingsShots(path, Shot); GetTree().Quit(); return; }
         // --shots=title: the title letter, the load page, and the pause page on PIP's handset (EA6a, FrontDoor.cs)
         if (OS.GetCmdlineUserArgs().Contains("--shots=title")) { if (await TitleShots(path, cam)) GetTree().Quit(); return; }
+        // --shots=look: the outdoors in its light, with the frame rate at each view (LOOK1, LookShots.cs)
+        if (OS.GetCmdlineUserArgs().Contains("--shots=look")) { await LookShots(Shot); GetTree().Quit(); return; }
+        if (OS.GetCmdlineUserArgs().Contains("--shots=roads")) { await RoadShots(Shot); GetTree().Quit(); return; }
         var hq = _town.Centre; var up = hq.Normalized();
         await Shot("-town", TownBuilder.Place(_planet, 22, 40, 0, 7).Origin, hq + up * 2);
         await Shot("-shop", TownBuilder.Place(_planet, 70, 20, 0, 2.2f).Origin, TownBuilder.Place(_planet, 76, 1, 0, 2).Origin);

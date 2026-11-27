@@ -14,7 +14,7 @@ public static class GameSettings
 {
     public const string FilePath = "user://settings.cfg";
     /// <summary>Things that follow the graphics setting at runtime join these groups (the sun, the far trees and rocks).</summary>
-    public const string SunGroup = "settings_sun", FarPropsGroup = "settings_far_props";
+    public const string SunGroup = "settings_sun", FarPropsGroup = "settings_far_props", EnvironmentGroup = "settings_environment";
 
     public const int MouseSteps = 10, DefaultMouse = 5, DefaultVolume = 80;
     public static readonly int[] DayMinuteChoices = { 8, 12, 16 };
@@ -57,7 +57,13 @@ public static class GameSettings
     public static void Load()
     {
         ResetToDefaults();
-        if (Automated) return;
+        if (Automated)
+        {
+            // a developer flag picks the graphics level for a check (--graphics=low|medium|high); nothing else is read
+            if (OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--graphics=")) is { } g)
+                Graphics = g["--graphics=".Length..] switch { "low" => GraphicsQuality.Low, "high" => GraphicsQuality.High, _ => GraphicsQuality.Medium };
+            return;
+        }
         var cfg = new ConfigFile();
         if (cfg.Load(FilePath) != Error.Ok) return;
         Mouse = Math.Clamp((int)cfg.GetValue("controls", "mouse_sensitivity", DefaultMouse), 1, MouseSteps);
@@ -98,8 +104,9 @@ public static class GameSettings
             if (root.Mode != want) root.Mode = want;
         }
 
-        // Medium is the game as it has always looked. Low is for weak computers: fewer pixels drawn (and sharpened back up),
-        // no multisampling, short hard shadows, trees fade sooner. Every 2D page on an object keeps its full resolution.
+        // Medium is the game as it is meant to look. Low is for weak computers: fewer pixels drawn (and sharpened back up),
+        // no multisampling, short hard shadows, trees fade sooner, no ambient occlusion or glow, plainer ground.
+        // High adds full-size ambient occlusion, bounced light and softer sun shadows. Every 2D page on an object keeps its full resolution.
         // (a computer without Vulkan runs the simpler OpenGL renderer, which has no FSR sharpening or FXAA: plain scaling there)
         string renderer = RenderingServer.GetCurrentRenderingMethod();
         switch (Graphics)
@@ -132,7 +139,12 @@ public static class GameSettings
                 RenderingServer.PositionalSoftShadowFilterSetQuality(RenderingServer.ShadowQuality.SoftLow);
                 break;
         }
+        // ambient occlusion: half size at Medium, full size and finer at High (LOOK1)
+        RenderingServer.EnvironmentSetSsaoQuality(Graphics == GraphicsQuality.High ? RenderingServer.EnvironmentSsaoQuality.High : RenderingServer.EnvironmentSsaoQuality.Medium,
+            Graphics != GraphicsQuality.High, 0.5f, 2, 50f, 300f);
         foreach (var n in tree.GetNodesInGroup(SunGroup)) if (n is DirectionalLight3D sun) ApplySun(sun);
+        foreach (var n in tree.GetNodesInGroup(EnvironmentGroup)) if (n is WorldEnvironment env) ApplyEnvironment(env);
+        World.PlanetBuilder.SetDetail((int)Graphics);
         foreach (var n in tree.GetNodesInGroup(FarPropsGroup)) if (n is GeometryInstance3D g) g.VisibilityRangeEnd = PropDrawDistance;
 
         // master volume: the slider is perceptual (squared), so 50% sounds about half as loud
@@ -150,6 +162,17 @@ public static class GameSettings
             GraphicsQuality.High => (DirectionalLight3D.ShadowMode.Parallel4Splits, 500f),
             _ => (DirectionalLight3D.ShadowMode.Parallel4Splits, 320f),
         };
+        sun.LightAngularDistance = Graphics == GraphicsQuality.High ? 0.6f : 0f;   // the sun's width: shadows soften with distance (High only)
+    }
+
+    /// <summary>The outdoor light's extras for the current graphics setting (LOOK1): ambient occlusion and glow from Medium, bounced light at High.</summary>
+    public static void ApplyEnvironment(WorldEnvironment world)
+    {
+        world.AddToGroup(EnvironmentGroup);
+        if (world.Environment is not { } env) return;
+        env.SsaoEnabled = Graphics != GraphicsQuality.Low;
+        env.GlowEnabled = Graphics != GraphicsQuality.Low;
+        env.SsilEnabled = Graphics == GraphicsQuality.High;
     }
 
     /// <summary>Distant trees and rocks: drawn out to the current setting's distance, and kept in step when it changes.</summary>
