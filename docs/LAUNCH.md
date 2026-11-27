@@ -1,6 +1,6 @@
 # Launch, Marketing and Keeping It Going
 
-*Idea session, 2026-11-26. Decisions: D52 plan B (decided by the owner), D54–D55 (proposed), D56–D58 polish first (decided; the bar is in `docs/POLISH.md`), D59–D61 price, Ko-fi and money (the owner's answers, 2026-11-26; D60 replaces D53). Ready-to-paste text: `docs/marketing/KOFI.md` (the Ko-fi page) and `docs/marketing/STEAM_PAGE.md` (the store page). Money background: `docs/BUSINESS_PLAN.md`. Dates checked against Valve's published 2027 calendar on 2026-11-26; check them again in Steamworks before relying on them.*
+*Idea session, 2026-11-26. Decisions: D52 plan B (decided by the owner), D54 (decided: only where required), D55 (proposed), D56–D58 polish first (decided; the bar is in `docs/POLISH.md`), D59–D61 price, Ko-fi and money (the owner's answers, 2026-11-26; D60 replaces D53). Ready-to-paste text: `docs/marketing/KOFI.md` (the Ko-fi page) and `docs/marketing/STEAM_PAGE.md` (the store page). Money background: `docs/BUSINESS_PLAN.md`. Dates checked against Valve's published 2027 calendar on 2026-11-26; check them again in Steamworks before relying on them.*
 
 ## 1. Where we are
 
@@ -65,8 +65,8 @@ About one session a week in each lane. Pictures and the demo have hard dates; ev
 
 | Week of | Geometry lane | Gameplay lane | Owner |
 |---|---|---|---|
-| 30 Nov | **LOOK1** light and land | **EA7** sound | Steamworks account and fee; Ko-fi page and first post |
-| 7 Dec | **MK1** store pictures | **HO1** no more progress bars | Fill in the store page; **submit it for review by Fri 11 Dec** (Valve takes a few working days and slows over the holidays) |
+| 30 Nov | **LOOK1** light and land | ✅ EA7 sound; **AP1** the bot walks; **TIME1** the day on the timesheet (rules) | Steamworks account and fee; Ko-fi page and first post |
+| 7 Dec | **MK1** store pictures | **TIME2** (in the world), then **HO1** no more progress bars | Fill in the store page; **submit it for review by Fri 11 Dec** (Valve takes a few working days and slows over the holidays) |
 | 14 Dec | **LOOK2** surfaces | **IW1** | The page goes live as "Coming soon". Post it everywhere (§6). Show the $20 Ko-fi shop item |
 | 21 Dec | **ROOM1** rooms | **HO2** verbs, Acts 0–1 | |
 | 28 Dec | | | **Playtest:** one evening, Acts 0–2, with a notebook (what confused you, when you got bored, what felt fake) |
@@ -84,7 +84,7 @@ About one session a week in each lane. Pictures and the demo have hard dates; ev
 
 - **Steam Cloud without code:** Steamworks' "Auto-Cloud" can sync a folder of files. Once LK1 moves the saves into a plain `TELO` folder, it's two paths in Steamworks: Windows `%APPDATA%/TELO/saves`, Linux `~/.local/share/TELO/saves`.
 - **The demo is its own app** on Steam, attached to the main game. It uses the same save folder, so a demo save carries straight on in the full game.
-- **AI disclosure** (D54): Steam's content survey asks about AI-made content that players see or hear. TELO's code, in-game text and the scripts that build its models were written with Claude, so the honest answer is "yes, pre-generated". Wording in `STEAM_PAGE.md`. Nothing runs AI while you play, so the extra rules for live AI don't apply.
+- **AI disclosure** (D54, owner 2026-11-26: **only where required**): Steam's content survey asks about AI-made content that players see or hear. TELO's code, in-game text and the scripts that build its models were written with AI help, and some trailer and clip video will be AI-assisted, so the honest answer is "yes, pre-generated". Wording in `STEAM_PAGE.md`. It isn't mentioned anywhere else (store text, Ko-fi, posts). Nothing runs AI while you play, so the extra rules for live AI don't apply. Store screenshots must be the real game; AI-made video is for mood and titles, never shown as gameplay.
 - **Keys for Ko-fi buyers:** Steam lets you request keys to sell or give away on other stores (up to 5,000 for a game's launch, more on request). Valve's rule is not to give Steam customers a worse deal than key buyers, so the Ko-fi price is never below Steam's: $20 against $19.99 (D60). Reviews from a key show on the store page but **don't count towards the review score**, so Ko-fi buyers' reviews are welcome but can't be what lifts the score: that has to come from Steam buyers.
 
 ## 6. Marketing: what to say, and where
@@ -155,7 +155,7 @@ Most small games sell the bulk of their copies at launch and in sales. What keep
 - ~~**Q1** Launch plan~~: **B, keeping 11 March** (owner, 2026-11-26), polished first (D56).
 - ~~**Q2** Price~~: **$19.99 on Steam** (owner, 2026-11-26; D59).
 - ~~**Q3** Ko-fi~~: **free, members (monthly), and the game for $20 "just to support me"** (owner, 2026-11-26; D60). The $5, the dates and the switch to Steam at launch are Claude's; change any of them freely.
-- **Q4** How it's made: say it plainly on Steam and Ko-fi (**recommended, D54**), or only where Steam requires it?
+- ~~**Q4** How it's made~~: **only where required**, which is Steam's AI disclosure (owner, 2026-11-26; D54). The video will be mixed, so the disclosure covers it.
 - ~~**Q5** Country~~: **Australia**; profitable as soon as possible, no loans or grants until it makes money (owner, 2026-11-26; D61, §10).
 
 ## 10. Money, from Australia (D61)

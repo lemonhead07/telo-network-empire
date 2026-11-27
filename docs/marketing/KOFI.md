@@ -57,11 +57,9 @@
 >
 > **Where it's at:** early access plays start to finish, Acts 0 to 5, 20 to 30 hours, and it has its sound now. This winter is for making it look and feel finished. The Steam page goes up in December, a free demo is in Steam Next Fest (22 Feb – 1 Mar 2027), and **early access is on Steam on 11 March 2027 for $19.99.**
 >
-> **How it's made:** by one person who isn't a programmer, working with an AI assistant (Claude) that writes the code, the words and the scripts that build the models. Every decision about what goes in is a human one.
->
 > **Three ways to be on the line:** follow for free; become a member ($5 a month) for the development content; or buy early access now ($20), just to support me.
 
-*(The "How it's made" paragraph is the honest version, D54, still waiting on the owner's answer to Q4. If you'd rather say it only on Steam, delete it here.)*
+*(No "how it's made" paragraph here: the owner says it only where it's required, which is Steam's AI disclosure (D54, decided 2026-11-26).)*
 
 ---
 
@@ -149,10 +147,9 @@ Today's best pictures, until MK1 makes proper ones: `docs/img/millbrook.png` (Mi
 1. **The switchboard.** Why the centre of the game is a sheet of plywood with brass screws: you can see every customer you have from your bed. A picture, then a clip once MK2 exists.
 2. **The Steam page is up** (mid-December). One line and the link. Ask for wishlists, once, plainly. Say the $20 early-access purchase is open here.
 3. **Every improvement creates a new problem.** Jory is right 85% of the time. The other 15% is a fault three weeks later at a house you've forgotten. Why that's the most fun rule in the game.
-4. **How TELO is made.** One person who isn't a programmer, and Claude. What the AI does, what the person decides, what it's like. Honest, short, no hype (D54).
-5. **The first build is out** (mid-January), for buyers. What's in it, what's rough.
-6. **The demo** (February). What's in it, the Next Fest dates, the link.
-7. **Early access is out** (11 March). The Steam link; buyers' keys are on their way.
+4. **The first build is out** (mid-January), for buyers. What's in it, what's rough.
+5. **The demo** (February). What's in it, the Next Fest dates, the link.
+6. **Early access is out** (11 March). The Steam link; buyers' keys are on their way.
 
 ## The monthly members' letter (template)
 
